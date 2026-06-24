@@ -4,6 +4,23 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Everyday Strong</title>
+
+<!-- STEP 1: Replace these values with your Firebase config -->
+<script>
+var FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDYVYxiuxraOm0NR03eAN2YeTwp8X32n3A",
+  authDomain: "everyday-strong-95844.firebaseapp.com",
+  databaseURL: "https://everyday-strong-95844-default-rtdb.firebaseio.com",
+  projectId: "everyday-strong-95844",
+  storageBucket: "everyday-strong-95844.firebasestorage.app",
+  messagingSenderId: "835314554846",
+  appId: "1:835314554846:web:cd5367a8002833c6ed2f4f"
+};
+</script>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
@@ -22,7 +39,7 @@ body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
 .stitle{font-size:18px;color:#3a2a1a;margin-bottom:0.5rem;font-family:Georgia,serif;font-weight:normal;}
 .ssub{font-size:12px;color:#9a8a7a;margin-bottom:1rem;}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;}
-.vc{background:#fff;border-radius:10px;overflow:hidden;border:1px solid #ddd0c6;cursor:pointer;}
+.vc{background:#fff;border-radius:10px;overflow:hidden;border:1px solid #ddd0c6;cursor:pointer;transition:transform 0.15s;}
 .vc:hover{transform:translateY(-2px);}
 .thumb{width:100%;aspect-ratio:16/9;background:#e8ddd2;position:relative;overflow:hidden;}
 .thumb img{width:100%;height:100%;object-fit:cover;}
@@ -36,7 +53,7 @@ body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
 .ah{background:#3a2a1a;color:#f5f0eb;padding:9px 14px;font-size:11px;font-weight:700;text-transform:uppercase;}
 .ab{padding:12px 14px;font-size:14px;color:#3a2a1a;line-height:1.7;white-space:pre-wrap;word-break:break-word;}
 .ab a{color:#a0522d;}
-.ad{font-size:11px;color:#b0a090;padding:0 14px 10px;}
+.adate{font-size:11px;color:#b0a090;padding:0 14px 10px;}
 .adhdr{background:#3a2a1a;padding:0.9rem 1.4rem;display:flex;align-items:center;justify-content:space-between;}
 .adbody{padding:1.4rem;max-width:700px;margin:0 auto;}
 .tabs{display:flex;gap:8px;margin-bottom:1.2rem;flex-wrap:wrap;}
@@ -64,6 +81,8 @@ textarea.fi{min-height:80px;resize:vertical;}
 .delbtn{background:none;border:1px solid #e0d0c8;border-radius:5px;color:#c05040;font-size:12px;cursor:pointer;padding:3px 9px;white-space:nowrap;}
 .ok{background:#eaf6f0;color:#1a7a4a;padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:10px;display:none;border:0.5px solid #b0e0c8;}
 .tip{font-size:12px;color:#9a8a7a;margin:-6px 0 10px;}
+.loading{text-align:center;padding:2rem;color:#9a8a7a;font-size:14px;}
+.setup-warn{background:#fff8e6;border:1px solid #f0c040;border-radius:10px;padding:1rem;margin-bottom:1rem;font-size:13px;color:#7a5a10;font-family:Arial,sans-serif;line-height:1.6;}
 </style>
 </head>
 <body>
@@ -90,8 +109,9 @@ textarea.fi{min-height:80px;resize:vertical;}
     <div id="ann-sec"></div>
     <p class="stitle">Workout Library</p>
     <p class="ssub" id="acc-lbl">Your videos</p>
-    <div class="grid" id="vgrid"></div>
-    <div class="empty" id="vempty" style="display:none;"><p style="font-size:28px;margin-bottom:8px;">&#127947;</p><p>No workouts yet - check back soon!</p></div>
+    <div id="vgrid-wrap">
+      <div class="loading">Loading workouts...</div>
+    </div>
   </div>
 </div>
 
@@ -102,6 +122,7 @@ textarea.fi{min-height:80px;resize:vertical;}
     <button class="sbtn" style="color:#f5f0eb;border-color:#7a6a5a;" id="exit-btn">Exit</button>
   </div>
   <div class="adbody">
+    <div id="setup-warn-wrap"></div>
     <div class="tabs">
       <button class="tab on" id="tab-videos">&#128249; Videos</button>
       <button class="tab" id="tab-codes">&#128272; Access Codes</button>
@@ -122,7 +143,7 @@ textarea.fi{min-height:80px;resize:vertical;}
       </div>
       <div class="ac3">
         <h3>All Videos (<span id="vcnt">0</span>)</h3>
-        <div id="vlist"></div>
+        <div id="vlist"><div class="loading">Loading...</div></div>
       </div>
     </div>
     <div class="tc" id="tc-codes">
@@ -139,13 +160,13 @@ textarea.fi{min-height:80px;resize:vertical;}
           <button class="abtn2 sec" id="gen-btn" style="white-space:nowrap;font-size:12px;margin-bottom:0;">Auto-generate</button>
         </div>
         <label class="lbl" style="margin-top:10px;">Access Level</label>
-        <select class="fi" id="c-access"></select>
+        <select class="fi" id="c-access"><option value="ALL">Full Membership - all videos</option></select>
         <p class="tip">Full Membership sees all videos. A program code only sees that program.</p>
         <button class="abtn2" id="add-code-btn">Create Code</button>
       </div>
       <div class="ac3">
         <h3>Active Codes (<span id="ccnt">0</span>)</h3>
-        <div id="clist"></div>
+        <div id="clist"><div class="loading">Loading...</div></div>
       </div>
     </div>
     <div class="tc" id="tc-announce">
@@ -166,28 +187,37 @@ textarea.fi{min-height:80px;resize:vertical;}
       </div>
       <div class="ac3">
         <h3>Active Announcements (<span id="acnt">0</span>)</h3>
-        <div id="alist"></div>
+        <div id="alist"><div class="loading">Loading...</div></div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-var videos = [];
-var codes = [{name:"Demo Member",code:"STRONG2024",access:"ALL"}];
-var ann = [];
 var adminPass = "ADMIN123";
 var currentUser = null;
 var currentAccess = "ALL";
+var db = null;
+var isFirebaseReady = false;
 
-try { var tmp = localStorage.getItem("es_v"); if(tmp) videos = JSON.parse(tmp); } catch(e){}
-try { var tmp = localStorage.getItem("es_c"); if(tmp) codes = JSON.parse(tmp); } catch(e){}
-try { var tmp = localStorage.getItem("es_a"); if(tmp) ann = JSON.parse(tmp); } catch(e){}
-try { var tmp = localStorage.getItem("es_p"); if(tmp) adminPass = tmp; } catch(e){}
+function initFirebase(){
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.database();
+    isFirebaseReady = true;
+    ensureDefaultCode();
+  } catch(e){
+    isFirebaseReady = false;
+  }
+}
 
-function saveVideos(){ try{localStorage.setItem("es_v",JSON.stringify(videos));}catch(e){} }
-function saveCodes(){ try{localStorage.setItem("es_c",JSON.stringify(codes));}catch(e){} }
-function saveAnn(){ try{localStorage.setItem("es_a",JSON.stringify(ann));}catch(e){} }
+function ensureDefaultCode(){
+  db.ref("codes").orderByChild("code").equalTo("STRONG2024").once("value", function(snap){
+    if(!snap.exists()){
+      db.ref("codes").push({name:"Demo Member",code:"STRONG2024",access:"ALL"});
+    }
+  });
+}
 
 function showPage(id){
   document.getElementById("pg-login").style.display = "none";
@@ -200,12 +230,10 @@ function showPage(id){
 function escHtml(s){
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
-
 function getYTId(u){
   var m = String(u).match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
   return m ? m[1] : null;
 }
-
 function flashOk(id, msg){
   var el = document.getElementById(id);
   if(msg) el.textContent = msg;
@@ -217,110 +245,151 @@ function doLogin(){
   var val = document.getElementById("code-in").value.trim().toUpperCase();
   var err = document.getElementById("login-err");
   if(!val){ err.style.display="block"; err.textContent="Please enter your access code."; return; }
-  var found = null;
-  for(var i=0;i<codes.length;i++){ if(codes[i].code.toUpperCase()===val){ found=codes[i]; break; } }
-  if(found){
-    currentUser = found.name;
-    currentAccess = found.access || "ALL";
-    err.style.display = "none";
-    document.getElementById("wbar").textContent = "Welcome, "+found.name+"! Ready to get strong?";
-    document.getElementById("acc-lbl").textContent = currentAccess==="ALL" ? "Full membership - all workouts" : "Your program: "+currentAccess;
-    renderVideos();
-    renderAnn();
-    showPage("pg-portal");
+  if(!isFirebaseReady){ err.style.display="block"; err.textContent="Database not connected yet. Please set up Firebase."; return; }
+  db.ref("codes").orderByChild("code").equalTo(val).once("value", function(snap){
+    if(snap.exists()){
+      var found = null;
+      snap.forEach(function(c){ found = c.val(); });
+      currentUser = found.name;
+      currentAccess = found.access || "ALL";
+      err.style.display = "none";
+      document.getElementById("wbar").textContent = "Welcome, "+found.name+"! Ready to get strong?";
+      document.getElementById("acc-lbl").textContent = currentAccess==="ALL" ? "Full membership - all workouts" : "Your program: "+currentAccess;
+      loadMemberVideos();
+      loadAnnouncements();
+      showPage("pg-portal");
+    } else {
+      err.style.display = "block";
+      err.textContent = "Incorrect code. Please check with your instructor.";
+      document.getElementById("code-in").select();
+    }
+  });
+}
+
+function loadMemberVideos(){
+  var wrap = document.getElementById("vgrid-wrap");
+  wrap.innerHTML = "<div class='loading'>Loading workouts...</div>";
+  db.ref("videos").on("value", function(snap){
+    var list = [];
+    if(snap.exists()){
+      snap.forEach(function(c){
+        var v = c.val(); v._key = c.key;
+        if(currentAccess==="ALL" || v.tag===currentAccess || v.tag==="Full Membership") list.push(v);
+      });
+    }
+    if(!list.length){
+      wrap.innerHTML = "<div class='empty'><p style='font-size:28px;margin-bottom:8px;'>&#127947;</p><p>No workouts yet - check back soon!</p></div>";
+      return;
+    }
+    var html = "<div class='grid'>";
+    for(var i=0;i<list.length;i++){
+      var v=list[i];
+      var ytId=getYTId(v.url);
+      var th=ytId ? "<img src='https://img.youtube.com/vi/"+ytId+"/mqdefault.jpg' onerror='this.style.display=\"none\"' />" : "";
+      html+="<div class='vc' onclick='openVideo(\""+escHtml(v.url)+"\")'><div class='thumb'>"+th+"<div class='play'></div></div><div class='vi'><div class='vt'>"+escHtml(v.title)+"</div>"+(v.tag?"<span class='vtg'>"+escHtml(v.tag)+"</span>":"")+"</div></div>";
+    }
+    html += "</div>";
+    wrap.innerHTML = html;
+  });
+}
+
+function openVideo(url){
+  var ytId=getYTId(url);
+  window.open(ytId ? "https://www.youtube.com/watch?v="+ytId : url, "_blank");
+}
+
+function loadAnnouncements(){
+  db.ref("announcements").on("value", function(snap){
+    var sec = document.getElementById("ann-sec");
+    if(!snap.exists()){ sec.innerHTML=""; return; }
+    var lb={zoom:"Live Class",general:"Announcement",schedule:"Schedule"};
+    var html="<p class='stitle' style='margin-bottom:0.7rem;'>Announcements</p>";
+    var items = [];
+    snap.forEach(function(c){ var a=c.val(); a._key=c.key; items.unshift(a); });
+    for(var i=0;i<items.length;i++){
+      var a=items[i];
+      var b=escHtml(a.body).replace(/https?:\/\/[^\s<]+/g,function(u){ return "<a href='"+u+"' target='_blank'>"+u+"</a>"; });
+      html+="<div class='ac2'><div class='ah'>"+(lb[a.type]||"Announcement")+"</div><div class='ab'><strong>"+escHtml(a.title)+"</strong><br/>"+b+"</div><div class='adate'>"+escHtml(a.date)+"</div></div>";
+    }
+    sec.innerHTML=html;
+  });
+}
+
+function showAdmin(){
+  var p = prompt("Instructor password:");
+  if(!p) return;
+  if(p===adminPass){
+    var w = document.getElementById("setup-warn-wrap");
+    if(!isFirebaseReady){
+      w.innerHTML = "<div class='setup-warn'><strong>Firebase not connected yet!</strong><br/>Videos and codes won't save until you add your Firebase config. See setup instructions.</div>";
+    } else { w.innerHTML=""; }
+    loadAdmVideos(); loadAdmCodes(); loadAdmAnn(); showPage("pg-admin");
   } else {
-    err.style.display = "block";
-    err.textContent = "Incorrect code. Please check with your instructor.";
-    document.getElementById("code-in").select();
+    alert("Incorrect password. Default: ADMIN123");
   }
 }
 
-function renderVideos(){
-  var g = document.getElementById("vgrid");
-  var e = document.getElementById("vempty");
-  var list = [];
-  for(var i=0;i<videos.length;i++){
-    var v = videos[i];
-    if(currentAccess==="ALL" || v.tag===currentAccess || v.tag==="Full Membership") list.push(v);
-  }
-  if(!list.length){ g.innerHTML=""; e.style.display="block"; return; }
-  e.style.display="none";
-  var html="";
-  for(var i=0;i<list.length;i++){
-    var v=list[i];
-    var ytId=getYTId(v.url);
-    var th=ytId ? "<img src='https://img.youtube.com/vi/"+ytId+"/mqdefault.jpg' onerror='this.style.display=\"none\"' />" : "";
-    html+="<div class='vc' onclick='openVideo(\""+v.id+"\")'><div class='thumb'>"+th+"<div class='play'></div></div><div class='vi'><div class='vt'>"+escHtml(v.title)+"</div>"+(v.tag?"<span class='vtg'>"+escHtml(v.tag)+"</span>":"")+"</div></div>";
-  }
-  g.innerHTML=html;
+function loadAdmVideos(){
+  db.ref("videos").on("value", function(snap){
+    var cnt=0, html="";
+    if(snap.exists()){
+      snap.forEach(function(c){
+        var v=c.val(); cnt++;
+        html+="<div class='li'><div class='lil'>"+escHtml(v.title)+(v.tag?" <span class='bdg'>"+escHtml(v.tag)+"</span>":"")+"</div><button class='delbtn' onclick='delVideo(\""+c.key+"\")'>Remove</button></div>";
+      });
+    }
+    document.getElementById("vcnt").textContent=cnt;
+    document.getElementById("vlist").innerHTML=html||"<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No videos yet.</p>";
+    updateDrop();
+  });
 }
 
-function openVideo(id){
-  var v=null;
-  for(var i=0;i<videos.length;i++){ if(String(videos[i].id)===String(id)){ v=videos[i]; break; } }
-  if(!v) return;
-  var ytId=getYTId(v.url);
-  window.open(ytId ? "https://www.youtube.com/watch?v="+ytId : v.url, "_blank");
+function addVideo(){
+  if(!isFirebaseReady){ alert("Firebase not connected. Please complete setup first."); return; }
+  var t=document.getElementById("v-title").value.trim();
+  var u=document.getElementById("v-url").value.trim();
+  var tg=document.getElementById("v-tag").value.trim();
+  if(!t||!u){ alert("Please enter a title and video link."); return; }
+  db.ref("videos").push({title:t,url:u,tag:tg,date:new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}, function(err){
+    if(err){ alert("Error saving: "+err.message); return; }
+    document.getElementById("v-title").value="";
+    document.getElementById("v-url").value="";
+    document.getElementById("v-tag").value="";
+    flashOk("ok-video","Video saved!");
+  });
 }
 
-function renderAnn(){
-  var sec=document.getElementById("ann-sec");
-  if(!ann.length){ sec.innerHTML=""; return; }
-  var lb={zoom:"Live Class",general:"Announcement",schedule:"Schedule"};
-  var html="<p class='stitle' style='margin-bottom:0.7rem;'>Announcements</p>";
-  for(var i=0;i<ann.length;i++){
-    var a=ann[i];
-    var b=escHtml(a.body).replace(/https?:\/\/[^\s<]+/g,function(u){ return "<a href='"+u+"' target='_blank'>"+u+"</a>"; });
-    html+="<div class='ac2'><div class='ah'>"+(lb[a.type]||"Announcement")+"</div><div class='ab'><strong>"+escHtml(a.title)+"</strong><br/>"+b+"</div><div class='ad'>"+escHtml(a.date)+"</div></div>";
-  }
-  sec.innerHTML=html;
-}
-
-function getCats(){
-  var c=[];
-  for(var i=0;i<videos.length;i++){ var t=videos[i].tag; if(t && c.indexOf(t)===-1) c.push(t); }
-  return c;
+function delVideo(key){
+  if(!confirm("Remove this video?")) return;
+  db.ref("videos/"+key).remove();
 }
 
 function updateDrop(){
   var s=document.getElementById("c-access");
   var prev=s.value;
   s.innerHTML="<option value='ALL'>Full Membership - all videos</option>";
-  var cats=getCats();
-  for(var i=0;i<cats.length;i++) s.innerHTML+="<option value='"+escHtml(cats[i])+"'>"+escHtml(cats[i])+"</option>";
-  if(prev) s.value=prev;
+  db.ref("videos").once("value", function(snap){
+    var cats=[];
+    if(snap.exists()) snap.forEach(function(c){ var t=c.val().tag; if(t && cats.indexOf(t)===-1) cats.push(t); });
+    for(var i=0;i<cats.length;i++) s.innerHTML+="<option value='"+escHtml(cats[i])+"'>"+escHtml(cats[i])+"</option>";
+    if(prev) s.value=prev;
+  });
 }
 
-function addVideo(){
-  var t=document.getElementById("v-title").value.trim();
-  var u=document.getElementById("v-url").value.trim();
-  var tg=document.getElementById("v-tag").value.trim();
-  if(!t||!u){ alert("Please enter a title and video link."); return; }
-  videos.push({id:Date.now(),title:t,url:u,tag:tg});
-  saveVideos();
-  document.getElementById("v-title").value="";
-  document.getElementById("v-url").value="";
-  document.getElementById("v-tag").value="";
-  flashOk("ok-video","Video saved!");
-  renderAdmVideos();
-  updateDrop();
-}
-
-function renderAdmVideos(){
-  document.getElementById("vcnt").textContent=videos.length;
-  var l=document.getElementById("vlist");
-  if(!videos.length){ l.innerHTML="<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No videos yet.</p>"; return; }
-  var html="";
-  for(var i=0;i<videos.length;i++){
-    var v=videos[i];
-    html+="<div class='li'><div class='lil'>"+escHtml(v.title)+(v.tag?" <span class='bdg'>"+escHtml(v.tag)+"</span>":"")+"</div><button class='delbtn' onclick='delVideo("+i+")'>Remove</button></div>";
-  }
-  l.innerHTML=html;
-}
-
-function delVideo(i){
-  if(!confirm("Remove this video?")) return;
-  videos.splice(i,1); saveVideos(); renderAdmVideos(); updateDrop();
+function loadAdmCodes(){
+  db.ref("codes").on("value", function(snap){
+    var cnt=0, html="";
+    if(snap.exists()){
+      snap.forEach(function(c){
+        var cd=c.val(); cnt++;
+        var bc=cd.access==="ALL"?"bdg all":"bdg";
+        var al=cd.access==="ALL"?"Full Access":cd.access;
+        html+="<div class='li'><div class='lil'>"+escHtml(cd.name)+" <span class='cd'>"+escHtml(cd.code)+"</span> <span class='"+bc+"'>"+escHtml(al)+"</span></div><button class='delbtn' onclick='delCode(\""+c.key+"\")'>Remove</button></div>";
+      });
+    }
+    document.getElementById("ccnt").textContent=cnt;
+    document.getElementById("clist").innerHTML=html||"<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No codes yet.</p>";
+  });
 }
 
 function genCode(){
@@ -330,67 +399,61 @@ function genCode(){
 }
 
 function addCode(){
+  if(!isFirebaseReady){ alert("Firebase not connected. Please complete setup first."); return; }
   var n=document.getElementById("c-name").value.trim();
   var c=document.getElementById("c-code").value.trim().toUpperCase();
   var a=document.getElementById("c-access").value;
   if(!n||!c){ alert("Please enter a name and code."); return; }
-  for(var i=0;i<codes.length;i++){ if(codes[i].code===c){ alert("That code already exists."); return; } }
-  codes.push({name:n,code:c,access:a});
-  saveCodes();
-  flashOk("ok-code","Code for "+n+": "+c+(a!=="ALL"?" ("+a+")":" (Full Access)"));
-  document.getElementById("c-name").value="";
-  document.getElementById("c-code").value="";
-  renderAdmCodes();
+  db.ref("codes").orderByChild("code").equalTo(c).once("value", function(snap){
+    if(snap.exists()){ alert("That code already exists."); return; }
+    db.ref("codes").push({name:n,code:c,access:a}, function(err){
+      if(err){ alert("Error: "+err.message); return; }
+      flashOk("ok-code","Code for "+n+": "+c+(a!=="ALL"?" ("+a+")":" (Full Access)"));
+      document.getElementById("c-name").value="";
+      document.getElementById("c-code").value="";
+    });
+  });
 }
 
-function renderAdmCodes(){
-  document.getElementById("ccnt").textContent=codes.length;
-  var l=document.getElementById("clist");
-  if(!codes.length){ l.innerHTML="<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No codes yet.</p>"; return; }
-  var html="";
-  for(var i=0;i<codes.length;i++){
-    var c=codes[i];
-    var bc=c.access==="ALL"?"bdg all":"bdg";
-    var al=c.access==="ALL"?"Full Access":c.access;
-    html+="<div class='li'><div class='lil'>"+escHtml(c.name)+" <span class='cd'>"+escHtml(c.code)+"</span> <span class='"+bc+"'>"+escHtml(al)+"</span></div><button class='delbtn' onclick='delCode("+i+")'>Remove</button></div>";
-  }
-  l.innerHTML=html;
-}
-
-function delCode(i){
+function delCode(key){
   if(!confirm("Remove this code?")) return;
-  codes.splice(i,1); saveCodes(); renderAdmCodes();
+  db.ref("codes/"+key).remove();
+}
+
+function loadAdmAnn(){
+  db.ref("announcements").on("value", function(snap){
+    var cnt=0, html="";
+    if(snap.exists()){
+      var items=[];
+      snap.forEach(function(c){ var a=c.val(); a._key=c.key; items.unshift(a); cnt++; });
+      for(var i=0;i<items.length;i++){
+        var a=items[i];
+        html+="<div class='li'><div class='lil'><strong>"+escHtml(a.title)+"</strong><br/><span style='font-size:11px;color:#9a8a7a;'>"+escHtml(a.date)+"</span></div><button class='delbtn' onclick='delAnn(\""+a._key+"\")'>Remove</button></div>";
+      }
+    }
+    document.getElementById("acnt").textContent=cnt;
+    document.getElementById("alist").innerHTML=html||"<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No announcements yet.</p>";
+  });
 }
 
 function addAnn(){
+  if(!isFirebaseReady){ alert("Firebase not connected. Please complete setup first."); return; }
   var tp=document.getElementById("a-type").value;
   var t=document.getElementById("a-title").value.trim();
   var b=document.getElementById("a-body").value.trim();
   if(!t||!b){ alert("Please enter a title and message."); return; }
   var d=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-  ann.unshift({id:Date.now(),type:tp,title:t,body:b,date:d});
-  saveAnn();
-  document.getElementById("a-title").value="";
-  document.getElementById("a-body").value="";
-  flashOk("ok-ann","Announcement posted!");
-  renderAdmAnn();
+  db.ref("announcements").push({type:tp,title:t,body:b,date:d}, function(err){
+    if(err){ alert("Error: "+err.message); return; }
+    document.getElementById("a-title").value="";
+    document.getElementById("a-body").value="";
+    flashOk("ok-ann","Announcement posted!");
+  });
 }
 
-function renderAdmAnn(){
-  document.getElementById("acnt").textContent=ann.length;
-  var l=document.getElementById("alist");
-  if(!ann.length){ l.innerHTML="<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No announcements yet.</p>"; return; }
-  var html="";
-  for(var i=0;i<ann.length;i++){
-    var a=ann[i];
-    html+="<div class='li'><div class='lil'><strong>"+escHtml(a.title)+"</strong><br/><span style='font-size:11px;color:#9a8a7a;'>"+escHtml(a.date)+"</span></div><button class='delbtn' onclick='delAnn("+i+")'>Remove</button></div>";
-  }
-  l.innerHTML=html;
-}
-
-function delAnn(i){
+function delAnn(key){
   if(!confirm("Remove this announcement?")) return;
-  ann.splice(i,1); saveAnn(); renderAdmAnn();
+  db.ref("announcements/"+key).remove();
 }
 
 document.getElementById("login-btn").onclick = doLogin;
@@ -400,12 +463,7 @@ document.getElementById("signout-btn").onclick = function(){
   document.getElementById("code-in").value="";
   document.getElementById("login-err").style.display="none";
 };
-document.getElementById("admin-link").onclick = function(){
-  var p = prompt("Instructor password:");
-  if(!p) return;
-  if(p===adminPass){ renderAdmVideos(); renderAdmCodes(); renderAdmAnn(); updateDrop(); showPage("pg-admin"); }
-  else alert("Incorrect password. Default: ADMIN123");
-};
+document.getElementById("admin-link").onclick = showAdmin;
 document.getElementById("exit-btn").onclick = function(){ showPage("pg-login"); };
 document.getElementById("add-video-btn").onclick = addVideo;
 document.getElementById("gen-btn").onclick = genCode;
@@ -428,7 +486,7 @@ document.getElementById("tab-announce").onclick = function(){
   this.classList.add("on"); document.getElementById("tc-announce").classList.add("on");
 };
 
-renderAdmVideos(); renderAdmCodes(); renderAdmAnn(); updateDrop();
+initFirebase();
 </script>
 </body>
 </html>
