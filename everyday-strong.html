@@ -4,8 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Everyday Strong</title>
-
-<!-- STEP 1: Replace these values with your Firebase config -->
 <script>
 var FIREBASE_CONFIG = {
   apiKey: "AIzaSyDYVYxiuxraOm0NR03eAN2YeTwp8X32n3A",
@@ -17,10 +15,8 @@ var FIREBASE_CONFIG = {
   appId: "1:835314554846:web:cd5367a8002833c6ed2f4f"
 };
 </script>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
@@ -39,15 +35,14 @@ body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
 .stitle{font-size:18px;color:#3a2a1a;margin-bottom:0.5rem;font-family:Georgia,serif;font-weight:normal;}
 .ssub{font-size:12px;color:#9a8a7a;margin-bottom:1rem;}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;}
-.vc{background:#fff;border-radius:10px;overflow:hidden;border:1px solid #ddd0c6;cursor:pointer;transition:transform 0.15s;}
-.vc:hover{transform:translateY(-2px);}
-.thumb{width:100%;aspect-ratio:16/9;background:#e8ddd2;position:relative;overflow:hidden;}
+.vc{background:#fff;border-radius:10px;overflow:hidden;border:1px solid #ddd0c6;}
+.thumb{width:100%;aspect-ratio:16/9;background:#e8ddd2;position:relative;overflow:hidden;cursor:pointer;}
 .thumb img{width:100%;height:100%;object-fit:cover;}
 .play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:42px;height:42px;background:rgba(160,82,45,0.9);border-radius:50%;}
 .play::after{content:"";position:absolute;top:50%;left:55%;transform:translate(-50%,-50%);border-left:14px solid #fff;border-top:9px solid transparent;border-bottom:9px solid transparent;}
 .vi{padding:10px 12px;}
 .vt{font-size:13px;font-weight:600;color:#3a2a1a;margin-bottom:4px;}
-.vtg{font-size:11px;color:#a0522d;background:#f5ede6;padding:2px 7px;border-radius:8px;display:inline-block;}
+.vtg{font-size:11px;color:#a0522d;background:#f5ede6;padding:2px 7px;border-radius:8px;display:inline-block;margin-bottom:6px;}
 .empty{text-align:center;padding:2rem;color:#9a8a7a;font-size:14px;background:#fff;border-radius:10px;border:1px dashed #d8cfc6;}
 .ac2{background:#fff;border-radius:10px;border:1px solid #ddd0c6;overflow:hidden;margin-bottom:10px;}
 .ah{background:#3a2a1a;color:#f5f0eb;padding:9px 14px;font-size:11px;font-weight:700;text-transform:uppercase;}
@@ -82,7 +77,39 @@ textarea.fi{min-height:80px;resize:vertical;}
 .ok{background:#eaf6f0;color:#1a7a4a;padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:10px;display:none;border:0.5px solid #b0e0c8;}
 .tip{font-size:12px;color:#9a8a7a;margin:-6px 0 10px;}
 .loading{text-align:center;padding:2rem;color:#9a8a7a;font-size:14px;}
-.setup-warn{background:#fff8e6;border:1px solid #f0c040;border-radius:10px;padding:1rem;margin-bottom:1rem;font-size:13px;color:#7a5a10;font-family:Arial,sans-serif;line-height:1.6;}
+
+/* VIDEO COMMENTS */
+.vcmt-btn{font-size:12px;color:#a0522d;background:none;border:none;cursor:pointer;padding:4px 0;text-decoration:underline;display:block;margin-top:4px;}
+.vcmt-box{border-top:0.5px solid #e8ddd2;padding:10px 12px;display:none;}
+.vcmt-list{margin-bottom:8px;}
+.vcmt-item{padding:6px 0;border-bottom:0.5px solid #f0ebe4;font-size:12px;color:#3a2a1a;}
+.vcmt-item:last-child{border-bottom:none;}
+.vcmt-name{font-weight:700;color:#a0522d;margin-right:6px;}
+.vcmt-date{font-size:10px;color:#b0a090;margin-left:4px;}
+.vcmt-input{width:100%;padding:7px 10px;border:1px solid #d8cfc6;border-radius:7px;font-size:13px;background:#f9f6f2;outline:none;margin-bottom:6px;}
+.vcmt-submit{padding:6px 14px;background:#a0522d;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;}
+.vcmt-empty{font-size:12px;color:#b0a090;padding:4px 0;}
+
+/* COMMUNITY WALL */
+.community-section{background:#fff;border-radius:10px;border:1px solid #ddd0c6;padding:1.2rem;margin-bottom:1.4rem;}
+.community-section h3{font-size:16px;color:#3a2a1a;margin-bottom:0.8rem;font-family:Georgia,serif;font-weight:normal;}
+.cmt-item{padding:10px 0;border-bottom:0.5px solid #f0ebe4;}
+.cmt-item:last-child{border-bottom:none;}
+.cmt-name{font-weight:700;font-size:13px;color:#a0522d;}
+.cmt-date{font-size:11px;color:#b0a090;margin-left:6px;}
+.cmt-text{font-size:14px;color:#3a2a1a;margin-top:3px;line-height:1.5;}
+.cmt-input-wrap{margin-top:10px;border-top:0.5px solid #e8ddd2;padding-top:10px;}
+.cmt-textarea{width:100%;padding:9px 12px;border:1.5px solid #d8cfc6;border-radius:8px;font-size:14px;background:#f9f6f2;outline:none;min-height:70px;resize:vertical;margin-bottom:8px;}
+.cmt-textarea:focus{border-color:#a0522d;}
+.cmt-submit{padding:8px 18px;background:#a0522d;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-weight:700;}
+
+/* MESSAGE BUTTON */
+.msg-btn{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #ddd0c6;border-radius:10px;padding:12px 16px;margin-bottom:1.4rem;cursor:pointer;width:100%;text-align:left;transition:background 0.15s;}
+.msg-btn:hover{background:#f9f6f2;}
+.msg-icon{width:36px;height:36px;background:#f5ede6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.msg-text{flex:1;}
+.msg-title{font-size:14px;font-weight:700;color:#3a2a1a;}
+.msg-sub{font-size:12px;color:#9a8a7a;margin-top:2px;}
 </style>
 </head>
 <body>
@@ -107,11 +134,31 @@ textarea.fi{min-height:80px;resize:vertical;}
   <div class="wbar" id="wbar">Welcome back!</div>
   <div class="pbody">
     <div id="ann-sec"></div>
+
+    <!-- MESSAGE HEATHER -->
+    <a class="msg-btn" href="mailto:everydaystrongteam@gmail.com?subject=Message from Everyday Strong Member">
+      <div class="msg-icon">✉️</div>
+      <div class="msg-text">
+        <div class="msg-title">Message Heather</div>
+        <div class="msg-sub">Send a private message to your instructor</div>
+      </div>
+      <span style="color:#a0522d;font-size:18px;">›</span>
+    </a>
+
+    <!-- COMMUNITY WALL -->
+    <div class="community-section">
+      <h3>💬 Community Wall</h3>
+      <div id="community-list"><div class="loading" style="padding:0.5rem 0;font-size:13px;">Loading comments...</div></div>
+      <div class="cmt-input-wrap">
+        <textarea class="cmt-textarea" id="community-input" placeholder="Share something with the community..."></textarea>
+        <button class="cmt-submit" id="community-submit">Post</button>
+      </div>
+    </div>
+
+    <!-- VIDEOS -->
     <p class="stitle">Workout Library</p>
     <p class="ssub" id="acc-lbl">Your videos</p>
-    <div id="vgrid-wrap">
-      <div class="loading">Loading workouts...</div>
-    </div>
+    <div id="vgrid-wrap"><div class="loading">Loading workouts...</div></div>
   </div>
 </div>
 
@@ -122,11 +169,10 @@ textarea.fi{min-height:80px;resize:vertical;}
     <button class="sbtn" style="color:#f5f0eb;border-color:#7a6a5a;" id="exit-btn">Exit</button>
   </div>
   <div class="adbody">
-    <div id="setup-warn-wrap"></div>
     <div class="tabs">
-      <button class="tab on" id="tab-videos">&#128249; Videos</button>
-      <button class="tab" id="tab-codes">&#128272; Access Codes</button>
-      <button class="tab" id="tab-announce">&#128226; Announcements</button>
+      <button class="tab on" id="tab-videos">📹 Videos</button>
+      <button class="tab" id="tab-codes">🔐 Access Codes</button>
+      <button class="tab" id="tab-announce">📢 Announcements</button>
     </div>
     <div class="tc on" id="tc-videos">
       <div class="ac3">
@@ -137,7 +183,7 @@ textarea.fi{min-height:80px;resize:vertical;}
         <label class="lbl">YouTube Link</label>
         <input type="text" class="fi" id="v-url" placeholder="https://youtube.com/watch?v=..." style="text-transform:none;" />
         <label class="lbl">Program / Category</label>
-        <input type="text" class="fi" id="v-tag" placeholder="e.g. 8-Week Strength, Beginner Cardio" style="text-transform:none;" />
+        <input type="text" class="fi" id="v-tag" placeholder="e.g. 8-Week Strength, Full Membership" style="text-transform:none;" />
         <p class="tip">Controls which clients can see this video.</p>
         <button class="abtn2" id="add-video-btn">Save Video</button>
       </div>
@@ -198,24 +244,20 @@ var adminPass = "ADMIN123";
 var currentUser = null;
 var currentAccess = "ALL";
 var db = null;
-var isFirebaseReady = false;
+var isReady = false;
 
 function initFirebase(){
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.database();
-    isFirebaseReady = true;
+    isReady = true;
     ensureDefaultCode();
-  } catch(e){
-    isFirebaseReady = false;
-  }
+  } catch(e){ isReady = false; }
 }
 
 function ensureDefaultCode(){
   db.ref("codes").orderByChild("code").equalTo("STRONG2024").once("value", function(snap){
-    if(!snap.exists()){
-      db.ref("codes").push({name:"Demo Member",code:"STRONG2024",access:"ALL"});
-    }
+    if(!snap.exists()) db.ref("codes").push({name:"Demo Member",code:"STRONG2024",access:"ALL"});
   });
 }
 
@@ -240,12 +282,19 @@ function flashOk(id, msg){
   el.style.display = "block";
   setTimeout(function(){ el.style.display = "none"; }, 3000);
 }
+function timeAgo(ts){
+  var d = Math.floor((Date.now()-ts)/1000);
+  if(d<60) return "just now";
+  if(d<3600) return Math.floor(d/60)+"m ago";
+  if(d<86400) return Math.floor(d/3600)+"h ago";
+  return Math.floor(d/86400)+"d ago";
+}
 
 function doLogin(){
   var val = document.getElementById("code-in").value.trim().toUpperCase();
   var err = document.getElementById("login-err");
   if(!val){ err.style.display="block"; err.textContent="Please enter your access code."; return; }
-  if(!isFirebaseReady){ err.style.display="block"; err.textContent="Database not connected yet. Please set up Firebase."; return; }
+  if(!isReady){ err.style.display="block"; err.textContent="Connecting to database..."; return; }
   db.ref("codes").orderByChild("code").equalTo(val).once("value", function(snap){
     if(snap.exists()){
       var found = null;
@@ -257,6 +306,7 @@ function doLogin(){
       document.getElementById("acc-lbl").textContent = currentAccess==="ALL" ? "Full membership - all workouts" : "Your program: "+currentAccess;
       loadMemberVideos();
       loadAnnouncements();
+      loadCommunityWall();
       showPage("pg-portal");
     } else {
       err.style.display = "block";
@@ -283,10 +333,19 @@ function loadMemberVideos(){
     }
     var html = "<div class='grid'>";
     for(var i=0;i<list.length;i++){
-      var v=list[i];
-      var ytId=getYTId(v.url);
-      var th=ytId ? "<img src='https://img.youtube.com/vi/"+ytId+"/mqdefault.jpg' onerror='this.style.display=\"none\"' />" : "";
-      html+="<div class='vc' onclick='openVideo(\""+escHtml(v.url)+"\")'><div class='thumb'>"+th+"<div class='play'></div></div><div class='vi'><div class='vt'>"+escHtml(v.title)+"</div>"+(v.tag?"<span class='vtg'>"+escHtml(v.tag)+"</span>":"")+"</div></div>";
+      var v = list[i];
+      var ytId = getYTId(v.url);
+      var th = ytId ? "<img src='https://img.youtube.com/vi/"+ytId+"/mqdefault.jpg' onerror='this.style.display=\"none\"' />" : "";
+      html += "<div class='vc'>";
+      html += "<div class='thumb' onclick='openVideo(\""+escHtml(v.url)+"\")'>"+th+"<div class='play'></div></div>";
+      html += "<div class='vi'><div class='vt'>"+escHtml(v.title)+"</div>";
+      if(v.tag) html += "<span class='vtg'>"+escHtml(v.tag)+"</span>";
+      html += "<button class='vcmt-btn' onclick='toggleComments(\""+v._key+"\", this)'>💬 Comments</button>";
+      html += "<div class='vcmt-box' id='vcmt-"+v._key+"'>";
+      html += "<div class='vcmt-list' id='vcmt-list-"+v._key+"'><div class='vcmt-empty'>No comments yet.</div></div>";
+      html += "<input class='vcmt-input' id='vcmt-in-"+v._key+"' placeholder='Add a comment...' />";
+      html += "<button class='vcmt-submit' onclick='postVideoComment(\""+v._key+"\")'>Post</button>";
+      html += "</div></div></div>";
     }
     html += "</div>";
     wrap.innerHTML = html;
@@ -294,8 +353,45 @@ function loadMemberVideos(){
 }
 
 function openVideo(url){
-  var ytId=getYTId(url);
+  var ytId = getYTId(url);
   window.open(ytId ? "https://www.youtube.com/watch?v="+ytId : url, "_blank");
+}
+
+function toggleComments(videoKey, btn){
+  var box = document.getElementById("vcmt-"+videoKey);
+  if(box.style.display==="block"){
+    box.style.display="none";
+    btn.textContent="💬 Comments";
+  } else {
+    box.style.display="block";
+    btn.textContent="💬 Hide comments";
+    loadVideoComments(videoKey);
+  }
+}
+
+function loadVideoComments(videoKey){
+  var list = document.getElementById("vcmt-list-"+videoKey);
+  if(!list) return;
+  db.ref("vcmts/"+videoKey).on("value", function(snap){
+    if(!snap.exists()){ list.innerHTML="<div class='vcmt-empty'>No comments yet. Be the first!</div>"; return; }
+    var items=[], html="";
+    snap.forEach(function(c){ var a=c.val(); a._key=c.key; items.push(a); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    for(var i=0;i<items.length;i++){
+      var c=items[i];
+      html+="<div class='vcmt-item'><span class='vcmt-name'>"+escHtml(c.name)+"</span><span class='vcmt-date'>"+timeAgo(c.ts)+"</span><br/>"+escHtml(c.text)+"</div>";
+    }
+    list.innerHTML=html;
+  });
+}
+
+function postVideoComment(videoKey){
+  var inp = document.getElementById("vcmt-in-"+videoKey);
+  var text = inp ? inp.value.trim() : "";
+  if(!text) return;
+  db.ref("vcmts/"+videoKey).push({name:currentUser, text:text, ts:Date.now()}, function(err){
+    if(!err) inp.value="";
+  });
 }
 
 function loadAnnouncements(){
@@ -304,7 +400,7 @@ function loadAnnouncements(){
     if(!snap.exists()){ sec.innerHTML=""; return; }
     var lb={zoom:"Live Class",general:"Announcement",schedule:"Schedule"};
     var html="<p class='stitle' style='margin-bottom:0.7rem;'>Announcements</p>";
-    var items = [];
+    var items=[];
     snap.forEach(function(c){ var a=c.val(); a._key=c.key; items.unshift(a); });
     for(var i=0;i<items.length;i++){
       var a=items[i];
@@ -315,29 +411,42 @@ function loadAnnouncements(){
   });
 }
 
+function loadCommunityWall(){
+  db.ref("community").on("value", function(snap){
+    var list = document.getElementById("community-list");
+    if(!snap.exists()){ list.innerHTML="<p style='color:#9a8a7a;font-size:13px;'>No posts yet — be the first!</p>"; return; }
+    var items=[], html="";
+    snap.forEach(function(c){ var a=c.val(); a._key=c.key; items.push(a); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    for(var i=0;i<items.length;i++){
+      var c=items[i];
+      html+="<div class='cmt-item'><span class='cmt-name'>"+escHtml(c.name)+"</span><span class='cmt-date'>"+timeAgo(c.ts)+"</span><div class='cmt-text'>"+escHtml(c.text)+"</div></div>";
+    }
+    list.innerHTML=html;
+  });
+}
+
+function postCommunity(){
+  var inp = document.getElementById("community-input");
+  var text = inp ? inp.value.trim() : "";
+  if(!text){ alert("Please write something first!"); return; }
+  db.ref("community").push({name:currentUser, text:text, ts:Date.now()}, function(err){
+    if(!err) inp.value="";
+    else alert("Error posting. Please try again.");
+  });
+}
+
 function showAdmin(){
   var p = prompt("Instructor password:");
   if(!p) return;
-  if(p===adminPass){
-    var w = document.getElementById("setup-warn-wrap");
-    if(!isFirebaseReady){
-      w.innerHTML = "<div class='setup-warn'><strong>Firebase not connected yet!</strong><br/>Videos and codes won't save until you add your Firebase config. See setup instructions.</div>";
-    } else { w.innerHTML=""; }
-    loadAdmVideos(); loadAdmCodes(); loadAdmAnn(); showPage("pg-admin");
-  } else {
-    alert("Incorrect password. Default: ADMIN123");
-  }
+  if(p===adminPass){ loadAdmVideos(); loadAdmCodes(); loadAdmAnn(); showPage("pg-admin"); }
+  else alert("Incorrect password. Default: ADMIN123");
 }
 
 function loadAdmVideos(){
   db.ref("videos").on("value", function(snap){
     var cnt=0, html="";
-    if(snap.exists()){
-      snap.forEach(function(c){
-        var v=c.val(); cnt++;
-        html+="<div class='li'><div class='lil'>"+escHtml(v.title)+(v.tag?" <span class='bdg'>"+escHtml(v.tag)+"</span>":"")+"</div><button class='delbtn' onclick='delVideo(\""+c.key+"\")'>Remove</button></div>";
-      });
-    }
+    if(snap.exists()) snap.forEach(function(c){ var v=c.val(); cnt++; html+="<div class='li'><div class='lil'>"+escHtml(v.title)+(v.tag?" <span class='bdg'>"+escHtml(v.tag)+"</span>":"")+"</div><button class='delbtn' onclick='delVideo(\""+c.key+"\")'>Remove</button></div>"; });
     document.getElementById("vcnt").textContent=cnt;
     document.getElementById("vlist").innerHTML=html||"<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No videos yet.</p>";
     updateDrop();
@@ -345,13 +454,13 @@ function loadAdmVideos(){
 }
 
 function addVideo(){
-  if(!isFirebaseReady){ alert("Firebase not connected. Please complete setup first."); return; }
+  if(!isReady){ alert("Database not connected."); return; }
   var t=document.getElementById("v-title").value.trim();
   var u=document.getElementById("v-url").value.trim();
   var tg=document.getElementById("v-tag").value.trim();
   if(!t||!u){ alert("Please enter a title and video link."); return; }
-  db.ref("videos").push({title:t,url:u,tag:tg,date:new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}, function(err){
-    if(err){ alert("Error saving: "+err.message); return; }
+  db.ref("videos").push({title:t,url:u,tag:tg}, function(err){
+    if(err){ alert("Error: "+err.message); return; }
     document.getElementById("v-title").value="";
     document.getElementById("v-url").value="";
     document.getElementById("v-tag").value="";
@@ -359,10 +468,7 @@ function addVideo(){
   });
 }
 
-function delVideo(key){
-  if(!confirm("Remove this video?")) return;
-  db.ref("videos/"+key).remove();
-}
+function delVideo(key){ if(!confirm("Remove this video?")) return; db.ref("videos/"+key).remove(); }
 
 function updateDrop(){
   var s=document.getElementById("c-access");
@@ -379,27 +485,16 @@ function updateDrop(){
 function loadAdmCodes(){
   db.ref("codes").on("value", function(snap){
     var cnt=0, html="";
-    if(snap.exists()){
-      snap.forEach(function(c){
-        var cd=c.val(); cnt++;
-        var bc=cd.access==="ALL"?"bdg all":"bdg";
-        var al=cd.access==="ALL"?"Full Access":cd.access;
-        html+="<div class='li'><div class='lil'>"+escHtml(cd.name)+" <span class='cd'>"+escHtml(cd.code)+"</span> <span class='"+bc+"'>"+escHtml(al)+"</span></div><button class='delbtn' onclick='delCode(\""+c.key+"\")'>Remove</button></div>";
-      });
-    }
+    if(snap.exists()) snap.forEach(function(c){ var cd=c.val(); cnt++; var bc=cd.access==="ALL"?"bdg all":"bdg"; var al=cd.access==="ALL"?"Full Access":cd.access; html+="<div class='li'><div class='lil'>"+escHtml(cd.name)+" <span class='cd'>"+escHtml(cd.code)+"</span> <span class='"+bc+"'>"+escHtml(al)+"</span></div><button class='delbtn' onclick='delCode(\""+c.key+"\")'>Remove</button></div>"; });
     document.getElementById("ccnt").textContent=cnt;
     document.getElementById("clist").innerHTML=html||"<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No codes yet.</p>";
   });
 }
 
-function genCode(){
-  var c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",o="";
-  for(var i=0;i<8;i++) o+=c[Math.floor(Math.random()*c.length)];
-  document.getElementById("c-code").value=o;
-}
+function genCode(){ var c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",o=""; for(var i=0;i<8;i++) o+=c[Math.floor(Math.random()*c.length)]; document.getElementById("c-code").value=o; }
 
 function addCode(){
-  if(!isFirebaseReady){ alert("Firebase not connected. Please complete setup first."); return; }
+  if(!isReady){ alert("Database not connected."); return; }
   var n=document.getElementById("c-name").value.trim();
   var c=document.getElementById("c-code").value.trim().toUpperCase();
   var a=document.getElementById("c-access").value;
@@ -415,29 +510,19 @@ function addCode(){
   });
 }
 
-function delCode(key){
-  if(!confirm("Remove this code?")) return;
-  db.ref("codes/"+key).remove();
-}
+function delCode(key){ if(!confirm("Remove this code?")) return; db.ref("codes/"+key).remove(); }
 
 function loadAdmAnn(){
   db.ref("announcements").on("value", function(snap){
     var cnt=0, html="";
-    if(snap.exists()){
-      var items=[];
-      snap.forEach(function(c){ var a=c.val(); a._key=c.key; items.unshift(a); cnt++; });
-      for(var i=0;i<items.length;i++){
-        var a=items[i];
-        html+="<div class='li'><div class='lil'><strong>"+escHtml(a.title)+"</strong><br/><span style='font-size:11px;color:#9a8a7a;'>"+escHtml(a.date)+"</span></div><button class='delbtn' onclick='delAnn(\""+a._key+"\")'>Remove</button></div>";
-      }
-    }
+    if(snap.exists()){ var items=[]; snap.forEach(function(c){ var a=c.val(); a._key=c.key; items.unshift(a); cnt++; }); for(var i=0;i<items.length;i++){ var a=items[i]; html+="<div class='li'><div class='lil'><strong>"+escHtml(a.title)+"</strong><br/><span style='font-size:11px;color:#9a8a7a;'>"+escHtml(a.date)+"</span></div><button class='delbtn' onclick='delAnn(\""+a._key+"\")'>Remove</button></div>"; } }
     document.getElementById("acnt").textContent=cnt;
     document.getElementById("alist").innerHTML=html||"<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No announcements yet.</p>";
   });
 }
 
 function addAnn(){
-  if(!isFirebaseReady){ alert("Firebase not connected. Please complete setup first."); return; }
+  if(!isReady){ alert("Database not connected."); return; }
   var tp=document.getElementById("a-type").value;
   var t=document.getElementById("a-title").value.trim();
   var b=document.getElementById("a-body").value.trim();
@@ -451,40 +536,22 @@ function addAnn(){
   });
 }
 
-function delAnn(key){
-  if(!confirm("Remove this announcement?")) return;
-  db.ref("announcements/"+key).remove();
-}
+function delAnn(key){ if(!confirm("Remove this announcement?")) return; db.ref("announcements/"+key).remove(); }
 
 document.getElementById("login-btn").onclick = doLogin;
 document.getElementById("code-in").onkeydown = function(e){ if(e.key==="Enter") doLogin(); };
-document.getElementById("signout-btn").onclick = function(){
-  showPage("pg-login");
-  document.getElementById("code-in").value="";
-  document.getElementById("login-err").style.display="none";
-};
+document.getElementById("signout-btn").onclick = function(){ showPage("pg-login"); document.getElementById("code-in").value=""; document.getElementById("login-err").style.display="none"; };
 document.getElementById("admin-link").onclick = showAdmin;
 document.getElementById("exit-btn").onclick = function(){ showPage("pg-login"); };
 document.getElementById("add-video-btn").onclick = addVideo;
 document.getElementById("gen-btn").onclick = genCode;
 document.getElementById("add-code-btn").onclick = addCode;
 document.getElementById("add-ann-btn").onclick = addAnn;
+document.getElementById("community-submit").onclick = postCommunity;
 
-document.getElementById("tab-videos").onclick = function(){
-  document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on");});
-  document.querySelectorAll(".tc").forEach(function(t){t.classList.remove("on");});
-  this.classList.add("on"); document.getElementById("tc-videos").classList.add("on");
-};
-document.getElementById("tab-codes").onclick = function(){
-  document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on");});
-  document.querySelectorAll(".tc").forEach(function(t){t.classList.remove("on");});
-  this.classList.add("on"); document.getElementById("tc-codes").classList.add("on");
-};
-document.getElementById("tab-announce").onclick = function(){
-  document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on");});
-  document.querySelectorAll(".tc").forEach(function(t){t.classList.remove("on");});
-  this.classList.add("on"); document.getElementById("tc-announce").classList.add("on");
-};
+document.getElementById("tab-videos").onclick = function(){ document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on");}); document.querySelectorAll(".tc").forEach(function(t){t.classList.remove("on");}); this.classList.add("on"); document.getElementById("tc-videos").classList.add("on"); };
+document.getElementById("tab-codes").onclick = function(){ document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on");}); document.querySelectorAll(".tc").forEach(function(t){t.classList.remove("on");}); this.classList.add("on"); document.getElementById("tc-codes").classList.add("on"); };
+document.getElementById("tab-announce").onclick = function(){ document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on");}); document.querySelectorAll(".tc").forEach(function(t){t.classList.remove("on");}); this.classList.add("on"); document.getElementById("tc-announce").classList.add("on"); };
 
 initFirebase();
 </script>
