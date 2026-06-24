@@ -77,6 +77,17 @@ textarea.fi{min-height:80px;resize:vertical;}
 .ok{background:#eaf6f0;color:#1a7a4a;padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:10px;display:none;border:0.5px solid #b0e0c8;}
 .tip{font-size:12px;color:#9a8a7a;margin:-6px 0 10px;}
 .loading{text-align:center;padding:2rem;color:#9a8a7a;font-size:14px;}
+/* SEARCH AND FILTER */
+.search-wrap{margin-bottom:1rem;}
+.search-inp{width:100%;padding:10px 14px 10px 38px;border:1.5px solid #d8cfc6;border-radius:8px;font-size:14px;background:#fff;outline:none;color:#3a2a1a;}
+.search-inp:focus{border-color:#a0522d;}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;color:#b0a090;}
+.search-box{position:relative;}
+.filter-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;}
+.filter-btn{padding:6px 14px;border:1px solid #d8cfc6;border-radius:16px;font-size:12px;cursor:pointer;background:#fff;color:#7a6a5a;white-space:nowrap;}
+.filter-btn.on{background:#a0522d;color:#fff;border-color:#a0522d;}
+.no-results{text-align:center;padding:2rem;color:#9a8a7a;font-size:14px;background:#fff;border-radius:10px;border:1px dashed #d8cfc6;}
+
 
 /* VIDEO COMMENTS */
 .vcmt-btn{font-size:12px;color:#a0522d;background:none;border:none;cursor:pointer;padding:4px 0;text-decoration:underline;display:block;margin-top:4px;}
@@ -158,6 +169,15 @@ textarea.fi{min-height:80px;resize:vertical;}
     <!-- VIDEOS -->
     <p class="stitle">Workout Library</p>
     <p class="ssub" id="acc-lbl">Your videos</p>
+    <div class="search-wrap">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input class="search-inp" type="text" id="video-search" placeholder="Search workouts..." autocomplete="off" />
+      </div>
+    </div>
+    <div class="filter-wrap" id="filter-wrap">
+      <button class="filter-btn on" onclick="setFilter('ALL', this)">All</button>
+    </div>
     <div id="vgrid-wrap"><div class="loading">Loading workouts...</div></div>
   </div>
 </div>
@@ -173,6 +193,7 @@ textarea.fi{min-height:80px;resize:vertical;}
       <button class="tab on" id="tab-videos">📹 Videos</button>
       <button class="tab" id="tab-codes">🔐 Access Codes</button>
       <button class="tab" id="tab-announce">📢 Announcements</button>
+      <button class="tab" id="tab-settings">⚙️ Settings</button>
     </div>
     <div class="tc on" id="tc-videos">
       <div class="ac3">
@@ -236,6 +257,20 @@ textarea.fi{min-height:80px;resize:vertical;}
         <div id="alist"><div class="loading">Loading...</div></div>
       </div>
     </div>
+
+    <div class="tc" id="tc-settings">
+      <div class="ac3">
+        <h3>Change Admin Password</h3>
+        <div class="ok" id="ok-pass">Password updated!</div>
+        <label class="lbl">Current Password</label>
+        <input type="password" class="fi" id="pass-current" placeholder="Enter current password" style="text-transform:none;" />
+        <label class="lbl">New Password</label>
+        <input type="password" class="fi" id="pass-new" placeholder="Enter new password" style="text-transform:none;" />
+        <label class="lbl">Confirm New Password</label>
+        <input type="password" class="fi" id="pass-confirm" placeholder="Confirm new password" style="text-transform:none;" />
+        <button class="abtn2" id="change-pass-btn">Update Password</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -252,9 +287,15 @@ function initFirebase(){
     db = firebase.database();
     isReady = true;
     ensureDefaultCode();
+    loadAdminPass();
   } catch(e){ isReady = false; }
 }
 
+function loadAdminPass(){
+  db.ref("settings/adminPass").once("value", function(snap){
+    if(snap.exists()) adminPass = snap.val();
+  });
+}
 function ensureDefaultCode(){
   db.ref("codes").orderByChild("code").equalTo("STRONG2024").once("value", function(snap){
     if(!snap.exists()) db.ref("codes").push({name:"Demo Member",code:"STRONG2024",access:"ALL"});
@@ -440,7 +481,7 @@ function showAdmin(){
   var p = prompt("Instructor password:");
   if(!p) return;
   if(p===adminPass){ loadAdmVideos(); loadAdmCodes(); loadAdmAnn(); showPage("pg-admin"); }
-  else alert("Incorrect password. Default: ADMIN123");
+  else alert("Incorrect password. Please try again.");
 }
 
 function loadAdmVideos(){
@@ -548,10 +589,31 @@ document.getElementById("gen-btn").onclick = genCode;
 document.getElementById("add-code-btn").onclick = addCode;
 document.getElementById("add-ann-btn").onclick = addAnn;
 document.getElementById("community-submit").onclick = postCommunity;
+document.getElementById("video-search").oninput = function(){ renderVideos(); };
 
 document.getElementById("tab-videos").onclick = function(){ document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on");}); document.querySelectorAll(".tc").forEach(function(t){t.classList.remove("on");}); this.classList.add("on"); document.getElementById("tc-videos").classList.add("on"); };
 document.getElementById("tab-codes").onclick = function(){ document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on");}); document.querySelectorAll(".tc").forEach(function(t){t.classList.remove("on");}); this.classList.add("on"); document.getElementById("tc-codes").classList.add("on"); };
 document.getElementById("tab-announce").onclick = function(){ document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on");}); document.querySelectorAll(".tc").forEach(function(t){t.classList.remove("on");}); this.classList.add("on"); document.getElementById("tc-announce").classList.add("on"); };
+
+
+document.getElementById("tab-settings").onclick = function(){ document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on");}); document.querySelectorAll(".tc").forEach(function(t){t.classList.remove("on");}); this.classList.add("on"); document.getElementById("tc-settings").classList.add("on"); };
+document.getElementById("change-pass-btn").onclick = function(){
+  var cur = document.getElementById("pass-current").value;
+  var nw = document.getElementById("pass-new").value.trim();
+  var cf = document.getElementById("pass-confirm").value.trim();
+  if(cur !== adminPass){ alert("Current password is incorrect."); return; }
+  if(!nw){ alert("Please enter a new password."); return; }
+  if(nw !== cf){ alert("New passwords do not match."); return; }
+  if(nw.length < 6){ alert("Password must be at least 6 characters."); return; }
+  adminPass = nw;
+  db.ref("settings/adminPass").set(nw, function(err){
+    if(err){ alert("Error saving: "+err.message); return; }
+    document.getElementById("pass-current").value="";
+    document.getElementById("pass-new").value="";
+    document.getElementById("pass-confirm").value="";
+    flashOk("ok-pass","Password updated!");
+  });
+};
 
 initFirebase();
 </script>
