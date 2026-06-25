@@ -238,7 +238,7 @@ try {
     appId:"1:835314554846:web:cd5367a8002833c6ed2f4f"
   });
   DB = firebase.database();
-  DB.ref("es_pass").once("value",function(s){ if(s.exists()) adminPass=s.val(); });
+  DB.ref("adminPass").once("value",function(s){ if(s.exists()) adminPass=s.val(); });
 } catch(e){}
 
 function sp(id){
@@ -266,7 +266,7 @@ function doLogin(){
   var err=document.getElementById("login-err");
   if(!val){ err.style.display="block"; err.textContent="Please enter your access code."; return; }
   if(!DB){ err.style.display="block"; err.textContent="Connecting... please wait a moment and try again."; return; }
-  DB.ref("es_codes").orderByChild("code").equalTo(val).once("value",function(snap){
+  DB.ref("codes").orderByChild("code").equalTo(val).once("value",function(snap){
     if(snap.exists()){
       var found=null; snap.forEach(function(c){ found=c.val(); });
       currentUser=found.name;
@@ -301,7 +301,7 @@ function doAdmin(){
 // VIDEOS - MEMBER
 function loadVideos(){
   if(!DB) return;
-  DB.ref("es_videos").on("value",function(snap){
+  DB.ref("videos").on("value",function(snap){
     allVideos=[];
     if(snap.exists()) snap.forEach(function(c){ var v=c.val(); v._k=c.key; if(canAccess(v.tag)) allVideos.push(v); });
     buildFilters(); renderVideos();
@@ -346,7 +346,7 @@ function openVideo(url){ var ytId=getYTId(url); window.open(ytId?"https://www.yo
 // ANNOUNCEMENTS
 function loadAnnouncements(){
   if(!DB) return;
-  DB.ref("es_ann").on("value",function(snap){
+  DB.ref("announcements").on("value",function(snap){
     var sec=document.getElementById("ann-sec");
     if(!snap.exists()){ sec.innerHTML=""; return; }
     var lb={zoom:"Live Class",general:"Announcement",schedule:"Schedule"};
@@ -381,7 +381,7 @@ document.getElementById("c-access-type").onchange=function(){
 
 function loadCategoryPicker(){
   if(!DB) return;
-  DB.ref("es_videos").once("value",function(snap){
+  DB.ref("videos").once("value",function(snap){
     var cats=[];
     if(snap.exists()) snap.forEach(function(c){ var t=c.val().tag; if(t&&cats.indexOf(t)===-1) cats.push(t); });
     var box=document.getElementById("program-checkboxes");
@@ -393,7 +393,7 @@ function loadCategoryPicker(){
 // ADMIN VIDEOS
 function loadAdmVideos(){
   if(!DB) return;
-  DB.ref("es_videos").on("value",function(snap){
+  DB.ref("videos").on("value",function(snap){
     var cnt=0,h="";
     if(snap.exists()) snap.forEach(function(c){ var v=c.val(); cnt++; h+="<div class='list-item'><div class='list-item-left'>"+ex(v.title)+(v.tag?" <span class='badge'>"+ex(v.tag)+"</span>":"")+"</div><button class='del-btn' onclick='delVideo(\""+c.key+"\")'>Remove</button></div>"; });
     document.getElementById("video-count").textContent=cnt;
@@ -407,7 +407,7 @@ function addVideo(){
   var tg=document.getElementById("v-tag").value.trim();
   if(!t||!u){ alert("Please enter a title and video link."); return; }
   if(!DB){ alert("Database not connected."); return; }
-  DB.ref("es_videos").push({title:t,url:u,tag:tg,ts:Date.now()},function(e){
+  DB.ref("videos").push({title:t,url:u,tag:tg,ts:Date.now()},function(e){
     if(!e){ document.getElementById("v-title").value=""; document.getElementById("v-url").value=""; document.getElementById("v-tag").value=""; showOk("ok-video","Video saved!"); }
   });
 }
@@ -417,7 +417,7 @@ function delVideo(key){ if(!confirm("Remove this video?")) return; DB.ref("es_vi
 // ADMIN CODES
 function loadAdmCodes(){
   if(!DB) return;
-  DB.ref("es_codes").on("value",function(snap){
+  DB.ref("codes").on("value",function(snap){
     var cnt=0,h="";
     if(snap.exists()) snap.forEach(function(c){
       var cd=c.val(); cnt++;
@@ -447,9 +447,9 @@ function addCode(){
   }
   if(!n||!c){ alert("Please enter a name and code."); return; }
   if(!DB){ alert("Database not connected."); return; }
-  DB.ref("es_codes").orderByChild("code").equalTo(c).once("value",function(snap){
+  DB.ref("codes").orderByChild("code").equalTo(c).once("value",function(snap){
     if(snap.exists()){ alert("That code already exists."); return; }
-    DB.ref("es_codes").push({name:n,code:c,access:access},function(e){
+    DB.ref("codes").push({name:n,code:c,access:access},function(e){
       if(!e){
         var label=Array.isArray(access)?access.join(", "):"Full Access";
         showOk("ok-code","Code for "+n+": "+c+" ("+label+")");
@@ -466,7 +466,7 @@ function delCode(key){ if(!confirm("Remove this code?")) return; DB.ref("es_code
 // ADMIN ANNOUNCEMENTS
 function loadAdmAnn(){
   if(!DB) return;
-  DB.ref("es_ann").on("value",function(snap){
+  DB.ref("announcements").on("value",function(snap){
     var cnt=0,h="";
     if(snap.exists()){ var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.unshift(a); cnt++; }); items.forEach(function(a){ h+="<div class='list-item'><div class='list-item-left'><strong>"+ex(a.title)+"</strong><br/><span style='font-size:11px;color:#9a8a7a;'>"+ex(a.date)+"</span></div><button class='del-btn' onclick='delAnn(\""+a._k+"\")'>Remove</button></div>"; }); }
     document.getElementById("ann-count").textContent=cnt;
@@ -481,7 +481,7 @@ function addAnn(){
   if(!t||!b){ alert("Please enter a title and message."); return; }
   if(!DB){ alert("Database not connected."); return; }
   var d=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-  DB.ref("es_ann").push({type:tp,title:t,body:b,date:d,ts:Date.now()},function(e){
+  DB.ref("announcements").push({type:tp,title:t,body:b,date:d,ts:Date.now()},function(e){
     if(!e){ document.getElementById("a-title").value=""; document.getElementById("a-body").value=""; showOk("ok-ann","Announcement posted!"); }
   });
 }
@@ -507,7 +507,7 @@ document.getElementById("pass-btn").onclick = function(){
   if(!nw||nw!==cf){ alert("Passwords don't match."); return; }
   if(nw.length<6){ alert("Must be at least 6 characters."); return; }
   adminPass=nw;
-  if(DB) DB.ref("es_pass").set(nw);
+  if(DB) DB.ref("adminPass").set(nw);
   document.getElementById("pass-cur").value=""; document.getElementById("pass-new").value=""; document.getElementById("pass-cf").value="";
   showOk("ok-pass","Password updated!");
 };
