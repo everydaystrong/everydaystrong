@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>New View Eye Care — Content Hub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:#f0f4f8;min-height:100vh;}
+.page{display:none;}
+.lw{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;background:linear-gradient(135deg,#1a3a5c,#2a6496);}
+.lc{background:#fff;border-radius:14px;padding:2.5rem 2rem;width:100%;max-width:360px;text-align:center;}
+.li{font-size:46px;margin-bottom:6px;}
+.lt{font-size:21px;font-weight:700;color:#1a3a5c;font-family:Georgia,serif;}
+.lg{color:#4a7c5c;}
+.ls{font-size:12px;color:#8aaac0;margin-top:3px;margin-bottom:1.2rem;}
+.ld{border:none;border-top:1px solid #e8edf2;margin:0.8rem 0;}
+.er{color:#b03020;font-size:13px;margin-bottom:8px;background:#fdf0ee;padding:8px;border-radius:6px;display:none;}
+.inp{width:100%;padding:11px 14px;border:1.5px solid #d0dae4;border-radius:8px;font-size:15px;margin-bottom:10px;background:#f8fafc;outline:none;text-transform:uppercase;letter-spacing:1px;}
+.inp:focus{border-color:#2a6496;}
+.mb{width:100%;padding:12px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;font-weight:700;}
+.mb:hover{background:#2a6496;}
+.hdr{background:#1a3a5c;padding:0.8rem 1.2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+.ht{font-size:14px;font-weight:700;color:#fff;font-family:Georgia,serif;}
+.hg{color:#8cc8a0;}
+.sb{background:none;border:1px solid rgba(255,255,255,0.4);border-radius:6px;padding:6px 12px;font-size:12px;color:#fff;cursor:pointer;}
+.wb{background:#4a7c5c;color:#fff;padding:9px 1.2rem;font-size:13px;}
+.nv{background:#fff;border-bottom:1px solid #e0e8f0;display:flex;overflow-x:auto;padding:0 0.5rem;}
+.nb{padding:11px 12px;border:none;background:none;font-size:12px;color:#6a8aac;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;font-weight:600;}
+.nb.on{color:#1a3a5c;border-bottom-color:#4a7c5c;}
+.pb{padding:1.2rem;max-width:860px;margin:0 auto;}
+.sc{display:none;}
+.sc.on{display:block;}
+.st{font-size:17px;color:#1a3a5c;margin-bottom:3px;font-family:Georgia,serif;font-weight:normal;}
+.ss{font-size:12px;color:#8aaac0;margin-bottom:1rem;}
+.cd{background:#fff;border-radius:10px;border:1px solid #e0e8f0;margin-bottom:1rem;overflow:hidden;}
+.ch{padding:10px 14px;border-bottom:1px solid #e8f0f8;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px;}
+.cb{padding:12px 14px;font-size:14px;color:#2a3a4a;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
+.pl{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;margin-right:4px;}
+.pl.ig{background:#fce4ec;color:#c2185b;}
+.pl.tt{background:#e8f5e9;color:#2e7d32;}
+.pl.fb{background:#e3f2fd;color:#1565c0;}
+.pl.al{background:#f3e5f5;color:#6a1b9a;}
+.sl{display:inline-block;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none;margin-top:7px;}
+.sl.ig{background:#e91e8c;color:#fff;}
+.sl.tt{background:#111;color:#fff;}
+.sl.fb{background:#1877f2;color:#fff;}
+.sl.gn{background:#1a3a5c;color:#fff;}
+.pa{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid #e8f0f8;}
+.lb{display:flex;align-items:center;gap:5px;background:none;border:1px solid #e0e8f0;border-radius:14px;padding:5px 11px;font-size:13px;cursor:pointer;color:#6a8aac;}
+.lb.on{background:#fce4ec;border-color:#f48fb1;color:#c2185b;}
+.ct{font-size:12px;color:#2a6496;background:none;border:none;cursor:pointer;text-decoration:underline;}
+.cbx{border-top:1px solid #e8f0f8;padding:9px 14px;display:none;}
+.ci2{padding:6px 0;border-bottom:0.5px solid #f0f4f8;font-size:13px;color:#2a3a4a;}
+.ci2:last-child{border-bottom:none;}
+.cw{font-weight:700;color:#2a6496;font-size:12px;margin-right:5px;}
+.cwh{font-size:11px;color:#8aaac0;}
+.cr{display:flex;gap:7px;margin-top:7px;}
+.cin{flex:1;padding:7px 10px;border:1px solid #d0dae4;border-radius:6px;font-size:13px;background:#f8fafc;outline:none;}
+.cp{padding:7px 12px;background:#1a3a5c;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;}
+
+/* IDEA CARDS */
+.ic{background:#fff;border-radius:10px;border:1px solid #e0e8f0;margin-bottom:10px;overflow:hidden;}
+.ic-top{padding:12px 14px 8px;}
+.ih{display:flex;justify-content:space-between;margin-bottom:5px;}
+.iw{font-size:12px;font-weight:700;color:#4a7c5c;}
+.iwh{font-size:11px;color:#8aaac0;}
+.it{font-size:14px;color:#2a3a4a;line-height:1.5;margin-bottom:6px;}
+.ity{font-size:11px;padding:2px 7px;border-radius:7px;background:#e8f5e9;color:#2e7d32;display:inline-block;}
+
+/* STAR RATING */
+.stars{display:flex;align-items:center;gap:4px;margin:8px 0;}
+.star{font-size:20px;cursor:pointer;color:#d0dae4;transition:color 0.1s;}
+.star.on{color:#f5a623;}
+.avg-rating{font-size:12px;color:#8aaac0;margin-left:6px;}
+
+/* IDEA ACTION BUTTONS */
+.ic-actions{display:flex;gap:6px;padding:10px 14px;border-top:1px solid #e8f0f8;flex-wrap:wrap;}
+.ia-btn{padding:6px 12px;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-weight:700;white-space:nowrap;}
+.ia-rec{background:#e3f2fd;color:#1565c0;}
+.ia-rec:hover{background:#bbdefb;}
+.ia-done{background:#e8f5e9;color:#2e7d32;}
+.ia-done:hover{background:#c8e6c9;}
+.ia-del{background:#fdf0ee;color:#c05040;}
+.ia-del:hover{background:#ffccbc;}
+
+/* STATUS BADGES */
+.status-rec{background:#e3f2fd;color:#1565c0;font-size:11px;padding:2px 8px;border-radius:8px;font-weight:700;}
+.status-done{background:#e8f5e9;color:#2e7d32;font-size:11px;padding:2px 8px;border-radius:8px;font-weight:700;}
+
+/* OTHER */
+.tr{display:flex;align-items:flex-start;gap:9px;padding:9px 0;border-bottom:0.5px solid #e8f0f8;}
+.tr:last-child{border-bottom:none;}
+.tk{width:20px;height:20px;border-radius:50%;border:2px solid #1a3a5c;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:1px;font-size:11px;color:transparent;}
+.tk.dn{background:#1a3a5c;color:#fff;}
+.tt2{flex:1;font-size:14px;color:#2a3a4a;}
+.tt2.dn{text-decoration:line-through;color:#8aaac0;}
+.tg{font-size:11px;padding:2px 6px;border-radius:6px;background:#e3f2fd;color:#1565c0;margin-left:5px;}
+.wkd{background:#fff;border-radius:10px;border:1px solid #e0e8f0;margin-bottom:10px;overflow:hidden;}
+.wkh{background:#1a3a5c;color:#fff;padding:8px 14px;font-size:13px;font-weight:700;}
+.wkb{padding:9px 14px;}
+.wki{padding:6px 0;border-bottom:0.5px solid #e8f0f8;font-size:13px;color:#2a3a4a;}
+.wki:last-child{border-bottom:none;}
+.wke{font-size:13px;color:#8aaac0;padding:4px 0;}
+.fc{background:#fff;border-radius:10px;border:1px solid #e0e8f0;padding:1.1rem;margin-bottom:1rem;}
+.fc h3{font-size:13px;color:#1a3a5c;margin-bottom:0.9rem;font-weight:700;}
+.lb2{font-size:11px;color:#6a8aac;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:4px;}
+.fi{width:100%;padding:8px 11px;border:1.5px solid #d0dae4;border-radius:7px;font-size:14px;background:#f8fafc;color:#333;outline:none;margin-bottom:9px;}
+.fi:focus{border-color:#2a6496;}
+textarea.fi{min-height:75px;resize:vertical;}
+.ab{padding:9px 18px;background:#1a3a5c;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-weight:700;}
+.ab:hover{background:#2a6496;}
+.ok{background:#eaf6f0;color:#1a7a4a;padding:8px 11px;border-radius:7px;font-size:13px;margin-bottom:9px;display:none;}
+.em{text-align:center;padding:2rem 1rem;color:#8aaac0;font-size:14px;background:#fff;border-radius:10px;border:1px dashed #d0dae4;}
+.db{background:none;border:1px solid #e0d0c8;border-radius:5px;color:#c05040;font-size:12px;cursor:pointer;padding:3px 8px;}
+
+/* IDEA SUB TABS */
+.idea-tabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap;}
+.idea-tab{padding:7px 14px;border:1px solid #d0dae4;border-radius:14px;font-size:12px;cursor:pointer;background:#fff;color:#6a8aac;font-weight:600;}
+.idea-tab.on{background:#1a3a5c;color:#fff;border-color:#1a3a5c;}
+.idea-sec{display:none;}
+.idea-sec.on{display:block;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="page" id="pg-login" style="display:flex;">
+  <div class="lw" style="width:100%;">
+    <div class="lc">
+      <div class="li">👁️</div>
+      <div class="lt">New View <span class="lg">Eye Care</span></div>
+      <div class="ls">Social Media Content Hub</div>
+      <hr class="ld" />
+      <div class="er" id="er">Incorrect code. Please try again.</div>
+      <input class="inp" type="text" id="code-in" placeholder="Enter team code" autocomplete="off" />
+      <button class="mb" id="login-btn">Enter Hub</button>
+    </div>
+  </div>
+</div>
+
+<!-- HUB -->
+<div class="page" id="pg-hub">
+  <div class="hdr">
+    <span class="ht">👁️ New View <span class="hg">Eye Care</span></span>
+    <button class="sb" id="so-btn">Sign out</button>
+  </div>
+  <div class="wb">Welcome to the Content Hub!</div>
+  <div class="nv">
+    <button class="nb on" onclick="goSec('posts',this)">📱 Posts</button>
+    <button class="nb" onclick="goSec('sched',this)">📅 Schedule</button>
+    <button class="nb" onclick="goSec('rec',this)">🎬 Record</button>
+    <button class="nb" onclick="goSec('ideas',this)">💡 Ideas</button>
+  </div>
+  <div class="pb">
+
+    <!-- POSTS -->
+    <div class="sc on" id="sc-posts">
+      <p class="st">Live Posts</p>
+      <p class="ss">Completed posts across all platforms</p>
+      <div class="fc">
+        <h3>Add a Post</h3>
+        <div class="ok" id="ok-post">Post added!</div>
+        <label class="lb2">Caption / Description</label>
+        <textarea class="fi" id="p-cap" placeholder="What was this post about?"></textarea>
+        <label class="lb2">Platform</label>
+        <select class="fi" id="p-plat">
+          <option value="Instagram">Instagram</option>
+          <option value="TikTok">TikTok</option>
+          <option value="Facebook">Facebook</option>
+          <option value="All Platforms">All Platforms</option>
+        </select>
+        <label class="lb2">Post Type</label>
+        <select class="fi" id="p-typ">
+          <option value="Reel">Reel</option>
+          <option value="Photo">Photo</option>
+          <option value="Story">Story</option>
+          <option value="Carousel">Carousel</option>
+          <option value="TikTok">TikTok</option>
+        </select>
+        <label class="lb2">Social Media Link</label>
+        <input type="text" class="fi" id="p-link" placeholder="https://instagram.com/p/..." style="text-transform:none;" />
+        <label class="lb2">Date Posted</label>
+        <input type="date" class="fi" id="p-date" />
+        <button class="ab" id="post-btn">Add Post</button>
+      </div>
+      <div id="feed-el"><div class="em"><p>Loading posts...</p></div></div>
+    </div>
+
+    <!-- SCHEDULE -->
+    <div class="sc" id="sc-sched">
+      <p class="st">This Week's Schedule</p>
+      <p class="ss">What's going out this week</p>
+      <div class="fc">
+        <h3>Add to Schedule</h3>
+        <div class="ok" id="ok-sched">Added!</div>
+        <label class="lb2">Day</label>
+        <select class="fi" id="s-day">
+          <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+          <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+        </select>
+        <label class="lb2">What's Posting</label>
+        <input type="text" class="fi" id="s-txt" placeholder="e.g. Reel - Eye Health Tips" style="text-transform:none;" />
+        <label class="lb2">Platform</label>
+        <select class="fi" id="s-plat">
+          <option value="Instagram">Instagram</option>
+          <option value="TikTok">TikTok</option>
+          <option value="Facebook">Facebook</option>
+          <option value="All Platforms">All Platforms</option>
+        </select>
+        <label class="lb2">Time (optional)</label>
+        <input type="text" class="fi" id="s-time" placeholder="e.g. 9:00 AM" style="text-transform:none;" />
+        <button class="ab" id="sched-btn">Add to Schedule</button>
+      </div>
+      <div id="sched-el"><div class="em"><p>Loading...</p></div></div>
+    </div>
+
+    <!-- RECORD TAB -->
+    <div class="sc" id="sc-rec">
+      <p class="st">To Record</p>
+      <p class="ss">Content that needs to be filmed</p>
+      <div class="fc">
+        <h3>Add to Recording List</h3>
+        <div class="ok" id="ok-rec">Added!</div>
+        <label class="lb2">What Needs Recording</label>
+        <input type="text" class="fi" id="r-txt" placeholder="e.g. Frame try-on video" style="text-transform:none;" />
+        <label class="lb2">Type</label>
+        <select class="fi" id="r-typ">
+          <option value="Reel">Reel</option>
+          <option value="TikTok">TikTok</option>
+          <option value="Photo">Photo</option>
+          <option value="Story">Story</option>
+        </select>
+        <button class="ab" id="rec-btn">Add to List</button>
+      </div>
+      <div id="rec-el"><div class="em"><p>Loading...</p></div></div>
+    </div>
+
+    <!-- IDEAS -->
+    <div class="sc" id="sc-ideas">
+      <p class="st">Ideas</p>
+      <p class="ss">Track ideas from concept to completion</p>
+
+      <div class="idea-tabs">
+        <button class="idea-tab on" onclick="goIdea('new',this)">💡 Ideas (<span id="cnt-new">0</span>)</button>
+        <button class="idea-tab" onclick="goIdea('recorded',this)">🎬 Recorded (<span id="cnt-rec">0</span>)</button>
+        <button class="idea-tab" onclick="goIdea('made',this)">✅ Made (<span id="cnt-made">0</span>)</button>
+      </div>
+
+      <!-- NEW IDEAS -->
+      <div class="idea-sec on" id="idea-new">
+        <div class="fc">
+          <h3>Add an Idea</h3>
+          <div class="ok" id="ok-idea">Idea posted!</div>
+          <label class="lb2">Your Name</label>
+          <input type="text" class="fi" id="idea-name" placeholder="e.g. Jessica" style="text-transform:none;" />
+          <label class="lb2">Your Idea</label>
+          <textarea class="fi" id="idea-txt" placeholder="e.g. Reel showing eye exam process..."></textarea>
+          <label class="lb2">Type</label>
+          <select class="fi" id="idea-typ">
+            <option value="Reel">Reel / TikTok</option>
+            <option value="Photo">Photo Post</option>
+            <option value="Story">Story</option>
+            <option value="Caption">Caption Idea</option>
+            <option value="Campaign">Campaign Idea</option>
+          </select>
+          <label class="lb2">Reference Link (optional)</label>
+          <input type="text" class="fi" id="idea-link" placeholder="https://... paste any link for inspiration" style="text-transform:none;" />
+          <button class="ab" id="idea-btn">Post Idea</button>
+        </div>
+        <div id="ideas-new-el"><div class="em"><p>Loading...</p></div></div>
+      </div>
+
+      <!-- RECORDED IDEAS -->
+      <div class="idea-sec" id="idea-recorded">
+        <p style="font-size:13px;color:#8aaac0;margin-bottom:1rem;">Ideas that have been filmed and recorded</p>
+        <div id="ideas-rec-el"><div class="em"><p>Loading...</p></div></div>
+      </div>
+
+      <!-- MADE IDEAS -->
+      <div class="idea-sec" id="idea-made">
+        <p style="font-size:13px;color:#8aaac0;margin-bottom:1rem;">Ideas that have been edited and posted</p>
+        <div id="ideas-made-el"><div class="em"><p>Loading...</p></div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+var WHO = "Team";
+var DB = null;
+var TEAM_CODE = "NEWVIEW";
+var DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+
+(function(){
+  try {
+    var app = firebase.initializeApp({
+      apiKey:"AIzaSyDYVYxiuxraOm0NR03eAN2YeTwp8X32n3A",
+      authDomain:"everyday-strong-95844.firebaseapp.com",
+      databaseURL:"https://everyday-strong-95844-default-rtdb.firebaseio.com",
+      projectId:"everyday-strong-95844",
+      storageBucket:"everyday-strong-95844.firebasestorage.app",
+      messagingSenderId:"835314554846",
+      appId:"1:835314554846:web:cd5367a8002833c6ed2f4f"
+    },"nv5");
+    DB = firebase.database(app);
+  } catch(e){}
+})();
+
+function sp(id){
+  ["pg-login","pg-hub"].forEach(function(p){ document.getElementById(p).style.display="none"; });
+  document.getElementById(id).style.display="block";
+  window.scrollTo(0,0);
+}
+function ex(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function ago(ts){ var d=Math.floor((Date.now()-ts)/1000); if(d<60) return "just now"; if(d<3600) return Math.floor(d/60)+"m ago"; if(d<86400) return Math.floor(d/3600)+"h ago"; return Math.floor(d/86400)+"d ago"; }
+function showOk(id,msg){ var e=document.getElementById(id); if(msg) e.textContent=msg; e.style.display="block"; setTimeout(function(){ e.style.display="none"; },3000); }
+function pb(p){ var m={Instagram:"ig",TikTok:"tt",Facebook:"fb","All Platforms":"al"}; return "<span class='pl "+(m[p]||"ig")+"'>"+ex(p)+"</span>"; }
+function platLink(url,p){ if(!url) return ""; var m={Instagram:"ig",TikTok:"tt",Facebook:"fb"}; var l={Instagram:"View on Instagram",TikTok:"View on TikTok",Facebook:"View on Facebook"}; return "<br><a href='"+ex(url)+"' target='_blank' class='sl "+(m[p]||"gn")+"'>"+(l[p]||"View Post")+"</a>"; }
+function sk(s){ var r="",str=String(s); for(var i=0;i<str.length;i++){ var c=str[i]; r+=(c==="."||c==="#"||c==="$"||c==="["||c==="]"||c==="/")?"_":c; } return r; }
+
+function doLogin(){
+  var val=document.getElementById("code-in").value.trim().toUpperCase();
+  var err=document.getElementById("er");
+  if(!val){ err.style.display="block"; err.textContent="Please enter the team code."; return; }
+  if(val===TEAM_CODE){
+    err.style.display="none";
+    loadPosts(); loadSched(); loadRec(); loadIdeas();
+    sp("pg-hub");
+  } else {
+    err.style.display="block"; err.textContent="Incorrect code. Please try again.";
+    document.getElementById("code-in").select();
+  }
+}
+
+function goSec(name,btn){
+  document.querySelectorAll(".sc").forEach(function(s){ s.classList.remove("on"); });
+  document.querySelectorAll(".nb").forEach(function(b){ b.classList.remove("on"); });
+  document.getElementById("sc-"+name).classList.add("on");
+  btn.classList.add("on");
+}
+
+function goIdea(name,btn){
+  document.querySelectorAll(".idea-sec").forEach(function(s){ s.classList.remove("on"); });
+  document.querySelectorAll(".idea-tab").forEach(function(b){ b.classList.remove("on"); });
+  document.getElementById("idea-"+name).classList.add("on");
+  btn.classList.add("on");
+}
+
+// STARS
+function renderStars(key, ratings, total){
+  var avg = total > 0 ? (ratings/total).toFixed(1) : 0;
+  var h = "<div class='stars' id='stars-"+key+"'>";
+  for(var i=1;i<=5;i++){
+    h += "<span class='star "+(i<=Math.round(avg)?"on":"")+"' onclick='rateStar(\""+key+"\","+i+")'>★</span>";
+  }
+  h += "<span class='avg-rating'>"+( total>0 ? avg+" ("+total+")" : "No ratings yet")+"</span></div>";
+  return h;
+}
+
+function rateStar(key, val){
+  if(!DB) return;
+  var name = prompt("Your name to save your rating:");
+  if(!name) return;
+  DB.ref("nv5/ideas/"+key+"/ratings/"+sk(name)).set(val);
+}
+
+// IDEAS
+function loadIdeas(){
+  if(!DB) return;
+  DB.ref("nv5/ideas").on("value",function(snap){
+    var newItems=[],recItems=[],madeItems=[];
+    if(snap.exists()) snap.forEach(function(c){ var a=c.val(); a._k=c.key; if(a.status==="recorded") recItems.push(a); else if(a.status==="made") madeItems.push(a); else newItems.push(a); });
+    newItems.sort(function(a,b){ return b.ts-a.ts; });
+    recItems.sort(function(a,b){ return b.ts-a.ts; });
+    madeItems.sort(function(a,b){ return b.ts-a.ts; });
+    document.getElementById("cnt-new").textContent=newItems.length;
+    document.getElementById("cnt-rec").textContent=recItems.length;
+    document.getElementById("cnt-made").textContent=madeItems.length;
+    renderIdeaList("ideas-new-el", newItems, "new");
+    renderIdeaList("ideas-rec-el", recItems, "recorded");
+    renderIdeaList("ideas-made-el", madeItems, "made");
+  });
+}
+
+function renderIdeaList(elId, items, stage){
+  var el=document.getElementById(elId);
+  if(!items.length){
+    var msgs={new:"No ideas yet — add the first one above!",recorded:"No recorded ideas yet.",made:"No completed ideas yet."};
+    el.innerHTML="<div class='em'><p style='font-size:24px;margin-bottom:8px;'>"+(stage==="new"?"💡":stage==="recorded"?"🎬":"✅")+"</p><p>"+msgs[stage]+"</p></div>";
+    return;
+  }
+  var h="";
+  items.forEach(function(i){
+    var ratings=i.ratings||{};
+    var rKeys=Object.keys(ratings);
+    var total=rKeys.length;
+    var sum=0; rKeys.forEach(function(k){ sum+=ratings[k]; });
+    h+="<div class='ic'><div class='ic-top'>";
+    h+="<div class='ih'><span class='iw'>"+ex(i.name||"Team")+"</span><span class='iwh'>"+ago(i.ts)+"</span></div>";
+    h+="<div class='it'>"+ex(i.txt)+"</div>";
+    if(i.link) h+="<a href='"+ex(i.link)+"' target='_blank' class='sl gn' style='margin:4px 0;display:inline-block;font-size:11px;'>🔗 Reference</a>";
+    h+="<br><span class='ity'>"+ex(i.typ)+"</span>";
+    h+=renderStars(i._k, sum, total);
+    h+="</div>";
+    h+="<div class='ic-actions'>";
+    if(stage==="new"){
+      h+="<button class='ia-btn ia-rec' onclick='moveIdea(\""+i._k+"\",\"recorded\")'>🎬 Mark Recorded</button>";
+      h+="<button class='ia-btn ia-del' onclick='delIdea(\""+i._k+"\")'>🗑️ Delete</button>";
+    } else if(stage==="recorded"){
+      h+="<button class='ia-btn ia-done' onclick='moveIdea(\""+i._k+"\",\"made\")'>✅ Mark Made</button>";
+      h+="<button class='ia-btn ia-del' onclick='delIdea(\""+i._k+"\")'>🗑️ Delete</button>";
+    } else if(stage==="made"){
+      h+="<button class='ia-btn ia-del' onclick='delIdea(\""+i._k+"\")'>🗑️ Delete</button>";
+    }
+    h+="</div></div>";
+  });
+  el.innerHTML=h;
+}
+
+function moveIdea(key, status){
+  if(!DB) return;
+  DB.ref("nv5/ideas/"+key).update({status:status});
+}
+
+function addIdea(){
+  var name=document.getElementById("idea-name").value.trim();
+  var txt=document.getElementById("idea-txt").value.trim();
+  var typ=document.getElementById("idea-typ").value;
+  var link=document.getElementById("idea-link").value.trim();
+  if(!name){ alert("Please enter your name."); return; }
+  if(!txt){ alert("Please write your idea."); return; }
+  if(!DB){ alert("Database not connected. Please refresh."); return; }
+  DB.ref("nv5/ideas").push({name:name,txt:txt,typ:typ,link:link,status:"new",ts:Date.now()},function(e){
+    if(!e){ document.getElementById("idea-txt").value=""; document.getElementById("idea-link").value=""; showOk("ok-idea","Idea posted!"); }
+  });
+}
+
+function delIdea(key){ if(!confirm("Delete this idea permanently?")) return; DB.ref("nv5/ideas/"+key).remove(); }
+
+// POSTS
+function loadPosts(){
+  if(!DB){ document.getElementById("feed-el").innerHTML="<div class='em'><p>No posts yet.</p></div>"; return; }
+  DB.ref("nv5/posts").on("value",function(snap){
+    var el=document.getElementById("feed-el");
+    if(!snap.exists()){ el.innerHTML="<div class='em'><p style='font-size:24px;margin-bottom:8px;'>📱</p><p>No posts yet — add the first one above!</p></div>"; return; }
+    var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    var h="";
+    items.forEach(function(p){
+      var lk=p.likes||{},lc=Object.keys(lk).length,liked=lk[sk(WHO)]?true:false;
+      h+="<div class='cd'><div class='ch'>"+pb(p.plat);
+      if(p.typ) h+=" <span style='font-size:11px;background:#f0f4f8;color:#4a6a8a;padding:2px 7px;border-radius:6px;'>"+ex(p.typ)+"</span>";
+      h+=" <span style='font-size:11px;color:#8aaac0;'>"+ex(p.date||"")+"</span>";
+      h+="<button class='db' onclick='delPost(\""+p._k+"\")'>Remove</button></div>";
+      h+="<div class='cb'>"+ex(p.cap); if(p.link) h+=platLink(p.link,p.plat); h+="</div>";
+      h+="<div class='pa'><button class='lb "+(liked?"on":"")+"' onclick='togLike(\""+p._k+"\","+liked+")'>"+(liked?"❤️":"🤍")+" "+lc+"</button>";
+      h+="<button class='ct' onclick='togCmt(\""+p._k+"\",this)'>💬 Comments</button></div>";
+      h+="<div class='cbx' id='cbx-"+p._k+"'><div id='cl-"+p._k+"'></div><div class='cr'><input class='cin' id='cin-"+p._k+"' placeholder='Add a comment...' /><button class='cp' onclick='postCmt(\""+p._k+"\")'>Post</button></div></div></div>";
+    });
+    el.innerHTML=h;
+  });
+}
+
+function addPost(){
+  var cap=document.getElementById("p-cap").value.trim();
+  if(!cap){ alert("Please add a caption."); return; }
+  if(!DB){ alert("Database not connected. Please refresh."); return; }
+  DB.ref("nv5/posts").push({cap:cap,plat:document.getElementById("p-plat").value,typ:document.getElementById("p-typ").value,link:document.getElementById("p-link").value.trim(),date:document.getElementById("p-date").value,ts:Date.now(),likes:{}},function(e){
+    if(!e){ document.getElementById("p-cap").value=""; document.getElementById("p-link").value=""; showOk("ok-post","Post added!"); }
+  });
+}
+
+function delPost(key){ if(!confirm("Remove this post?")) return; DB.ref("nv5/posts/"+key).remove(); }
+function togLike(key,liked){ if(!DB) return; var ref=DB.ref("nv5/posts/"+key+"/likes/"+sk(WHO)); if(liked) ref.remove(); else ref.set(true); }
+function togCmt(key,btn){ var box=document.getElementById("cbx-"+key); if(box.style.display==="block"){ box.style.display="none"; btn.textContent="💬 Comments"; } else{ box.style.display="block"; btn.textContent="💬 Hide"; loadCmts(key); } }
+function loadCmts(key){ if(!DB) return; DB.ref("nv5/cmts/"+key).on("value",function(snap){ var el=document.getElementById("cl-"+key); if(!el) return; if(!snap.exists()){ el.innerHTML="<p style='font-size:12px;color:#8aaac0;padding:5px 0;'>No comments yet.</p>"; return; } var items=[],h=""; snap.forEach(function(c){ items.push(c.val()); }); items.sort(function(a,b){ return b.ts-a.ts; }); items.forEach(function(c){ h+="<div class='ci2'><span class='cw'>"+ex(c.name)+"</span><span class='cwh'>"+ago(c.ts)+"</span><br/>"+ex(c.txt)+"</div>"; }); el.innerHTML=h; }); }
+function postCmt(key){ if(!DB) return; var inp=document.getElementById("cin-"+key),txt=inp?inp.value.trim():""; if(!txt) return; var name=prompt("Your name:"); if(!name) return; DB.ref("nv5/cmts/"+key).push({name:name,txt:txt,ts:Date.now()},function(e){ if(!e) inp.value=""; }); }
+
+// SCHEDULE
+function loadSched(){
+  if(!DB){ document.getElementById("sched-el").innerHTML="<div class='em'><p>No schedule yet.</p></div>"; return; }
+  DB.ref("nv5/sched").on("value",function(snap){
+    var el=document.getElementById("sched-el");
+    if(!snap.exists()){ el.innerHTML="<div class='em'><p style='font-size:24px;margin-bottom:8px;'>📅</p><p>No schedule yet.</p></div>"; return; }
+    var bd={}; snap.forEach(function(c){ var a=c.val(); a._k=c.key; if(!bd[a.day]) bd[a.day]=[]; bd[a.day].push(a); });
+    var h="";
+    DAYS.forEach(function(day){
+      h+="<div class='wkd'><div class='wkh'>"+day+"</div><div class='wkb'>";
+      if(bd[day]&&bd[day].length){ bd[day].forEach(function(s){ h+="<div class='wki' style='display:flex;justify-content:space-between;align-items:center;'>"+pb(s.plat)+" "+ex(s.txt)+(s.time?" @ "+ex(s.time):"")+
+      "<button class='db' onclick='delSched(\""+s._k+"\")'>X</button></div>"; }); }
+      else h+="<div class='wke'>Nothing scheduled</div>";
+      h+="</div></div>";
+    });
+    el.innerHTML=h;
+  });
+}
+
+function addSched(){
+  var txt=document.getElementById("s-txt").value.trim();
+  if(!txt){ alert("Please describe what's posting."); return; }
+  if(!DB){ alert("Database not connected. Please refresh."); return; }
+  DB.ref("nv5/sched").push({day:document.getElementById("s-day").value,txt:txt,plat:document.getElementById("s-plat").value,time:document.getElementById("s-time").value.trim(),ts:Date.now()},function(e){
+    if(!e){ document.getElementById("s-txt").value=""; document.getElementById("s-time").value=""; showOk("ok-sched","Added!"); }
+  });
+}
+
+function delSched(key){ if(!confirm("Remove?")) return; DB.ref("nv5/sched/"+key).remove(); }
+
+// RECORD LIST
+function loadRec(){
+  if(!DB){ document.getElementById("rec-el").innerHTML="<div class='em'><p>No tasks yet.</p></div>"; return; }
+  DB.ref("nv5/rec").on("value",function(snap){
+    var el=document.getElementById("rec-el");
+    if(!snap.exists()){ el.innerHTML="<div class='em'><p style='font-size:24px;margin-bottom:8px;'>🎬</p><p>No recording tasks yet.</p></div>"; return; }
+    var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); });
+    var h="<div class='cd' style='padding:11px 14px;'>";
+    items.forEach(function(t){ var dn=t.done||false; h+="<div class='tr'><div class='tk "+(dn?"dn":"")+"' onclick='togRec(\""+t._k+"\","+dn+")'>"+(dn?"✓":"")+"</div><div class='tt2 "+(dn?"dn":"")+"'>"+ex(t.txt)+"<span class='tg'>"+ex(t.typ)+"</span></div><button class='db' onclick='delRec(\""+t._k+"\")'>X</button></div>"; });
+    h+="</div>"; el.innerHTML=h;
+  });
+}
+
+function addRec(){
+  var txt=document.getElementById("r-txt").value.trim();
+  if(!txt){ alert("Please describe what needs recording."); return; }
+  if(!DB){ alert("Database not connected. Please refresh."); return; }
+  DB.ref("nv5/rec").push({txt:txt,typ:document.getElementById("r-typ").value,done:false,ts:Date.now()},function(e){
+    if(!e){ document.getElementById("r-txt").value=""; showOk("ok-rec","Added!"); }
+  });
+}
+
+function togRec(key,done){ if(DB) DB.ref("nv5/rec/"+key).update({done:!done}); }
+function delRec(key){ if(!confirm("Remove?")) return; DB.ref("nv5/rec/"+key).remove(); }
+
+// WIRE UP
+document.getElementById("login-btn").onclick = doLogin;
+document.getElementById("code-in").onkeydown = function(e){ if(e.key==="Enter") doLogin(); };
+document.getElementById("so-btn").onclick = function(){ sp("pg-login"); document.getElementById("code-in").value=""; document.getElementById("er").style.display="none"; };
+document.getElementById("post-btn").onclick = addPost;
+document.getElementById("sched-btn").onclick = addSched;
+document.getElementById("rec-btn").onclick = addRec;
+document.getElementById("idea-btn").onclick = addIdea;
+</script>
+</body>
+</html>
