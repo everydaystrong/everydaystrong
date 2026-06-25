@@ -4,271 +4,215 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Everyday Strong</title>
-<script>
-var FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDYVYxiuxraOm0NR03eAN2YeTwp8X32n3A",
-  authDomain: "everyday-strong-95844.firebaseapp.com",
-  databaseURL: "https://everyday-strong-95844-default-rtdb.firebaseio.com",
-  projectId: "everyday-strong-95844",
-  storageBucket: "everyday-strong-95844.firebasestorage.app",
-  messagingSenderId: "835314554846",
-  appId: "1:835314554846:web:cd5367a8002833c6ed2f4f"
-};
-</script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
 .page{display:none;}
-.card{background:#fff;border-radius:12px;padding:2rem;width:100%;max-width:360px;text-align:center;border:1px solid #ddd0c6;}
-.err{color:#b03020;font-size:13px;margin-bottom:8px;background:#fdf0ee;padding:8px;border-radius:6px;display:none;}
-.inp{width:100%;padding:11px 14px;border:1.5px solid #d8cfc6;border-radius:8px;font-size:15px;margin-bottom:10px;background:#f9f6f2;outline:none;text-transform:uppercase;}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;background:#f5f0eb;}
+.login-card{background:#fff;border-radius:14px;padding:2.8rem 2.2rem;width:100%;max-width:380px;text-align:center;box-shadow:0 2px 24px rgba(60,30,10,0.08);border:0.5px solid #ddd0c6;}
+.logo-text{font-size:26px;font-weight:700;color:#3a2a1a;font-family:Georgia,serif;margin-bottom:1rem;}
+.logo-text span{color:#a0522d;}
+.tagline{color:#6a5a48;font-size:13px;margin-bottom:1.4rem;line-height:1.5;}
+.divider{border:none;border-top:1px solid #e8ddd2;margin:1rem 0;}
+.err{color:#b03020;font-size:13px;margin-bottom:10px;background:#fdf0ee;padding:8px;border-radius:7px;display:none;}
+.inp{width:100%;padding:12px 16px;border:1.5px solid #d8cfc6;border-radius:9px;font-size:16px;margin-bottom:12px;background:#f9f6f2;outline:none;text-transform:uppercase;letter-spacing:1px;}
 .inp:focus{border-color:#a0522d;}
-.btn{width:100%;padding:12px;background:#a0522d;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;font-weight:700;margin-bottom:8px;}
+.btn{width:100%;padding:13px;background:#a0522d;color:#fff;border:none;border-radius:9px;font-size:16px;cursor:pointer;font-weight:700;margin-bottom:8px;}
 .btn:hover{background:#8b4513;}
-.alink{font-size:12px;color:#b0a090;cursor:pointer;text-decoration:underline;display:block;margin-top:8px;}
-.hdr{background:#fff;border-bottom:1px solid #e0d5cc;padding:0.8rem 1.4rem;display:flex;align-items:center;justify-content:space-between;}
-.sbtn{background:none;border:1px solid #ddd0c6;border-radius:6px;padding:6px 14px;font-size:12px;color:#7a6a5a;cursor:pointer;}
-.wbar{background:#a0522d;color:#fff;padding:10px 1.4rem;font-size:13px;}
-.pbody{padding:1.4rem;max-width:960px;margin:0 auto;}
-.stitle{font-size:18px;color:#3a2a1a;margin-bottom:0.5rem;font-family:Georgia,serif;font-weight:normal;}
-.ssub{font-size:12px;color:#9a8a7a;margin-bottom:1rem;}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;}
-.vc{background:#fff;border-radius:10px;overflow:hidden;border:1px solid #ddd0c6;}
-.thumb{width:100%;aspect-ratio:16/9;background:#e8ddd2;position:relative;overflow:hidden;cursor:pointer;}
-.thumb img{width:100%;height:100%;object-fit:cover;}
-.play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:42px;height:42px;background:rgba(160,82,45,0.9);border-radius:50%;}
-.play::after{content:"";position:absolute;top:50%;left:55%;transform:translate(-50%,-50%);border-left:14px solid #fff;border-top:9px solid transparent;border-bottom:9px solid transparent;}
-.vi{padding:10px 12px;}
-.vt{font-size:13px;font-weight:600;color:#3a2a1a;margin-bottom:4px;}
-.vtg{font-size:11px;color:#a0522d;background:#f5ede6;padding:2px 7px;border-radius:8px;display:inline-block;margin-bottom:6px;}
-.empty{text-align:center;padding:2rem;color:#9a8a7a;font-size:14px;background:#fff;border-radius:10px;border:1px dashed #d8cfc6;}
-.ac2{background:#fff;border-radius:10px;border:1px solid #ddd0c6;overflow:hidden;margin-bottom:10px;}
-.ah{background:#3a2a1a;color:#f5f0eb;padding:9px 14px;font-size:11px;font-weight:700;text-transform:uppercase;}
-.ab{padding:12px 14px;font-size:14px;color:#3a2a1a;line-height:1.7;white-space:pre-wrap;word-break:break-word;}
-.ab a{color:#a0522d;}
-.adate{font-size:11px;color:#b0a090;padding:0 14px 10px;}
-.adhdr{background:#3a2a1a;padding:0.9rem 1.4rem;display:flex;align-items:center;justify-content:space-between;}
-.adbody{padding:1.4rem;max-width:700px;margin:0 auto;}
-.tabs{display:flex;gap:8px;margin-bottom:1.2rem;flex-wrap:wrap;}
-.tab{padding:7px 16px;border:1px solid #d8cfc6;border-radius:16px;font-size:13px;cursor:pointer;background:#fff;color:#7a6a5a;}
-.tab.on{background:#a0522d;color:#fff;border-color:#a0522d;}
-.tc{display:none;}
-.tc.on{display:block;}
-.ac3{background:#fff;border-radius:10px;padding:1.2rem;border:1px solid #ddd0c6;margin-bottom:1rem;}
-.ac3 h3{font-size:13px;color:#3a2a1a;margin-bottom:0.9rem;font-weight:700;}
-.lbl{font-size:11px;color:#7a6a5a;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:5px;}
-.fi{width:100%;padding:9px 12px;border:1.5px solid #d8cfc6;border-radius:7px;font-size:14px;background:#f9f6f2;color:#333;outline:none;margin-bottom:10px;}
-.fi:focus{border-color:#a0522d;}
-textarea.fi{min-height:80px;resize:vertical;}
-.abtn2{padding:9px 20px;background:#a0522d;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-weight:700;}
-.abtn2:hover{background:#8b4513;}
-.abtn2.sec{background:#fff;color:#a0522d;border:1.5px solid #a0522d;}
-.row2{display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;}
-.row2 .fw{flex:1;}
-.li{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid #ece4dc;font-size:13px;color:#3a2a1a;gap:8px;}
-.li:last-child{border-bottom:none;}
-.lil{flex:1;min-width:0;}
-.bdg{background:#f5ede6;color:#a0522d;font-size:11px;padding:2px 7px;border-radius:8px;margin-left:5px;}
-.bdg.all{background:#e8f0e8;color:#3a6a3a;}
-.cd{background:#3a2a1a;color:#f5ede6;padding:4px 10px;border-radius:5px;font-family:monospace;font-size:13px;letter-spacing:2px;display:inline-block;}
-.delbtn{background:none;border:1px solid #e0d0c8;border-radius:5px;color:#c05040;font-size:12px;cursor:pointer;padding:3px 9px;white-space:nowrap;}
-.ok{background:#eaf6f0;color:#1a7a4a;padding:9px 12px;border-radius:7px;font-size:13px;margin-bottom:10px;display:none;border:0.5px solid #b0e0c8;}
-.tip{font-size:12px;color:#9a8a7a;margin:-6px 0 10px;}
-.loading{text-align:center;padding:2rem;color:#9a8a7a;font-size:14px;}
-/* SEARCH AND FILTER */
-.search-wrap{margin-bottom:1rem;}
-.search-inp{width:100%;padding:10px 14px 10px 38px;border:1.5px solid #d8cfc6;border-radius:8px;font-size:14px;background:#fff;outline:none;color:#3a2a1a;}
+.alink{font-size:12px;color:#b0a090;cursor:pointer;text-decoration:underline;display:block;margin-top:8px;background:none;border:none;width:100%;}
+.portal-header{background:#fff;border-bottom:1px solid #e0d5cc;padding:0.9rem 1.6rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+.portal-brand{font-size:17px;font-weight:700;color:#3a2a1a;font-family:Georgia,serif;}
+.portal-brand span{color:#a0522d;}
+.logout-btn{background:none;border:1px solid #ddd0c6;border-radius:7px;padding:7px 16px;font-size:13px;color:#7a6a5a;cursor:pointer;}
+.welcome-bar{background:#a0522d;color:#fff;padding:11px 1.6rem;font-size:13px;}
+.portal-body{padding:1.6rem;max-width:980px;margin:0 auto;}
+.section-title{font-size:19px;color:#3a2a1a;margin-bottom:0.5rem;font-family:Georgia,serif;font-weight:normal;}
+.section-sub{font-size:13px;color:#9a8a7a;margin-bottom:1rem;}
+.announce-card{background:#fff;border-radius:11px;border:0.5px solid #ddd0c6;overflow:hidden;margin-bottom:10px;}
+.announce-header{background:#3a2a1a;color:#f5f0eb;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;}
+.announce-body{padding:14px 16px;font-size:14px;color:#3a2a1a;line-height:1.7;white-space:pre-wrap;word-break:break-word;}
+.announce-body a{color:#a0522d;}
+.announce-date{font-size:11px;color:#b0a090;padding:0 16px 10px;}
+.search-box{position:relative;margin-bottom:10px;}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:#b0a090;}
+.search-inp{width:100%;padding:10px 14px 10px 36px;border:1.5px solid #d8cfc6;border-radius:8px;font-size:14px;background:#fff;outline:none;color:#3a2a1a;}
 .search-inp:focus{border-color:#a0522d;}
-.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;color:#b0a090;}
-.search-box{position:relative;}
 .filter-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;}
-.filter-btn{padding:6px 14px;border:1px solid #d8cfc6;border-radius:16px;font-size:12px;cursor:pointer;background:#fff;color:#7a6a5a;white-space:nowrap;}
+.filter-btn{padding:6px 14px;border:1px solid #d8cfc6;border-radius:16px;font-size:12px;cursor:pointer;background:#fff;color:#7a6a5a;}
 .filter-btn.on{background:#a0522d;color:#fff;border-color:#a0522d;}
-.no-results{text-align:center;padding:2rem;color:#9a8a7a;font-size:14px;background:#fff;border-radius:10px;border:1px dashed #d8cfc6;}
-
-
-/* VIDEO COMMENTS */
-.vcmt-btn{font-size:12px;color:#a0522d;background:none;border:none;cursor:pointer;padding:4px 0;text-decoration:underline;display:block;margin-top:4px;}
-.vcmt-box{border-top:0.5px solid #e8ddd2;padding:10px 12px;display:none;}
-.vcmt-list{margin-bottom:8px;}
-.vcmt-item{padding:6px 0;border-bottom:0.5px solid #f0ebe4;font-size:12px;color:#3a2a1a;}
-.vcmt-item:last-child{border-bottom:none;}
-.vcmt-name{font-weight:700;color:#a0522d;margin-right:6px;}
-.vcmt-date{font-size:10px;color:#b0a090;margin-left:4px;}
-.vcmt-input{width:100%;padding:7px 10px;border:1px solid #d8cfc6;border-radius:7px;font-size:13px;background:#f9f6f2;outline:none;margin-bottom:6px;}
-.vcmt-submit{padding:6px 14px;background:#a0522d;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;}
-.vcmt-empty{font-size:12px;color:#b0a090;padding:4px 0;}
-
-/* COMMUNITY WALL */
-.community-section{background:#fff;border-radius:10px;border:1px solid #ddd0c6;padding:1.2rem;margin-bottom:1.4rem;}
-.community-section h3{font-size:16px;color:#3a2a1a;margin-bottom:0.8rem;font-family:Georgia,serif;font-weight:normal;}
-.cmt-item{padding:10px 0;border-bottom:0.5px solid #f0ebe4;}
-.cmt-item:last-child{border-bottom:none;}
-.cmt-name{font-weight:700;font-size:13px;color:#a0522d;}
-.cmt-date{font-size:11px;color:#b0a090;margin-left:6px;}
-.cmt-text{font-size:14px;color:#3a2a1a;margin-top:3px;line-height:1.5;}
-.cmt-input-wrap{margin-top:10px;border-top:0.5px solid #e8ddd2;padding-top:10px;}
-.cmt-textarea{width:100%;padding:9px 12px;border:1.5px solid #d8cfc6;border-radius:8px;font-size:14px;background:#f9f6f2;outline:none;min-height:70px;resize:vertical;margin-bottom:8px;}
-.cmt-textarea:focus{border-color:#a0522d;}
-.cmt-submit{padding:8px 18px;background:#a0522d;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-weight:700;}
-
-/* MESSAGE BUTTON */
-.msg-btn{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #ddd0c6;border-radius:10px;padding:12px 16px;margin-bottom:1.4rem;cursor:pointer;width:100%;text-align:left;transition:background 0.15s;}
-.msg-btn:hover{background:#f9f6f2;}
-.msg-icon{width:36px;height:36px;background:#f5ede6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
-.msg-text{flex:1;}
-.msg-title{font-size:14px;font-weight:700;color:#3a2a1a;}
-.msg-sub{font-size:12px;color:#9a8a7a;margin-top:2px;}
+.video-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;}
+.video-card{background:#fff;border-radius:11px;overflow:hidden;border:0.5px solid #ddd0c6;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;}
+.video-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(60,30,10,0.1);}
+.video-thumb{width:100%;aspect-ratio:16/9;background:#e8ddd2;position:relative;overflow:hidden;}
+.video-thumb img{width:100%;height:100%;object-fit:cover;}
+.play-overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;background:rgba(160,82,45,0.9);border-radius:50%;}
+.play-overlay::after{content:"";position:absolute;top:50%;left:55%;transform:translate(-50%,-50%);border-left:15px solid #fff;border-top:9px solid transparent;border-bottom:9px solid transparent;}
+.video-info{padding:11px 13px;}
+.video-title{font-size:13px;font-weight:600;color:#3a2a1a;margin-bottom:5px;line-height:1.4;}
+.video-tag{font-size:11px;color:#a0522d;background:#f5ede6;padding:3px 8px;border-radius:10px;display:inline-block;}
+.empty-state{text-align:center;padding:3rem 1rem;color:#9a8a7a;font-size:14px;background:#fff;border-radius:12px;border:0.5px dashed #d8cfc6;}
+.no-results{text-align:center;padding:2rem;color:#9a8a7a;font-size:14px;background:#fff;border-radius:10px;border:0.5px dashed #d8cfc6;}
+.admin-header{background:#3a2a1a;padding:1rem 1.6rem;display:flex;align-items:center;justify-content:space-between;}
+.admin-body{padding:1.6rem;max-width:720px;margin:0 auto;background:#f5f0eb;min-height:calc(100vh - 62px);}
+.admin-tabs{display:flex;gap:8px;margin-bottom:1.4rem;flex-wrap:wrap;}
+.tab-btn{padding:8px 18px;border:1px solid #d8cfc6;border-radius:20px;font-size:13px;cursor:pointer;background:#fff;color:#7a6a5a;}
+.tab-btn.on{background:#a0522d;color:#fff;border-color:#a0522d;}
+.tab-content{display:none;}
+.tab-content.on{display:block;}
+.admin-card{background:#fff;border-radius:11px;padding:1.4rem 1.3rem;border:0.5px solid #ddd0c6;margin-bottom:1.1rem;}
+.admin-card h3{font-size:14px;color:#3a2a1a;margin-bottom:1rem;font-weight:700;}
+.form-row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.form-label{font-size:11px;color:#7a6a5a;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;}
+.form-input{padding:10px 13px;border:1.5px solid #d8cfc6;border-radius:8px;font-size:14px;background:#f9f6f2;color:#333;outline:none;width:100%;}
+.form-input:focus{border-color:#a0522d;}
+.form-select{padding:10px 13px;border:1.5px solid #d8cfc6;border-radius:8px;font-size:14px;background:#f9f6f2;color:#333;outline:none;width:100%;}
+.form-textarea{padding:10px 13px;border:1.5px solid #d8cfc6;border-radius:8px;font-size:14px;background:#f9f6f2;color:#333;outline:none;width:100%;min-height:80px;resize:vertical;}
+.action-btn{padding:10px 22px;background:#a0522d;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700;}
+.action-btn:hover{background:#8b4513;}
+.action-btn.sec{background:#fff;color:#a0522d;border:1.5px solid #a0522d;}
+.list-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid #ece4dc;font-size:13px;color:#3a2a1a;gap:8px;}
+.list-item:last-child{border-bottom:none;}
+.list-item-left{flex:1;min-width:0;}
+.badge{background:#f5ede6;color:#a0522d;font-size:11px;padding:3px 8px;border-radius:10px;margin-left:6px;}
+.badge-all{background:#e8f0e8;color:#3a6a3a;}
+.code-display{background:#3a2a1a;color:#f5ede6;padding:5px 11px;border-radius:6px;font-family:monospace;font-size:14px;letter-spacing:2px;display:inline-block;}
+.del-btn{background:none;border:1px solid #e0d0c8;border-radius:6px;color:#c05040;font-size:12px;cursor:pointer;padding:4px 10px;}
+.ok-msg{background:#eaf6f0;color:#1a7a4a;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;display:none;border:0.5px solid #b0e0c8;}
+.tip{font-size:12px;color:#9a8a7a;margin-top:-6px;margin-bottom:12px;}
+.inline-row{display:flex;gap:10px;align-items:flex-end;}
+.inline-row .form-row{flex:1;margin-bottom:0;}
+.program-checkboxes{border:1.5px solid #d8cfc6;border-radius:8px;background:#f9f6f2;padding:8px 12px;max-height:160px;overflow-y:auto;}
+.program-check-item{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:14px;color:#3a2a1a;cursor:pointer;}
+.program-check-item input{width:16px;height:16px;accent-color:#a0522d;cursor:pointer;}
 </style>
 </head>
 <body>
 
-<div class="page" id="pg-login" style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;">
-  <div class="card">
-    <p style="font-size:22px;font-weight:700;color:#3a2a1a;margin-bottom:0.3rem;font-family:Georgia,serif;">Everyday Strong</p>
-    <p style="color:#6a5a48;font-size:13px;margin-bottom:1rem;line-height:1.5;">Strength built steadily, intentionally, and sustainably.</p>
-    <hr style="border:none;border-top:1px solid #e8ddd2;margin:1rem 0;" />
-    <div class="err" id="login-err">Incorrect code. Please check with your instructor.</div>
-    <input class="inp" type="text" id="code-in" placeholder="Enter your access code" autocomplete="off" />
-    <button class="btn" id="login-btn">Access My Workouts</button>
-    <span class="alink" id="admin-link">Instructor login</span>
+<div class="page" id="pg-login" style="display:flex;">
+  <div class="login-wrap" style="width:100%;">
+    <div class="login-card">
+      <div class="logo-text">Everyday <span>Strong</span></div>
+      <p class="tagline">Strength built steadily, intentionally, and sustainably.</p>
+      <hr class="divider" />
+      <div class="err" id="login-err">Incorrect code. Please check with your instructor.</div>
+      <input class="inp" type="text" id="code-in" placeholder="Enter your access code" autocomplete="off" />
+      <button class="btn" id="login-btn">Access My Workouts</button>
+      <button class="alink" id="admin-link">Instructor login</button>
+    </div>
   </div>
 </div>
 
 <div class="page" id="pg-portal">
-  <div class="hdr">
-    <p style="font-size:18px;font-weight:700;color:#3a2a1a;font-family:Georgia,serif;">Everyday Strong</p>
-    <button class="sbtn" id="signout-btn">Sign out</button>
+  <div class="portal-header">
+    <div class="portal-brand">Everyday <span>Strong</span></div>
+    <button class="logout-btn" id="signout-btn">Sign out</button>
   </div>
-  <div class="wbar" id="wbar">Welcome back!</div>
-  <div class="pbody">
+  <div class="welcome-bar" id="welcome-bar">Welcome back!</div>
+  <div class="portal-body">
     <div id="ann-sec"></div>
-
-    <!-- MESSAGE HEATHER -->
-    <a class="msg-btn" href="mailto:everydaystrongteam@gmail.com?subject=Message from Everyday Strong Member">
-      <div class="msg-icon">✉️</div>
-      <div class="msg-text">
-        <div class="msg-title">Message Heather</div>
-        <div class="msg-sub">Send a private message to your instructor</div>
-      </div>
-      <span style="color:#a0522d;font-size:18px;">›</span>
-    </a>
-
-    <!-- COMMUNITY WALL -->
-    <div class="community-section">
-      <h3>💬 Community Wall</h3>
-      <div id="community-list"><div class="loading" style="padding:0.5rem 0;font-size:13px;">Loading comments...</div></div>
-      <div class="cmt-input-wrap">
-        <textarea class="cmt-textarea" id="community-input" placeholder="Share something with the community..."></textarea>
-        <button class="cmt-submit" id="community-submit">Post</button>
-      </div>
+    <p class="section-title">Workout Library</p>
+    <p class="section-sub" id="acc-lbl">Your videos</p>
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input class="search-inp" type="text" id="video-search" placeholder="Search workouts..." autocomplete="off" />
     </div>
-
-    <!-- VIDEOS -->
-    <p class="stitle">Workout Library</p>
-    <p class="ssub" id="acc-lbl">Your videos</p>
-    <div class="search-wrap">
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input class="search-inp" type="text" id="video-search" placeholder="Search workouts..." autocomplete="off" />
-      </div>
-    </div>
-    <div class="filter-wrap" id="filter-wrap">
-      <button class="filter-btn on" onclick="setFilter('ALL', this)">All</button>
-    </div>
-    <div id="vgrid-wrap"><div class="loading">Loading workouts...</div></div>
+    <div class="filter-wrap" id="filter-wrap"></div>
+    <div id="video-grid-wrap"></div>
   </div>
 </div>
 
 <div class="page" id="pg-admin">
-  <div class="adhdr">
-    <p style="font-size:18px;font-weight:700;color:#f5f0eb;font-family:Georgia,serif;">Everyday Strong</p>
+  <div class="admin-header">
+    <div class="portal-brand" style="color:#f5f0eb;">Everyday <span>Strong</span></div>
     <span style="font-size:14px;font-weight:600;color:#f5f0eb;">Instructor Panel</span>
-    <button class="sbtn" style="color:#f5f0eb;border-color:#7a6a5a;" id="exit-btn">Exit</button>
+    <button class="logout-btn" style="color:#f5f0eb;border-color:#7a6a5a;" id="exit-btn">Exit</button>
   </div>
-  <div class="adbody">
-    <div class="tabs">
-      <button class="tab on" id="tab-videos">📹 Videos</button>
-      <button class="tab" id="tab-codes">🔐 Access Codes</button>
-      <button class="tab" id="tab-announce">📢 Announcements</button>
-      <button class="tab" id="tab-settings">⚙️ Settings</button>
+  <div class="admin-body">
+    <div class="admin-tabs">
+      <button class="tab-btn on" id="atab-videos">📹 Videos</button>
+      <button class="tab-btn" id="atab-codes">🔐 Access Codes</button>
+      <button class="tab-btn" id="atab-announce">📢 Announcements</button>
+      <button class="tab-btn" id="atab-settings">⚙️ Settings</button>
     </div>
-    <div class="tc on" id="tc-videos">
-      <div class="ac3">
+
+    <div class="tab-content on" id="atc-videos">
+      <div class="admin-card">
         <h3>Add a Workout Video</h3>
-        <div class="ok" id="ok-video">Video saved!</div>
-        <label class="lbl">Video Title</label>
-        <input type="text" class="fi" id="v-title" placeholder="e.g. Full Body Strength" style="text-transform:none;" />
-        <label class="lbl">YouTube Link</label>
-        <input type="text" class="fi" id="v-url" placeholder="https://youtube.com/watch?v=..." style="text-transform:none;" />
-        <label class="lbl">Program / Category</label>
-        <input type="text" class="fi" id="v-tag" placeholder="e.g. 8-Week Strength, Full Membership" style="text-transform:none;" />
-        <p class="tip">Controls which clients can see this video.</p>
-        <button class="abtn2" id="add-video-btn">Save Video</button>
+        <div class="ok-msg" id="ok-video">Video saved!</div>
+        <div class="form-row"><span class="form-label">Video Title</span><input class="form-input" id="v-title" placeholder="e.g. Full Body Strength — Week 1" style="text-transform:none;" /></div>
+        <div class="form-row"><span class="form-label">YouTube Link</span><input class="form-input" id="v-url" placeholder="https://youtube.com/watch?v=..." style="text-transform:none;" /></div>
+        <div class="form-row"><span class="form-label">Program / Category</span><input class="form-input" id="v-tag" placeholder="e.g. 8-Week Strength, Beginner Cardio" style="text-transform:none;" /></div>
+        <p class="tip">This controls which clients can see this video.</p>
+        <button class="action-btn" id="add-video-btn">Save Video</button>
       </div>
-      <div class="ac3">
-        <h3>All Videos (<span id="vcnt">0</span>)</h3>
-        <div id="vlist"><div class="loading">Loading...</div></div>
-      </div>
-    </div>
-    <div class="tc" id="tc-codes">
-      <div class="ac3">
-        <h3>Create Access Code</h3>
-        <div class="ok" id="ok-code"></div>
-        <label class="lbl">Client Name</label>
-        <input type="text" class="fi" id="c-name" placeholder="e.g. Sarah M." style="text-transform:none;" />
-        <div class="row2">
-          <div class="fw">
-            <label class="lbl">Access Code</label>
-            <input type="text" class="fi" id="c-code" placeholder="e.g. SARAH2024" style="margin-bottom:0;" />
-          </div>
-          <button class="abtn2 sec" id="gen-btn" style="white-space:nowrap;font-size:12px;margin-bottom:0;">Auto-generate</button>
-        </div>
-        <label class="lbl" style="margin-top:10px;">Access Level</label>
-        <select class="fi" id="c-access"><option value="ALL">Full Membership - all videos</option></select>
-        <p class="tip">Full Membership sees all videos. A program code only sees that program.</p>
-        <button class="abtn2" id="add-code-btn">Create Code</button>
-      </div>
-      <div class="ac3">
-        <h3>Active Codes (<span id="ccnt">0</span>)</h3>
-        <div id="clist"><div class="loading">Loading...</div></div>
-      </div>
-    </div>
-    <div class="tc" id="tc-announce">
-      <div class="ac3">
-        <h3>Post an Announcement</h3>
-        <div class="ok" id="ok-ann">Announcement posted!</div>
-        <label class="lbl">Type</label>
-        <select class="fi" id="a-type">
-          <option value="zoom">Live Class / Zoom Link</option>
-          <option value="general">General Announcement</option>
-          <option value="schedule">Schedule Update</option>
-        </select>
-        <label class="lbl">Title</label>
-        <input type="text" class="fi" id="a-title" placeholder="e.g. Live Class This Saturday 10am!" style="text-transform:none;" />
-        <label class="lbl">Message or Zoom Link</label>
-        <textarea class="fi" id="a-body" placeholder="Paste your Zoom link here, or type a message..."></textarea>
-        <button class="abtn2" id="add-ann-btn">Post Announcement</button>
-      </div>
-      <div class="ac3">
-        <h3>Active Announcements (<span id="acnt">0</span>)</h3>
-        <div id="alist"><div class="loading">Loading...</div></div>
+      <div class="admin-card">
+        <h3>All Videos (<span id="video-count">0</span>)</h3>
+        <div id="video-list"></div>
       </div>
     </div>
 
-    <div class="tc" id="tc-settings">
-      <div class="ac3">
+    <div class="tab-content" id="atc-codes">
+      <div class="admin-card">
+        <h3>Create Access Code</h3>
+        <div class="ok-msg" id="ok-code"></div>
+        <div class="form-row"><span class="form-label">Client Name</span><input class="form-input" id="c-name" placeholder="e.g. Sarah M." style="text-transform:none;" /></div>
+        <div class="inline-row">
+          <div class="form-row"><span class="form-label">Access Code</span><input class="form-input" id="c-code" placeholder="e.g. SARAH2024" /></div>
+          <button class="action-btn sec" id="gen-btn" style="white-space:nowrap;font-size:13px;margin-bottom:0;">Auto-generate</button>
+        </div>
+        <div class="form-row" style="margin-top:10px;">
+          <span class="form-label">Access Level</span>
+          <select class="form-select" id="c-access-type">
+            <option value="ALL">Full Membership — all videos</option>
+            <option value="PROGRAMS">Specific Programs</option>
+          </select>
+        </div>
+        <div id="program-picker" style="display:none;margin-bottom:12px;">
+          <span class="form-label" style="display:block;margin-bottom:6px;">Select Programs</span>
+          <div class="program-checkboxes" id="program-checkboxes">
+            <p style="color:#9a8a7a;font-size:13px;">Add videos with categories first.</p>
+          </div>
+        </div>
+        <p class="tip">Full Membership sees everything. Specific Programs lets you pick multiple programs.</p>
+        <button class="action-btn" id="add-code-btn" style="margin-top:4px;">Create Code</button>
+      </div>
+      <div class="admin-card">
+        <h3>Active Codes (<span id="code-count">0</span>)</h3>
+        <div id="code-list"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="atc-announce">
+      <div class="admin-card">
+        <h3>Post an Announcement</h3>
+        <div class="ok-msg" id="ok-ann">Announcement posted!</div>
+        <div class="form-row"><span class="form-label">Type</span>
+          <select class="form-select" id="a-type">
+            <option value="zoom">Live Class / Zoom Link</option>
+            <option value="general">General Announcement</option>
+            <option value="schedule">Schedule Update</option>
+          </select>
+        </div>
+        <div class="form-row"><span class="form-label">Title</span><input class="form-input" id="a-title" placeholder="e.g. Live Class This Saturday 10am!" style="text-transform:none;" /></div>
+        <div class="form-row"><span class="form-label">Message or Zoom Link</span><textarea class="form-textarea" id="a-body" placeholder="Paste your Zoom link or type a message..."></textarea></div>
+        <button class="action-btn" id="add-ann-btn">Post Announcement</button>
+      </div>
+      <div class="admin-card">
+        <h3>Active Announcements (<span id="ann-count">0</span>)</h3>
+        <div id="ann-list"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="atc-settings">
+      <div class="admin-card">
         <h3>Change Admin Password</h3>
-        <div class="ok" id="ok-pass">Password updated!</div>
-        <label class="lbl">Current Password</label>
-        <input type="password" class="fi" id="pass-current" placeholder="Enter current password" style="text-transform:none;" />
-        <label class="lbl">New Password</label>
-        <input type="password" class="fi" id="pass-new" placeholder="Enter new password" style="text-transform:none;" />
-        <label class="lbl">Confirm New Password</label>
-        <input type="password" class="fi" id="pass-confirm" placeholder="Confirm new password" style="text-transform:none;" />
-        <button class="abtn2" id="change-pass-btn">Update Password</button>
+        <div class="ok-msg" id="ok-pass">Password updated!</div>
+        <div class="form-row"><span class="form-label">Current Password</span><input type="password" class="form-input" id="pass-cur" /></div>
+        <div class="form-row"><span class="form-label">New Password</span><input type="password" class="form-input" id="pass-new" /></div>
+        <div class="form-row"><span class="form-label">Confirm New Password</span><input type="password" class="form-input" id="pass-cf" /></div>
+        <button class="action-btn" id="pass-btn">Update Password</button>
       </div>
     </div>
   </div>
@@ -278,344 +222,295 @@ textarea.fi{min-height:80px;resize:vertical;}
 var adminPass = "ADMIN123";
 var currentUser = null;
 var currentAccess = "ALL";
-var db = null;
-var isReady = false;
+var allVideos = [];
+var activeFilter = "ALL";
+var DB = null;
 
-function initFirebase(){
-  try {
-    firebase.initializeApp(FIREBASE_CONFIG);
-    db = firebase.database();
-    isReady = true;
-    ensureDefaultCode();
-    loadAdminPass();
-  } catch(e){ isReady = false; }
-}
-
-function loadAdminPass(){
-  db.ref("settings/adminPass").once("value", function(snap){
-    if(snap.exists()) adminPass = snap.val();
+// Init Firebase
+try {
+  firebase.initializeApp({
+    apiKey:"AIzaSyDYVYxiuxraOm0NR03eAN2YeTwp8X32n3A",
+    authDomain:"everyday-strong-95844.firebaseapp.com",
+    databaseURL:"https://everyday-strong-95844-default-rtdb.firebaseio.com",
+    projectId:"everyday-strong-95844",
+    storageBucket:"everyday-strong-95844.firebasestorage.app",
+    messagingSenderId:"835314554846",
+    appId:"1:835314554846:web:cd5367a8002833c6ed2f4f"
   });
-}
-function ensureDefaultCode(){
-  db.ref("codes").orderByChild("code").equalTo("STRONG2024").once("value", function(snap){
-    if(!snap.exists()) db.ref("codes").push({name:"Demo Member",code:"STRONG2024",access:"ALL"});
-  });
-}
+  DB = firebase.database();
+  DB.ref("es_pass").once("value",function(s){ if(s.exists()) adminPass=s.val(); });
+} catch(e){}
 
-function showPage(id){
-  document.getElementById("pg-login").style.display = "none";
-  document.getElementById("pg-portal").style.display = "none";
-  document.getElementById("pg-admin").style.display = "none";
-  document.getElementById(id).style.display = "block";
+function sp(id){
+  document.getElementById("pg-login").style.display="none";
+  document.getElementById("pg-portal").style.display="none";
+  document.getElementById("pg-admin").style.display="none";
+  document.getElementById(id).style.display="block";
   window.scrollTo(0,0);
 }
 
-function escHtml(s){
-  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
-function getYTId(u){
-  var m = String(u).match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-  return m ? m[1] : null;
-}
-function flashOk(id, msg){
-  var el = document.getElementById(id);
-  if(msg) el.textContent = msg;
-  el.style.display = "block";
-  setTimeout(function(){ el.style.display = "none"; }, 3000);
-}
-function timeAgo(ts){
-  var d = Math.floor((Date.now()-ts)/1000);
-  if(d<60) return "just now";
-  if(d<3600) return Math.floor(d/60)+"m ago";
-  if(d<86400) return Math.floor(d/3600)+"h ago";
-  return Math.floor(d/86400)+"d ago";
+function ex(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function showOk(id,msg){ var e=document.getElementById(id); if(msg) e.textContent=msg; e.style.display="block"; setTimeout(function(){ e.style.display="none"; },3000); }
+function getYTId(u){ var m=String(u).match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/); return m?m[1]:null; }
+
+function canAccess(tag){
+  if(currentAccess==="ALL") return true;
+  if(!tag) return false;
+  if(Array.isArray(currentAccess)) return currentAccess.indexOf(tag)!==-1;
+  return currentAccess===tag;
 }
 
+// LOGIN
 function doLogin(){
-  var val = document.getElementById("code-in").value.trim().toUpperCase();
-  var err = document.getElementById("login-err");
+  var val=document.getElementById("code-in").value.trim().toUpperCase();
+  var err=document.getElementById("login-err");
   if(!val){ err.style.display="block"; err.textContent="Please enter your access code."; return; }
-  if(!isReady){ err.style.display="block"; err.textContent="Connecting to database..."; return; }
-  db.ref("codes").orderByChild("code").equalTo(val).once("value", function(snap){
+  if(!DB){ err.style.display="block"; err.textContent="Connecting... please wait a moment and try again."; return; }
+  DB.ref("es_codes").orderByChild("code").equalTo(val).once("value",function(snap){
     if(snap.exists()){
-      var found = null;
-      snap.forEach(function(c){ found = c.val(); });
-      currentUser = found.name;
-      currentAccess = found.access || "ALL";
-      err.style.display = "none";
-      document.getElementById("wbar").textContent = "Welcome, "+found.name+"! Ready to get strong?";
-      document.getElementById("acc-lbl").textContent = currentAccess==="ALL" ? "Full membership - all workouts" : "Your program: "+currentAccess;
-      loadMemberVideos();
-      loadAnnouncements();
-      loadCommunityWall();
-      showPage("pg-portal");
+      var found=null; snap.forEach(function(c){ found=c.val(); });
+      currentUser=found.name;
+      if(!found.access||found.access==="ALL"){ currentAccess="ALL"; }
+      else if(Array.isArray(found.access)){ currentAccess=found.access; }
+      else{ currentAccess=[found.access]; }
+      err.style.display="none";
+      document.getElementById("welcome-bar").textContent="Welcome, "+found.name+"! Ready to get strong?";
+      var lbl=document.getElementById("acc-lbl");
+      lbl.textContent=currentAccess==="ALL"?"Full membership — all workouts":"Your programs: "+(Array.isArray(currentAccess)?currentAccess.join(", "):currentAccess);
+      loadVideos(); loadAnnouncements();
+      sp("pg-portal");
     } else {
-      err.style.display = "block";
-      err.textContent = "Incorrect code. Please check with your instructor.";
+      err.style.display="block"; err.textContent="Incorrect code. Please check with your instructor.";
       document.getElementById("code-in").select();
     }
   });
 }
 
-function loadMemberVideos(){
-  var wrap = document.getElementById("vgrid-wrap");
-  wrap.innerHTML = "<div class='loading'>Loading workouts...</div>";
-  db.ref("videos").on("value", function(snap){
-    var list = [];
-    if(snap.exists()){
-      snap.forEach(function(c){
-        var v = c.val(); v._key = c.key;
-        if(currentAccess==="ALL" || v.tag===currentAccess || v.tag==="Full Membership") list.push(v);
-      });
-    }
-    if(!list.length){
-      wrap.innerHTML = "<div class='empty'><p style='font-size:28px;margin-bottom:8px;'>&#127947;</p><p>No workouts yet - check back soon!</p></div>";
-      return;
-    }
-    var html = "<div class='grid'>";
-    for(var i=0;i<list.length;i++){
-      var v = list[i];
-      var ytId = getYTId(v.url);
-      var th = ytId ? "<img src='https://img.youtube.com/vi/"+ytId+"/mqdefault.jpg' onerror='this.style.display=\"none\"' />" : "";
-      html += "<div class='vc'>";
-      html += "<div class='thumb' onclick='openVideo(\""+escHtml(v.url)+"\")'>"+th+"<div class='play'></div></div>";
-      html += "<div class='vi'><div class='vt'>"+escHtml(v.title)+"</div>";
-      if(v.tag) html += "<span class='vtg'>"+escHtml(v.tag)+"</span>";
-      html += "<button class='vcmt-btn' onclick='toggleComments(\""+v._key+"\", this)'>💬 Comments</button>";
-      html += "<div class='vcmt-box' id='vcmt-"+v._key+"'>";
-      html += "<div class='vcmt-list' id='vcmt-list-"+v._key+"'><div class='vcmt-empty'>No comments yet.</div></div>";
-      html += "<input class='vcmt-input' id='vcmt-in-"+v._key+"' placeholder='Add a comment...' />";
-      html += "<button class='vcmt-submit' onclick='postVideoComment(\""+v._key+"\")'>Post</button>";
-      html += "</div></div></div>";
-    }
-    html += "</div>";
-    wrap.innerHTML = html;
-  });
-}
-
-function openVideo(url){
-  var ytId = getYTId(url);
-  window.open(ytId ? "https://www.youtube.com/watch?v="+ytId : url, "_blank");
-}
-
-function toggleComments(videoKey, btn){
-  var box = document.getElementById("vcmt-"+videoKey);
-  if(box.style.display==="block"){
-    box.style.display="none";
-    btn.textContent="💬 Comments";
+// ADMIN LOGIN
+function doAdmin(){
+  var p=prompt("Instructor password:");
+  if(p===null) return;
+  if(p===adminPass){
+    loadAdmVideos(); loadAdmCodes(); loadAdmAnn();
+    sp("pg-admin");
   } else {
-    box.style.display="block";
-    btn.textContent="💬 Hide comments";
-    loadVideoComments(videoKey);
+    alert("Incorrect password. Please try again.");
   }
 }
 
-function loadVideoComments(videoKey){
-  var list = document.getElementById("vcmt-list-"+videoKey);
-  if(!list) return;
-  db.ref("vcmts/"+videoKey).on("value", function(snap){
-    if(!snap.exists()){ list.innerHTML="<div class='vcmt-empty'>No comments yet. Be the first!</div>"; return; }
-    var items=[], html="";
-    snap.forEach(function(c){ var a=c.val(); a._key=c.key; items.push(a); });
-    items.sort(function(a,b){ return b.ts-a.ts; });
-    for(var i=0;i<items.length;i++){
-      var c=items[i];
-      html+="<div class='vcmt-item'><span class='vcmt-name'>"+escHtml(c.name)+"</span><span class='vcmt-date'>"+timeAgo(c.ts)+"</span><br/>"+escHtml(c.text)+"</div>";
-    }
-    list.innerHTML=html;
+// VIDEOS - MEMBER
+function loadVideos(){
+  if(!DB) return;
+  DB.ref("es_videos").on("value",function(snap){
+    allVideos=[];
+    if(snap.exists()) snap.forEach(function(c){ var v=c.val(); v._k=c.key; if(canAccess(v.tag)) allVideos.push(v); });
+    buildFilters(); renderVideos();
   });
 }
 
-function postVideoComment(videoKey){
-  var inp = document.getElementById("vcmt-in-"+videoKey);
-  var text = inp ? inp.value.trim() : "";
-  if(!text) return;
-  db.ref("vcmts/"+videoKey).push({name:currentUser, text:text, ts:Date.now()}, function(err){
-    if(!err) inp.value="";
-  });
+function buildFilters(){
+  var cats=[];
+  allVideos.forEach(function(v){ if(v.tag&&cats.indexOf(v.tag)===-1) cats.push(v.tag); });
+  var h="<button class='filter-btn "+(activeFilter==="ALL"?"on":"")+"' onclick='setFilter(\"ALL\",this)'>All</button>";
+  cats.forEach(function(c){ h+="<button class='filter-btn "+(activeFilter===c?"on":"")+"' onclick='setFilter(\""+ex(c)+"\",this)'>"+ex(c)+"</button>"; });
+  document.getElementById("filter-wrap").innerHTML=h;
 }
 
+function setFilter(cat,btn){
+  activeFilter=cat;
+  document.querySelectorAll(".filter-btn").forEach(function(b){ b.classList.remove("on"); });
+  btn.classList.add("on"); renderVideos();
+}
+
+function renderVideos(){
+  var wrap=document.getElementById("video-grid-wrap");
+  var search=document.getElementById("video-search").value.trim().toLowerCase();
+  var list=allVideos.filter(function(v){
+    var mf=activeFilter==="ALL"||v.tag===activeFilter;
+    var ms=!search||v.title.toLowerCase().indexOf(search)!==-1||(v.tag&&v.tag.toLowerCase().indexOf(search)!==-1);
+    return mf&&ms;
+  });
+  if(!allVideos.length){ wrap.innerHTML="<div class='empty-state'><p style='font-size:32px;margin-bottom:10px;'>🏋️</p><p>No workouts yet — check back soon!</p></div>"; return; }
+  if(!list.length){ wrap.innerHTML="<div class='no-results'>No workouts match your search.</div>"; return; }
+  var h="<div class='video-grid'>";
+  list.forEach(function(v){
+    var ytId=getYTId(v.url);
+    var th=ytId?"<img src='https://img.youtube.com/vi/"+ytId+"/mqdefault.jpg' onerror='this.style.display=\"none\"' />":"";
+    h+="<div class='video-card' onclick='openVideo(\""+ex(v.url)+"\")'><div class='video-thumb'>"+th+"<div class='play-overlay'></div></div><div class='video-info'><div class='video-title'>"+ex(v.title)+"</div>"+(v.tag?"<span class='video-tag'>"+ex(v.tag)+"</span>":"")+"</div></div>";
+  });
+  h+="</div>"; wrap.innerHTML=h;
+}
+
+function openVideo(url){ var ytId=getYTId(url); window.open(ytId?"https://www.youtube.com/watch?v="+ytId:url,"_blank"); }
+
+// ANNOUNCEMENTS
 function loadAnnouncements(){
-  db.ref("announcements").on("value", function(snap){
-    var sec = document.getElementById("ann-sec");
+  if(!DB) return;
+  DB.ref("es_ann").on("value",function(snap){
+    var sec=document.getElementById("ann-sec");
     if(!snap.exists()){ sec.innerHTML=""; return; }
     var lb={zoom:"Live Class",general:"Announcement",schedule:"Schedule"};
-    var html="<p class='stitle' style='margin-bottom:0.7rem;'>Announcements</p>";
-    var items=[];
-    snap.forEach(function(c){ var a=c.val(); a._key=c.key; items.unshift(a); });
-    for(var i=0;i<items.length;i++){
-      var a=items[i];
-      var b=escHtml(a.body).replace(/https?:\/\/[^\s<]+/g,function(u){ return "<a href='"+u+"' target='_blank'>"+u+"</a>"; });
-      html+="<div class='ac2'><div class='ah'>"+(lb[a.type]||"Announcement")+"</div><div class='ab'><strong>"+escHtml(a.title)+"</strong><br/>"+b+"</div><div class='adate'>"+escHtml(a.date)+"</div></div>";
-    }
-    sec.innerHTML=html;
+    var h="<p class='section-title' style='margin-bottom:0.8rem;'>Announcements</p>";
+    var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.unshift(a); });
+    items.forEach(function(a){
+      var b=ex(a.body).replace(/https?:\/\/[^\s<]+/g,function(u){ return "<a href='"+u+"' target='_blank'>"+u+"</a>"; });
+      h+="<div class='announce-card'><div class='announce-header'>"+(lb[a.type]||"Announcement")+"</div><div class='announce-body'><strong>"+ex(a.title)+"</strong><br/>"+b+"</div><div class='announce-date'>"+ex(a.date)+"</div></div>";
+    });
+    sec.innerHTML=h;
   });
 }
 
-function loadCommunityWall(){
-  db.ref("community").on("value", function(snap){
-    var list = document.getElementById("community-list");
-    if(!snap.exists()){ list.innerHTML="<p style='color:#9a8a7a;font-size:13px;'>No posts yet — be the first!</p>"; return; }
-    var items=[], html="";
-    snap.forEach(function(c){ var a=c.val(); a._key=c.key; items.push(a); });
-    items.sort(function(a,b){ return b.ts-a.ts; });
-    for(var i=0;i<items.length;i++){
-      var c=items[i];
-      html+="<div class='cmt-item'><span class='cmt-name'>"+escHtml(c.name)+"</span><span class='cmt-date'>"+timeAgo(c.ts)+"</span><div class='cmt-text'>"+escHtml(c.text)+"</div></div>";
-    }
-    list.innerHTML=html;
+// ADMIN TABS
+document.getElementById("atab-videos").onclick=function(){ setAdmTab("videos",this); };
+document.getElementById("atab-codes").onclick=function(){ setAdmTab("codes",this); loadAdmCodes(); };
+document.getElementById("atab-announce").onclick=function(){ setAdmTab("announce",this); };
+document.getElementById("atab-settings").onclick=function(){ setAdmTab("settings",this); };
+
+function setAdmTab(name,btn){
+  document.querySelectorAll(".tab-btn").forEach(function(t){ t.classList.remove("on"); });
+  document.querySelectorAll(".tab-content").forEach(function(t){ t.classList.remove("on"); });
+  btn.classList.add("on"); document.getElementById("atc-"+name).classList.add("on");
+}
+
+// ACCESS TYPE TOGGLE
+document.getElementById("c-access-type").onchange=function(){
+  var show=this.value==="PROGRAMS";
+  document.getElementById("program-picker").style.display=show?"block":"none";
+  if(show) loadCategoryPicker();
+};
+
+function loadCategoryPicker(){
+  if(!DB) return;
+  DB.ref("es_videos").once("value",function(snap){
+    var cats=[];
+    if(snap.exists()) snap.forEach(function(c){ var t=c.val().tag; if(t&&cats.indexOf(t)===-1) cats.push(t); });
+    var box=document.getElementById("program-checkboxes");
+    if(!cats.length){ box.innerHTML="<p style='color:#9a8a7a;font-size:13px;'>Add videos with categories first.</p>"; return; }
+    box.innerHTML=cats.map(function(c){ return "<label class='program-check-item'><input type='checkbox' value='"+ex(c)+"' /> "+ex(c)+"</label>"; }).join("");
   });
 }
 
-function postCommunity(){
-  var inp = document.getElementById("community-input");
-  var text = inp ? inp.value.trim() : "";
-  if(!text){ alert("Please write something first!"); return; }
-  db.ref("community").push({name:currentUser, text:text, ts:Date.now()}, function(err){
-    if(!err) inp.value="";
-    else alert("Error posting. Please try again.");
-  });
-}
-
-function showAdmin(){
-  var p = prompt("Instructor password:");
-  if(!p) return;
-  if(p===adminPass){ loadAdmVideos(); loadAdmCodes(); loadAdmAnn(); showPage("pg-admin"); }
-  else alert("Incorrect password. Please try again.");
-}
-
+// ADMIN VIDEOS
 function loadAdmVideos(){
-  db.ref("videos").on("value", function(snap){
-    var cnt=0, html="";
-    if(snap.exists()) snap.forEach(function(c){ var v=c.val(); cnt++; html+="<div class='li'><div class='lil'>"+escHtml(v.title)+(v.tag?" <span class='bdg'>"+escHtml(v.tag)+"</span>":"")+"</div><button class='delbtn' onclick='delVideo(\""+c.key+"\")'>Remove</button></div>"; });
-    document.getElementById("vcnt").textContent=cnt;
-    document.getElementById("vlist").innerHTML=html||"<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No videos yet.</p>";
-    updateDrop();
+  if(!DB) return;
+  DB.ref("es_videos").on("value",function(snap){
+    var cnt=0,h="";
+    if(snap.exists()) snap.forEach(function(c){ var v=c.val(); cnt++; h+="<div class='list-item'><div class='list-item-left'>"+ex(v.title)+(v.tag?" <span class='badge'>"+ex(v.tag)+"</span>":"")+"</div><button class='del-btn' onclick='delVideo(\""+c.key+"\")'>Remove</button></div>"; });
+    document.getElementById("video-count").textContent=cnt;
+    document.getElementById("video-list").innerHTML=h||"<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No videos yet.</p>";
   });
 }
 
 function addVideo(){
-  if(!isReady){ alert("Database not connected."); return; }
   var t=document.getElementById("v-title").value.trim();
   var u=document.getElementById("v-url").value.trim();
   var tg=document.getElementById("v-tag").value.trim();
   if(!t||!u){ alert("Please enter a title and video link."); return; }
-  db.ref("videos").push({title:t,url:u,tag:tg}, function(err){
-    if(err){ alert("Error: "+err.message); return; }
-    document.getElementById("v-title").value="";
-    document.getElementById("v-url").value="";
-    document.getElementById("v-tag").value="";
-    flashOk("ok-video","Video saved!");
+  if(!DB){ alert("Database not connected."); return; }
+  DB.ref("es_videos").push({title:t,url:u,tag:tg,ts:Date.now()},function(e){
+    if(!e){ document.getElementById("v-title").value=""; document.getElementById("v-url").value=""; document.getElementById("v-tag").value=""; showOk("ok-video","Video saved!"); }
   });
 }
 
-function delVideo(key){ if(!confirm("Remove this video?")) return; db.ref("videos/"+key).remove(); }
+function delVideo(key){ if(!confirm("Remove this video?")) return; DB.ref("es_videos/"+key).remove(); }
 
-function updateDrop(){
-  var s=document.getElementById("c-access");
-  var prev=s.value;
-  s.innerHTML="<option value='ALL'>Full Membership - all videos</option>";
-  db.ref("videos").once("value", function(snap){
-    var cats=[];
-    if(snap.exists()) snap.forEach(function(c){ var t=c.val().tag; if(t && cats.indexOf(t)===-1) cats.push(t); });
-    for(var i=0;i<cats.length;i++) s.innerHTML+="<option value='"+escHtml(cats[i])+"'>"+escHtml(cats[i])+"</option>";
-    if(prev) s.value=prev;
-  });
-}
-
+// ADMIN CODES
 function loadAdmCodes(){
-  db.ref("codes").on("value", function(snap){
-    var cnt=0, html="";
-    if(snap.exists()) snap.forEach(function(c){ var cd=c.val(); cnt++; var bc=cd.access==="ALL"?"bdg all":"bdg"; var al=cd.access==="ALL"?"Full Access":cd.access; html+="<div class='li'><div class='lil'>"+escHtml(cd.name)+" <span class='cd'>"+escHtml(cd.code)+"</span> <span class='"+bc+"'>"+escHtml(al)+"</span></div><button class='delbtn' onclick='delCode(\""+c.key+"\")'>Remove</button></div>"; });
-    document.getElementById("ccnt").textContent=cnt;
-    document.getElementById("clist").innerHTML=html||"<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No codes yet.</p>";
+  if(!DB) return;
+  DB.ref("es_codes").on("value",function(snap){
+    var cnt=0,h="";
+    if(snap.exists()) snap.forEach(function(c){
+      var cd=c.val(); cnt++;
+      var al=cd.access==="ALL"||!cd.access?"Full Access":Array.isArray(cd.access)?cd.access.join(", "):cd.access;
+      var bc=cd.access==="ALL"||!cd.access?"badge badge-all":"badge";
+      h+="<div class='list-item'><div class='list-item-left'>"+ex(cd.name)+" <span class='code-display'>"+ex(cd.code)+"</span> <span class='"+bc+"'>"+ex(al)+"</span></div><button class='del-btn' onclick='delCode(\""+c.key+"\")'>Remove</button></div>";
+    });
+    document.getElementById("code-count").textContent=cnt;
+    document.getElementById("code-list").innerHTML=h||"<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No codes yet.</p>";
   });
 }
 
 function genCode(){ var c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",o=""; for(var i=0;i<8;i++) o+=c[Math.floor(Math.random()*c.length)]; document.getElementById("c-code").value=o; }
 
 function addCode(){
-  if(!isReady){ alert("Database not connected."); return; }
   var n=document.getElementById("c-name").value.trim();
   var c=document.getElementById("c-code").value.trim().toUpperCase();
-  var a=document.getElementById("c-access").value;
+  var atype=document.getElementById("c-access-type").value;
+  var access;
+  if(atype==="ALL"){ access="ALL"; }
+  else{
+    var checked=document.querySelectorAll("#program-checkboxes input:checked");
+    var programs=[];
+    checked.forEach(function(cb){ programs.push(cb.value); });
+    if(!programs.length){ alert("Please select at least one program."); return; }
+    access=programs;
+  }
   if(!n||!c){ alert("Please enter a name and code."); return; }
-  db.ref("codes").orderByChild("code").equalTo(c).once("value", function(snap){
+  if(!DB){ alert("Database not connected."); return; }
+  DB.ref("es_codes").orderByChild("code").equalTo(c).once("value",function(snap){
     if(snap.exists()){ alert("That code already exists."); return; }
-    db.ref("codes").push({name:n,code:c,access:a}, function(err){
-      if(err){ alert("Error: "+err.message); return; }
-      flashOk("ok-code","Code for "+n+": "+c+(a!=="ALL"?" ("+a+")":" (Full Access)"));
-      document.getElementById("c-name").value="";
-      document.getElementById("c-code").value="";
+    DB.ref("es_codes").push({name:n,code:c,access:access},function(e){
+      if(!e){
+        var label=Array.isArray(access)?access.join(", "):"Full Access";
+        showOk("ok-code","Code for "+n+": "+c+" ("+label+")");
+        document.getElementById("c-name").value=""; document.getElementById("c-code").value="";
+        document.getElementById("c-access-type").value="ALL";
+        document.getElementById("program-picker").style.display="none";
+      }
     });
   });
 }
 
-function delCode(key){ if(!confirm("Remove this code?")) return; db.ref("codes/"+key).remove(); }
+function delCode(key){ if(!confirm("Remove this code?")) return; DB.ref("es_codes/"+key).remove(); }
 
+// ADMIN ANNOUNCEMENTS
 function loadAdmAnn(){
-  db.ref("announcements").on("value", function(snap){
-    var cnt=0, html="";
-    if(snap.exists()){ var items=[]; snap.forEach(function(c){ var a=c.val(); a._key=c.key; items.unshift(a); cnt++; }); for(var i=0;i<items.length;i++){ var a=items[i]; html+="<div class='li'><div class='lil'><strong>"+escHtml(a.title)+"</strong><br/><span style='font-size:11px;color:#9a8a7a;'>"+escHtml(a.date)+"</span></div><button class='delbtn' onclick='delAnn(\""+a._key+"\")'>Remove</button></div>"; } }
-    document.getElementById("acnt").textContent=cnt;
-    document.getElementById("alist").innerHTML=html||"<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No announcements yet.</p>";
+  if(!DB) return;
+  DB.ref("es_ann").on("value",function(snap){
+    var cnt=0,h="";
+    if(snap.exists()){ var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.unshift(a); cnt++; }); items.forEach(function(a){ h+="<div class='list-item'><div class='list-item-left'><strong>"+ex(a.title)+"</strong><br/><span style='font-size:11px;color:#9a8a7a;'>"+ex(a.date)+"</span></div><button class='del-btn' onclick='delAnn(\""+a._k+"\")'>Remove</button></div>"; }); }
+    document.getElementById("ann-count").textContent=cnt;
+    document.getElementById("ann-list").innerHTML=h||"<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No announcements yet.</p>";
   });
 }
 
 function addAnn(){
-  if(!isReady){ alert("Database not connected."); return; }
   var tp=document.getElementById("a-type").value;
   var t=document.getElementById("a-title").value.trim();
   var b=document.getElementById("a-body").value.trim();
   if(!t||!b){ alert("Please enter a title and message."); return; }
+  if(!DB){ alert("Database not connected."); return; }
   var d=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-  db.ref("announcements").push({type:tp,title:t,body:b,date:d}, function(err){
-    if(err){ alert("Error: "+err.message); return; }
-    document.getElementById("a-title").value="";
-    document.getElementById("a-body").value="";
-    flashOk("ok-ann","Announcement posted!");
+  DB.ref("es_ann").push({type:tp,title:t,body:b,date:d,ts:Date.now()},function(e){
+    if(!e){ document.getElementById("a-title").value=""; document.getElementById("a-body").value=""; showOk("ok-ann","Announcement posted!"); }
   });
 }
 
-function delAnn(key){ if(!confirm("Remove this announcement?")) return; db.ref("announcements/"+key).remove(); }
+function delAnn(key){ if(!confirm("Remove this announcement?")) return; DB.ref("es_ann/"+key).remove(); }
 
+// WIRE UP
 document.getElementById("login-btn").onclick = doLogin;
 document.getElementById("code-in").onkeydown = function(e){ if(e.key==="Enter") doLogin(); };
-document.getElementById("signout-btn").onclick = function(){ showPage("pg-login"); document.getElementById("code-in").value=""; document.getElementById("login-err").style.display="none"; };
-document.getElementById("admin-link").onclick = showAdmin;
-document.getElementById("exit-btn").onclick = function(){ showPage("pg-login"); };
+document.getElementById("admin-link").onclick = doAdmin;
+document.getElementById("signout-btn").onclick = function(){ sp("pg-login"); document.getElementById("code-in").value=""; document.getElementById("login-err").style.display="none"; };
+document.getElementById("exit-btn").onclick = function(){ sp("pg-login"); };
 document.getElementById("add-video-btn").onclick = addVideo;
 document.getElementById("gen-btn").onclick = genCode;
 document.getElementById("add-code-btn").onclick = addCode;
 document.getElementById("add-ann-btn").onclick = addAnn;
-document.getElementById("community-submit").onclick = postCommunity;
-document.getElementById("video-search").oninput = function(){ renderVideos(); };
-
-document.getElementById("tab-videos").onclick = function(){ document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on");}); document.querySelectorAll(".tc").forEach(function(t){t.classList.remove("on");}); this.classList.add("on"); document.getElementById("tc-videos").classList.add("on"); };
-document.getElementById("tab-codes").onclick = function(){ document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on");}); document.querySelectorAll(".tc").forEach(function(t){t.classList.remove("on");}); this.classList.add("on"); document.getElementById("tc-codes").classList.add("on"); };
-document.getElementById("tab-announce").onclick = function(){ document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on");}); document.querySelectorAll(".tc").forEach(function(t){t.classList.remove("on");}); this.classList.add("on"); document.getElementById("tc-announce").classList.add("on"); };
-
-
-document.getElementById("tab-settings").onclick = function(){ document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on");}); document.querySelectorAll(".tc").forEach(function(t){t.classList.remove("on");}); this.classList.add("on"); document.getElementById("tc-settings").classList.add("on"); };
-document.getElementById("change-pass-btn").onclick = function(){
-  var cur = document.getElementById("pass-current").value;
-  var nw = document.getElementById("pass-new").value.trim();
-  var cf = document.getElementById("pass-confirm").value.trim();
-  if(cur !== adminPass){ alert("Current password is incorrect."); return; }
-  if(!nw){ alert("Please enter a new password."); return; }
-  if(nw !== cf){ alert("New passwords do not match."); return; }
-  if(nw.length < 6){ alert("Password must be at least 6 characters."); return; }
-  adminPass = nw;
-  db.ref("settings/adminPass").set(nw, function(err){
-    if(err){ alert("Error saving: "+err.message); return; }
-    document.getElementById("pass-current").value="";
-    document.getElementById("pass-new").value="";
-    document.getElementById("pass-confirm").value="";
-    flashOk("ok-pass","Password updated!");
-  });
+document.getElementById("video-search").oninput = renderVideos;
+document.getElementById("pass-btn").onclick = function(){
+  var cur=document.getElementById("pass-cur").value;
+  var nw=document.getElementById("pass-new").value.trim();
+  var cf=document.getElementById("pass-cf").value.trim();
+  if(cur!==adminPass){ alert("Current password is incorrect."); return; }
+  if(!nw||nw!==cf){ alert("Passwords don't match."); return; }
+  if(nw.length<6){ alert("Must be at least 6 characters."); return; }
+  adminPass=nw;
+  if(DB) DB.ref("es_pass").set(nw);
+  document.getElementById("pass-cur").value=""; document.getElementById("pass-new").value=""; document.getElementById("pass-cf").value="";
+  showOk("ok-pass","Password updated!");
 };
-
-initFirebase();
 </script>
 </body>
 </html>
