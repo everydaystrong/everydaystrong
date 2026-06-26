@@ -127,28 +127,13 @@ textarea.fi{min-height:75px;resize:vertical;}
 </head>
 <body>
 
-<!-- LOGIN -->
-<div class="page" id="pg-login" style="display:flex;">
-  <div class="lw" style="width:100%;">
-    <div class="lc">
-      <div class="li">👁️</div>
-      <div class="lt">New View <span class="lg">Eye Care</span></div>
-      <div class="ls">Social Media Content Hub</div>
-      <hr class="ld" />
-      <div class="er" id="er">Incorrect code. Please try again.</div>
-      <input class="inp" type="text" id="code-in" placeholder="Enter team code" autocomplete="off" />
-      <button class="mb" id="login-btn">Enter Hub</button>
-    </div>
-  </div>
-</div>
-
 <!-- HUB -->
-<div class="page" id="pg-hub">
+<div class="page" id="pg-hub" style="display:block;">
   <div class="hdr">
     <span class="ht">👁️ New View <span class="hg">Eye Care</span></span>
-    <button class="sb" id="so-btn">Sign out</button>
+    
   </div>
-  <div class="wb">Welcome to the Content Hub!</div>
+  
   <div class="nv">
     <button class="nb on" onclick="goSec('posts',this)">📱 Posts</button>
     <button class="nb" onclick="goSec('sched',this)">📅 Schedule</button>
@@ -589,9 +574,9 @@ function postIdeaCmt(key){
 }
 
 // WIRE UP
-document.getElementById("login-btn").onclick = doLogin;
-document.getElementById("code-in").onkeydown = function(e){ if(e.key==="Enter") doLogin(); };
-document.getElementById("so-btn").onclick = function(){ sp("pg-login"); document.getElementById("code-in").value=""; document.getElementById("er").style.display="none"; };
+
+
+
 document.getElementById("post-btn").onclick = addPost;
 document.getElementById("sched-btn").onclick = addSched;
 document.getElementById("rec-btn").onclick = addRec;
