@@ -428,7 +428,16 @@ function renderIdeaList(elId, items, stage){
     } else if(stage==="made"){
       h+="<button class='ia-btn ia-del' onclick='delIdea(\""+i._k+"\")'>🗑️ Delete</button>";
     }
+    h+="<button class=\'ct\' style=\'margin-left:auto;\' onclick=\'togIdeaCmt(\""+i._k+"\",this)\'>💬 Comments</button>";
+    h+="</div>";
+    h+="<div class=\'cbx\' id=\'icbx-"+i._k+"\' style=\'padding:9px 14px;\'>";
+    h+="<div id=\'icl-"+i._k+"\'></div>";
+    h+="<div class=\'cr\' style=\'padding-top:6px;\'>";
+    h+="<select class=\'cin\' id=\'icn-"+i._k+"\' style=\'flex:0 0 110px;font-size:12px;\'><option value=\'\'>Your name</option><option>Heather</option><option>Katie</option><option>Dr. Alperin</option></select>";
+    h+="<input class=\'cin\' id=\'ici-"+i._k+"\' placeholder=\'Add a comment...\' />";
+    h+="<button class=\'cp\' onclick=\'postIdeaCmt(\""+i._k+"\")\'>Post</button>";
     h+="</div></div>";
+    h+="</div>";
   });
   el.innerHTML=h;
 }
@@ -547,6 +556,37 @@ function addRec(){
 
 function togRec(key,done){ if(DB) DB.ref("nv5/rec/"+key).update({done:!done}); }
 function delRec(key){ if(!confirm("Remove?")) return; DB.ref("nv5/rec/"+key).remove(); }
+
+
+function togIdeaCmt(key,btn){
+  var box=document.getElementById("icbx-"+key);
+  if(box.style.display==="block"){ box.style.display="none"; btn.textContent="💬 Comments"; }
+  else{ box.style.display="block"; btn.textContent="💬 Hide"; loadIdeaCmts(key); }
+}
+
+function loadIdeaCmts(key){
+  if(!DB) return;
+  DB.ref("nv5/idea_cmts/"+key).on("value",function(snap){
+    var el=document.getElementById("icl-"+key); if(!el) return;
+    if(!snap.exists()){ el.innerHTML="<p style='font-size:12px;color:#8aaac0;padding:5px 0;'>No comments yet.</p>"; return; }
+    var items=[],h="";
+    snap.forEach(function(c){ items.push(c.val()); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    items.forEach(function(c){ h+="<div class='ci2'><span class='cw'>"+ex(c.name)+"</span><span class='cwh'>"+ago(c.ts)+"</span><br/>"+ex(c.txt)+"</div>"; });
+    el.innerHTML=h;
+  });
+}
+
+function postIdeaCmt(key){
+  if(!DB) return;
+  var nameEl=document.getElementById("icn-"+key);
+  var inp=document.getElementById("ici-"+key);
+  var name=nameEl?nameEl.value:"";
+  var txt=inp?inp.value.trim():"";
+  if(!name){ alert("Please select your name."); return; }
+  if(!txt){ alert("Please write a comment."); return; }
+  DB.ref("nv5/idea_cmts/"+key).push({name:name,txt:txt,ts:Date.now()},function(e){ if(!e){ inp.value=""; nameEl.value=""; } });
+}
 
 // WIRE UP
 document.getElementById("login-btn").onclick = doLogin;
