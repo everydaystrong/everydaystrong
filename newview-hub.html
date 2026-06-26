@@ -254,9 +254,18 @@ textarea.fi{min-height:75px;resize:vertical;}
       <div class="idea-sec on" id="idea-new">
         <div class="fc">
           <h3>Add an Idea</h3>
-          <div class="ok" id="ok-idea">Idea posted!</div>
           <label class="lb2">Your Name</label>
-          <input type="text" class="fi" id="idea-name" placeholder="e.g. Jessica" style="text-transform:none;" />
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:9px;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#2a3a4a;cursor:pointer;background:#f8fafc;border:1.5px solid #d0dae4;border-radius:8px;padding:8px 14px;">
+              <input type="radio" name="idea-name" value="Heather" style="accent-color:#1a3a5c;width:16px;height:16px;" /> Heather
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#2a3a4a;cursor:pointer;background:#f8fafc;border:1.5px solid #d0dae4;border-radius:8px;padding:8px 14px;">
+              <input type="radio" name="idea-name" value="Katie" style="accent-color:#1a3a5c;width:16px;height:16px;" /> Katie
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#2a3a4a;cursor:pointer;background:#f8fafc;border:1.5px solid #d0dae4;border-radius:8px;padding:8px 14px;">
+              <input type="radio" name="idea-name" value="Dr. Alperin" style="accent-color:#1a3a5c;width:16px;height:16px;" /> Dr. Alperin
+            </label>
+          </div>
           <label class="lb2">Your Idea</label>
           <textarea class="fi" id="idea-txt" placeholder="e.g. Reel showing eye exam process..."></textarea>
           <label class="lb2">Type</label>
