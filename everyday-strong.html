@@ -943,33 +943,85 @@ function loadCommunity(){
   if(!DB) return;
   DB.ref("community").orderByChild("ts").on("value", function(snap){
     var el = document.getElementById("comm-feed");
-    if(!snap.exists()){ el.innerHTML="<div class='empty-state'><p style='font-size:28px;margin-bottom:8px;'>🏘️</p><p>No posts yet — be the first to share!</p></div>"; return; }
+    if(!snap.exists()){ el.innerHTML="<div class=\"empty-state\"><p style=\"font-size:28px;margin-bottom:8px;\">🏘️</p><p>No posts yet — be the first!</p></div>"; return; }
     var items=[];
     snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); });
     items.reverse();
     if(activeCommCat !== "all") items = items.filter(function(p){ return p.cat === activeCommCat; });
-    if(!items.length){ el.innerHTML="<div class='empty-state'><p>No posts in this category yet.</p></div>"; return; }
+    if(!items.length){ el.innerHTML="<div class=\"empty-state\"><p>No posts in this category yet.</p></div>"; return; }
     var catLabels={win:"🏆 Win",checkin:"💪 Check-in",question:"❓ Question",general:"💬 General"};
-    var h="";
+    var html="";
     items.forEach(function(p){
       var lk=p.likes||{}, lc=Object.keys(lk).length, liked=lk[sk(currentUser)]?true:false;
-      var ago2=ago2fn(p.ts);
-      h+="<div class='comm-post'>";
-      h+="<div class='comm-post-hdr'><div><span class='comm-post-name'>"+ex(p.name)+"</span> <span class='comm-post-cat'>"+(catLabels[p.cat]||p.cat)+"</span></div><span class='comm-post-date'>"+ago2+"</span></div>";
-      h+="<div class='comm-post-body'>"+ex(p.text)+"</div>";
-      if(p.img) h+="<img class='comm-post-img' src='"+ex(p.img)+"' onerror='this.style.display="none"' />";
-      h+="<div class='comm-post-acts'>";
-      h+="<button class='comm-like-btn "+(liked?"on":"")+"' onclick='commLike(""+p._k+"","+liked+")'>"+(liked?"❤️":"🤍")+" "+lc+"</button>";
-      h+="<button class='comm-reply-btn' onclick='togCommReply(""+p._k+"",this)'>💬 Reply</button>";
-      h+="</div>";
-      h+="<div class='comm-replies' id='cr-"+p._k+"'><div id='crl-"+p._k+"'></div>";
-      h+="<div class='comm-reply-row'><input class='comm-reply-inp' id='cri-"+p._k+"' placeholder='Write a reply...' /><button class='comm-reply-post' onclick='postCommReply(""+p._k+"")'>Reply</button></div>";
-      h+="</div>";
-      h+="</div>";
+      var d=document.createElement("div");
+      d.className="comm-post";
+      d.setAttribute("id","cp-"+p._k);
+
+      var hdr=document.createElement("div");
+      hdr.className="comm-post-hdr";
+      hdr.innerHTML="<div><span class=\"comm-post-name\">"+ex(p.name)+"</span> <span class=\"comm-post-cat\">"+(catLabels[p.cat]||p.cat)+"</span></div><span class=\"comm-post-date\">"+ago2fn(p.ts)+"</span>";
+      d.appendChild(hdr);
+
+      var body=document.createElement("div");
+      body.className="comm-post-body";
+      body.textContent=p.text;
+      d.appendChild(body);
+
+      if(p.img){
+        var img=document.createElement("img");
+        img.className="comm-post-img";
+        img.src=p.img;
+        img.onerror=function(){ this.style.display="none"; };
+        d.appendChild(img);
+      }
+
+      var acts=document.createElement("div");
+      acts.className="comm-post-acts";
+
+      var likeBtn=document.createElement("button");
+      likeBtn.className="comm-like-btn"+(liked?" on":"");
+      likeBtn.innerHTML=(liked?"❤️":"🤍")+" "+lc;
+      likeBtn.setAttribute("data-key",p._k);
+      likeBtn.setAttribute("data-liked",liked?"1":"0");
+      likeBtn.onclick=function(){ var k=this.getAttribute("data-key"),l=this.getAttribute("data-liked")==="1"; commLike(k,l); };
+      acts.appendChild(likeBtn);
+
+      var replyBtn=document.createElement("button");
+      replyBtn.className="comm-reply-btn";
+      replyBtn.textContent="💬 Reply";
+      replyBtn.setAttribute("data-key",p._k);
+      replyBtn.onclick=function(){ togCommReply(this.getAttribute("data-key"),this); };
+      acts.appendChild(replyBtn);
+      d.appendChild(acts);
+
+      var replyBox=document.createElement("div");
+      replyBox.className="comm-replies";
+      replyBox.id="cr-"+p._k;
+      var replyList=document.createElement("div");
+      replyList.id="crl-"+p._k;
+      replyBox.appendChild(replyList);
+      var replyRow=document.createElement("div");
+      replyRow.className="comm-reply-row";
+      var replyInp=document.createElement("input");
+      replyInp.className="comm-reply-inp";
+      replyInp.id="cri-"+p._k;
+      replyInp.placeholder="Write a reply...";
+      var replyPost=document.createElement("button");
+      replyPost.className="comm-reply-post";
+      replyPost.textContent="Reply";
+      replyPost.setAttribute("data-key",p._k);
+      replyPost.onclick=function(){ postCommReply(this.getAttribute("data-key")); };
+      replyRow.appendChild(replyInp);
+      replyRow.appendChild(replyPost);
+      replyBox.appendChild(replyRow);
+      d.appendChild(replyBox);
+
+      html+=d.outerHTML;
     });
-    el.innerHTML=h;
+    el.innerHTML=html;
   });
 }
+
 
 function ago2fn(ts){
   var d=Math.floor((Date.now()-ts)/1000);
