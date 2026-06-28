@@ -7,110 +7,165 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
+:root{
+  --bg:#f5f0eb;--card:#fff;--border:#ddd0c6;--text:#3a2a1a;--sub:#9a8a7a;
+  --accent:#a0522d;--accent2:#8b4513;--bar:#a0522d;--hdr:#fff;--hdrtxt:#3a2a1a;
+  --admbg:#3a2a1a;--inp:#f9f6f2;--new-badge:#e8f5e9;--new-txt:#2e7d32;
+}
+body.dark{
+  --bg:#1a1a1a;--card:#2a2a2a;--border:#444;--text:#f0ebe4;--sub:#a0908a;
+  --accent:#c07040;--accent2:#d08050;--bar:#3a2a1a;--hdr:#2a2a2a;--hdrtxt:#f0ebe4;
+  --admbg:#111;--inp:#333;--new-badge:#1a3a1a;--new-txt:#6ac06a;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
+body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transition:background 0.3s;}
 .page{display:none;}
-.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;background:#f5f0eb;}
-.login-card{background:#fff;border-radius:14px;padding:2.8rem 2.2rem;width:100%;max-width:380px;text-align:center;box-shadow:0 2px 24px rgba(60,30,10,0.08);border:0.5px solid #ddd0c6;}
-.logo-text{font-size:26px;font-weight:700;color:#3a2a1a;font-family:Georgia,serif;margin-bottom:1rem;}
-.logo-text span{color:#a0522d;}
-.tagline{color:#6a5a48;font-size:13px;margin-bottom:1.4rem;line-height:1.5;}
-.divider{border:none;border-top:1px solid #e8ddd2;margin:1rem 0;}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;background:var(--bg);}
+.login-card{background:var(--card);border-radius:14px;padding:2.8rem 2.2rem;width:100%;max-width:380px;text-align:center;box-shadow:0 2px 24px rgba(60,30,10,0.08);border:0.5px solid var(--border);}
+.logo-text{font-size:26px;font-weight:700;color:var(--text);font-family:Georgia,serif;margin-bottom:1rem;}
+.logo-text span{color:var(--accent);}
+.tagline{color:var(--sub);font-size:13px;margin-bottom:1.4rem;line-height:1.5;}
+.divider{border:none;border-top:1px solid var(--border);margin:1rem 0;}
 .err{color:#b03020;font-size:13px;margin-bottom:10px;background:#fdf0ee;padding:8px;border-radius:7px;display:none;}
-.inp{width:100%;padding:12px 16px;border:1.5px solid #d8cfc6;border-radius:9px;font-size:16px;margin-bottom:12px;background:#f9f6f2;outline:none;text-transform:uppercase;letter-spacing:1px;}
-.inp:focus{border-color:#a0522d;}
-.btn{width:100%;padding:13px;background:#a0522d;color:#fff;border:none;border-radius:9px;font-size:16px;cursor:pointer;font-weight:700;margin-bottom:8px;}
-.btn:hover{background:#8b4513;}
-.alink{font-size:12px;color:#b0a090;cursor:pointer;text-decoration:underline;display:block;margin-top:8px;background:none;border:none;width:100%;}
-.portal-header{background:#fff;border-bottom:1px solid #e0d5cc;padding:0.9rem 1.6rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
-.portal-brand{font-size:17px;font-weight:700;color:#3a2a1a;font-family:Georgia,serif;}
-.portal-brand span{color:#a0522d;}
-.logout-btn{background:none;border:1px solid #ddd0c6;border-radius:7px;padding:7px 16px;font-size:13px;color:#7a6a5a;cursor:pointer;}
-.welcome-bar{background:#a0522d;color:#fff;padding:11px 1.6rem;font-size:13px;}
-.portal-body{padding:1.6rem;max-width:980px;margin:0 auto;}
-.section-title{font-size:19px;color:#3a2a1a;margin-bottom:0.5rem;font-family:Georgia,serif;font-weight:normal;}
-.section-sub{font-size:13px;color:#9a8a7a;margin-bottom:1rem;}
+.inp{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:9px;font-size:16px;margin-bottom:12px;background:var(--inp);outline:none;text-transform:uppercase;letter-spacing:1px;color:var(--text);}
+.inp:focus{border-color:var(--accent);}
+.btn{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:16px;cursor:pointer;font-weight:700;margin-bottom:8px;}
+.btn:hover{background:var(--accent2);}
+.alink{font-size:12px;color:var(--sub);cursor:pointer;text-decoration:underline;display:block;margin-top:8px;background:none;border:none;width:100%;}
+.portal-header{background:var(--hdr);border-bottom:1px solid var(--border);padding:0.9rem 1.6rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+.portal-brand{font-size:17px;font-weight:700;color:var(--hdrtxt);font-family:Georgia,serif;}
+.portal-brand span{color:var(--accent);}
+.hdr-right{display:flex;align-items:center;gap:8px;}
+.dark-toggle{background:none;border:1px solid var(--border);border-radius:20px;padding:5px 10px;font-size:13px;cursor:pointer;color:var(--sub);}
+.logout-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:7px 16px;font-size:13px;color:var(--sub);cursor:pointer;}
+.welcome-bar{background:var(--bar);color:#fff;padding:11px 1.6rem;font-size:13px;}
+.portal-body{padding:1.4rem;max-width:980px;margin:0 auto;}
+.section-title{font-size:19px;color:var(--text);margin-bottom:0.5rem;font-family:Georgia,serif;font-weight:normal;}
+.section-sub{font-size:13px;color:var(--sub);margin-bottom:1rem;}
+
+/* STREAK */
+.streak-bar{background:var(--card);border-radius:10px;border:0.5px solid var(--border);padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:12px;}
+.streak-num{font-size:28px;font-weight:700;color:var(--accent);}
+.streak-label{font-size:13px;color:var(--sub);}
+.streak-fire{font-size:24px;}
+
+/* NAV TABS */
+.portal-nav{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--card);margin-bottom:1.4rem;}
+.pnav-btn{flex:1;padding:11px 8px;border:none;background:none;font-size:12px;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;font-weight:600;white-space:nowrap;}
+.pnav-btn.on{color:var(--accent);border-bottom-color:var(--accent);}
 
 /* ANNOUNCEMENTS */
-.announce-card{background:#fff;border-radius:11px;border:0.5px solid #ddd0c6;overflow:hidden;margin-bottom:10px;}
-.announce-header{background:#3a2a1a;color:#f5f0eb;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;}
-.announce-body{padding:14px 16px;font-size:14px;color:#3a2a1a;line-height:1.7;white-space:pre-wrap;word-break:break-word;}
-.announce-body a{color:#a0522d;}
-.announce-date{font-size:11px;color:#b0a090;padding:0 16px 10px;}
+.announce-card{background:var(--card);border-radius:11px;border:0.5px solid var(--border);overflow:hidden;margin-bottom:10px;}
+.announce-header{background:var(--admbg);color:#f5f0eb;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;}
+.announce-body{padding:14px 16px;font-size:14px;color:var(--text);line-height:1.7;white-space:pre-wrap;word-break:break-word;}
+.announce-body a{color:var(--accent);}
+.announce-date{font-size:11px;color:var(--sub);padding:0 16px 10px;}
 
 /* CATEGORY CARDS */
-.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;margin-bottom:1rem;}
-.cat-card{background:#fff;border-radius:12px;border:0.5px solid #ddd0c6;padding:1.4rem 1rem;text-align:center;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;}
+.cat-card{background:var(--card);border-radius:12px;border:0.5px solid var(--border);overflow:hidden;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;}
 .cat-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(60,30,10,0.1);}
-.cat-icon{font-size:32px;margin-bottom:8px;}
-.cat-name{font-size:14px;font-weight:700;color:#3a2a1a;margin-bottom:4px;line-height:1.3;}
-.cat-count{font-size:12px;color:#a0522d;}
+.cat-img{width:100%;aspect-ratio:16/9;object-fit:cover;background:#e8ddd2;display:block;}
+.cat-img-placeholder{width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#e8ddd2,#d8cfc6);display:flex;align-items:center;justify-content:center;font-size:36px;}
+.cat-info{padding:10px 12px;}
+.cat-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.cat-count{font-size:12px;color:var(--accent);}
+.cat-progress{height:4px;background:var(--border);border-radius:2px;margin-top:6px;}
+.cat-progress-fill{height:100%;background:var(--accent);border-radius:2px;}
 
 /* BACK BUTTON */
-.back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:#a0522d;font-size:14px;cursor:pointer;font-weight:600;margin-bottom:1rem;padding:0;}
-.back-btn:hover{color:#8b4513;}
+.back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--accent);font-size:14px;cursor:pointer;font-weight:600;margin-bottom:1rem;padding:0;}
 
-/* VIDEO GRID */
+/* VIDEO CARDS */
 .video-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;}
-.video-card{background:#fff;border-radius:11px;overflow:hidden;border:0.5px solid #ddd0c6;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;}
+.video-card{background:var(--card);border-radius:11px;overflow:hidden;border:0.5px solid var(--border);transition:transform 0.15s,box-shadow 0.15s;position:relative;}
 .video-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(60,30,10,0.1);}
-.video-thumb{width:100%;aspect-ratio:16/9;background:#e8ddd2;position:relative;overflow:hidden;}
+.video-thumb{width:100%;aspect-ratio:16/9;background:#e8ddd2;position:relative;overflow:hidden;cursor:pointer;}
 .video-thumb img{width:100%;height:100%;object-fit:cover;}
 .play-overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;background:rgba(160,82,45,0.9);border-radius:50%;}
 .play-overlay::after{content:"";position:absolute;top:50%;left:55%;transform:translate(-50%,-50%);border-left:15px solid #fff;border-top:9px solid transparent;border-bottom:9px solid transparent;}
+.completed-badge{position:absolute;top:6px;left:6px;background:rgba(46,125,50,0.9);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;}
+.new-badge{position:absolute;top:6px;right:6px;background:var(--new-badge);color:var(--new-txt);font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;}
 .video-info{padding:11px 13px;}
-.video-title{font-size:13px;font-weight:600;color:#3a2a1a;margin-bottom:5px;line-height:1.4;}
-.video-tag{font-size:11px;color:#a0522d;background:#f5ede6;padding:3px 8px;border-radius:10px;display:inline-block;}
-.empty-state{text-align:center;padding:3rem 1rem;color:#9a8a7a;font-size:14px;background:#fff;border-radius:12px;border:0.5px dashed #d8cfc6;}
+.video-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.4;}
+.video-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.vact-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--sub);}
+.vact-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.note-box{margin-top:8px;display:none;}
+.note-inp{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--inp);color:var(--text);outline:none;resize:vertical;min-height:55px;}
+.note-save{padding:5px 12px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;margin-top:4px;}
+.note-display{font-size:12px;color:var(--sub);margin-top:6px;font-style:italic;white-space:pre-wrap;}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--sub);font-size:14px;background:var(--card);border-radius:12px;border:0.5px dashed var(--border);}
 
 /* ADMIN */
 .admin-header{background:#3a2a1a;padding:1rem 1.6rem;display:flex;align-items:center;justify-content:space-between;}
-.admin-body{padding:1.6rem;max-width:720px;margin:0 auto;background:#f5f0eb;min-height:calc(100vh - 62px);}
+.admin-body{padding:1.6rem;max-width:720px;margin:0 auto;background:var(--bg);min-height:calc(100vh - 62px);}
 .admin-tabs{display:flex;gap:8px;margin-bottom:1.4rem;flex-wrap:wrap;}
-.tab-btn{padding:8px 18px;border:1px solid #d8cfc6;border-radius:20px;font-size:13px;cursor:pointer;background:#fff;color:#7a6a5a;}
-.tab-btn.on{background:#a0522d;color:#fff;border-color:#a0522d;}
+.tab-btn{padding:8px 18px;border:1px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;background:var(--card);color:var(--sub);}
+.tab-btn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
 .tab-content{display:none;}
 .tab-content.on{display:block;}
-.admin-card{background:#fff;border-radius:11px;padding:1.4rem 1.3rem;border:0.5px solid #ddd0c6;margin-bottom:1.1rem;}
-.admin-card h3{font-size:14px;color:#3a2a1a;margin-bottom:1rem;font-weight:700;}
+.admin-card{background:var(--card);border-radius:11px;padding:1.4rem 1.3rem;border:0.5px solid var(--border);margin-bottom:1.1rem;}
+.admin-card h3{font-size:14px;color:var(--text);margin-bottom:1rem;font-weight:700;}
 .form-row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
-.form-label{font-size:11px;color:#7a6a5a;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;}
-.form-input{padding:10px 13px;border:1.5px solid #d8cfc6;border-radius:8px;font-size:14px;background:#f9f6f2;color:#333;outline:none;width:100%;}
-.form-input:focus{border-color:#a0522d;}
-.form-select{padding:10px 13px;border:1.5px solid #d8cfc6;border-radius:8px;font-size:14px;background:#f9f6f2;color:#333;outline:none;width:100%;}
-.form-textarea{padding:10px 13px;border:1.5px solid #d8cfc6;border-radius:8px;font-size:14px;background:#f9f6f2;color:#333;outline:none;width:100%;min-height:80px;resize:vertical;}
-.action-btn{padding:10px 22px;background:#a0522d;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700;}
-.action-btn:hover{background:#8b4513;}
-.action-btn.sec{background:#fff;color:#a0522d;border:1.5px solid #a0522d;}
-.list-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid #ece4dc;font-size:13px;color:#3a2a1a;gap:8px;}
+.form-label{font-size:11px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:0.8px;}
+.form-input{padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--inp);color:var(--text);outline:none;width:100%;}
+.form-input:focus{border-color:var(--accent);}
+.form-select{padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--inp);color:var(--text);outline:none;width:100%;}
+.form-textarea{padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--inp);color:var(--text);outline:none;width:100%;min-height:80px;resize:vertical;}
+.action-btn{padding:10px 22px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700;}
+.action-btn:hover{background:var(--accent2);}
+.action-btn.sec{background:var(--card);color:var(--accent);border:1.5px solid var(--accent);}
+.list-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);font-size:13px;color:var(--text);gap:8px;}
 .list-item:last-child{border-bottom:none;}
 .list-item-left{flex:1;min-width:0;}
 .badge{background:#f5ede6;color:#a0522d;font-size:11px;padding:3px 8px;border-radius:10px;margin-left:6px;}
 .badge-all{background:#e8f0e8;color:#3a6a3a;}
 .code-display{background:#3a2a1a;color:#f5ede6;padding:5px 11px;border-radius:6px;font-family:monospace;font-size:14px;letter-spacing:2px;display:inline-block;}
-.del-btn{background:none;border:1px solid #e0d0c8;border-radius:6px;color:#c05040;font-size:12px;cursor:pointer;padding:4px 10px;}
+.del-btn{background:none;border:1px solid #e0d0c8;border-radius:6px;color:#c05040;font-size:12px;cursor:pointer;padding:4px 8px;}
+.edit-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--sub);font-size:12px;cursor:pointer;padding:4px 8px;}
 .ok-msg{background:#eaf6f0;color:#1a7a4a;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;display:none;border:0.5px solid #b0e0c8;}
-.tip{font-size:12px;color:#9a8a7a;margin-top:-6px;margin-bottom:12px;}
+.tip{font-size:12px;color:var(--sub);margin-top:-6px;margin-bottom:12px;}
 .inline-row{display:flex;gap:10px;align-items:flex-end;}
 .inline-row .form-row{flex:1;margin-bottom:0;}
-.program-checkboxes{border:1.5px solid #d8cfc6;border-radius:8px;background:#f9f6f2;padding:8px 12px;max-height:160px;overflow-y:auto;}
-.program-check-item{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:14px;color:#3a2a1a;cursor:pointer;}
-.program-check-item input{width:16px;height:16px;accent-color:#a0522d;cursor:pointer;}
-
-/* DRAG TO REORDER */
+.program-checkboxes{border:1.5px solid var(--border);border-radius:8px;background:var(--inp);padding:8px 12px;max-height:160px;overflow-y:auto;}
+.program-check-item{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:14px;color:var(--text);cursor:pointer;}
+.program-check-item input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
+.order-btn{background:none;border:1px solid var(--border);border-radius:5px;color:var(--sub);font-size:14px;cursor:pointer;padding:2px 8px;}
+.order-btn:hover{background:var(--inp);color:var(--accent);}
 .drag-list{list-style:none;}
-.drag-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid #ece4dc;font-size:13px;color:#3a2a1a;cursor:grab;user-select:none;}
+.drag-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);font-size:13px;color:var(--text);}
 .drag-item:last-child{border-bottom:none;}
-.drag-item.dragging{opacity:0.4;background:#f5ede6;border-radius:8px;}
-.drag-handle{font-size:18px;color:#c0b0a0;cursor:grab;flex-shrink:0;}
+.drag-handle{font-size:18px;color:var(--border);}
 .drag-info{flex:1;}
 .drag-actions{display:flex;gap:6px;}
-.order-btn{background:none;border:1px solid #d8cfc6;border-radius:5px;color:#7a6a5a;font-size:14px;cursor:pointer;padding:2px 8px;line-height:1;}
-.order-btn:hover{background:#f5ede6;color:#a0522d;}
+
+/* EDIT MODAL */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:100;display:none;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border-radius:14px;padding:1.6rem;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;}
+.modal h3{font-size:16px;color:var(--text);margin-bottom:1rem;font-weight:700;}
+.modal-close{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--sub);}
 </style>
 </head>
 <body>
 
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeEdit()">✕</button>
+    <h3>Edit Video</h3>
+    <input type="hidden" id="edit-key" />
+    <div class="form-row"><span class="form-label">Title</span><input class="form-input" id="edit-title" style="text-transform:none;" /></div>
+    <div class="form-row"><span class="form-label">YouTube Link</span><input class="form-input" id="edit-url" style="text-transform:none;" /></div>
+    <div class="form-row"><span class="form-label">Program / Category</span><input class="form-input" id="edit-tag" style="text-transform:none;" /></div>
+    <div class="form-row"><span class="form-label">Release Date (optional)</span><input type="date" class="form-input" id="edit-release" /><span style="font-size:11px;color:var(--sub);margin-top:3px;">Leave blank to show immediately. Set a future date to schedule.</span></div>
+    <div class="form-row"><span class="form-label">Category Image URL (optional)</span><input class="form-input" id="edit-catimg" placeholder="https://... image for this category card" style="text-transform:none;" /></div>
+    <button class="action-btn" onclick="saveEdit()" style="width:100%;margin-top:4px;">Save Changes</button>
+  </div>
+</div>
+
+<!-- LOGIN -->
 <div class="page" id="pg-login" style="display:flex;">
   <div class="login-wrap" style="width:100%;">
     <div class="login-card">
@@ -125,32 +180,60 @@ body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
   </div>
 </div>
 
+<!-- PORTAL -->
 <div class="page" id="pg-portal">
   <div class="portal-header">
     <div class="portal-brand">Everyday <span>Strong</span></div>
-    <button class="logout-btn" id="signout-btn">Sign out</button>
+    <div class="hdr-right">
+      <button class="dark-toggle" id="dark-btn">🌙</button>
+      <button class="logout-btn" id="signout-btn">Sign out</button>
+    </div>
   </div>
   <div class="welcome-bar" id="welcome-bar">Welcome back!</div>
   <div class="portal-body">
     <div id="ann-sec"></div>
-
-    <!-- CATEGORY VIEW -->
-    <div id="cat-view">
-      <p class="section-title">Workout Library</p>
-      <p class="section-sub" id="acc-lbl">Choose a program to get started</p>
-      <div class="cat-grid" id="cat-grid"></div>
+    <div class="streak-bar" id="streak-bar" style="display:none;">
+      <span class="streak-fire">🔥</span>
+      <div><div class="streak-num" id="streak-num">0</div><div class="streak-label">day streak</div></div>
+      <div style="flex:1;text-align:right;font-size:12px;color:var(--sub);" id="streak-detail"></div>
     </div>
 
-    <!-- VIDEO VIEW -->
-    <div id="vid-view" style="display:none;">
-      <button class="back-btn" id="back-btn">← Back to Programs</button>
-      <p class="section-title" id="vid-title">Videos</p>
-      <p class="section-sub" id="vid-sub"></p>
-      <div class="video-grid" id="video-grid"></div>
+    <div class="portal-nav">
+      <button class="pnav-btn on" id="pnav-all" onclick="switchPortalTab('all',this)">🏋️ Programs</button>
+      <button class="pnav-btn" id="pnav-fav" onclick="switchPortalTab('fav',this)">⭐ Favorites</button>
+      <button class="pnav-btn" id="pnav-done" onclick="switchPortalTab('done',this)">✅ Completed</button>
+    </div>
+
+    <!-- PROGRAMS TAB -->
+    <div id="tab-all" class="portal-tab">
+      <div id="cat-view">
+        <div class="cat-grid" id="cat-grid"></div>
+      </div>
+      <div id="vid-view" style="display:none;">
+        <button class="back-btn" id="back-btn">← Back to Programs</button>
+        <p class="section-title" id="vid-title">Videos</p>
+        <p class="section-sub" id="vid-sub"></p>
+        <div class="video-grid" id="video-grid"></div>
+      </div>
+    </div>
+
+    <!-- FAVORITES TAB -->
+    <div id="tab-fav" class="portal-tab" style="display:none;">
+      <p class="section-title">⭐ Favorites</p>
+      <p class="section-sub">Videos you've saved</p>
+      <div class="video-grid" id="fav-grid"></div>
+    </div>
+
+    <!-- COMPLETED TAB -->
+    <div id="tab-done" class="portal-tab" style="display:none;">
+      <p class="section-title">✅ Completed Workouts</p>
+      <p class="section-sub">Your workout history</p>
+      <div class="video-grid" id="done-grid"></div>
     </div>
   </div>
 </div>
 
+<!-- ADMIN -->
 <div class="page" id="pg-admin">
   <div class="admin-header">
     <div class="portal-brand" style="color:#f5f0eb;">Everyday <span>Strong</span></div>
@@ -160,7 +243,7 @@ body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
   <div class="admin-body">
     <div class="admin-tabs">
       <button class="tab-btn on" id="atab-videos">📹 Videos</button>
-      <button class="tab-btn" id="atab-codes">🔐 Access Codes</button>
+      <button class="tab-btn" id="atab-codes">🔐 Codes</button>
       <button class="tab-btn" id="atab-announce">📢 Announcements</button>
       <button class="tab-btn" id="atab-settings">⚙️ Settings</button>
     </div>
@@ -171,20 +254,16 @@ body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
         <div class="ok-msg" id="ok-video">Video saved!</div>
         <div class="form-row"><span class="form-label">Video Title</span><input class="form-input" id="v-title" placeholder="e.g. Lower Body — Week 1" style="text-transform:none;" /></div>
         <div class="form-row"><span class="form-label">YouTube Link</span><input class="form-input" id="v-url" placeholder="https://youtube.com/watch?v=..." style="text-transform:none;" /></div>
-        <div class="form-row"><span class="form-label">Program / Category</span><input class="form-input" id="v-tag" placeholder="e.g. Lower Body, Bodyweight, Upper Body" style="text-transform:none;" /></div>
-        <p class="tip">This is the program this video belongs to.</p>
+        <div class="form-row"><span class="form-label">Program / Category</span><input class="form-input" id="v-tag" placeholder="e.g. Lower Body, Upper Body" style="text-transform:none;" /></div>
+        <div class="form-row"><span class="form-label">Release Date (optional)</span><input type="date" class="form-input" id="v-release" /><span style="font-size:11px;color:var(--sub);margin-top:3px;">Leave blank to show immediately. Set a future date to schedule.</span></div>
         <button class="action-btn" id="add-video-btn">Save Video</button>
       </div>
       <div class="admin-card">
-        <h3>Reorder Videos by Program</h3>
-        <div class="form-row">
-          <span class="form-label">Select Program</span>
-          <select class="form-select" id="reorder-cat" onchange="loadReorderList()">
-            <option value="">-- Select a program --</option>
-          </select>
-        </div>
+        <h3>Reorder Videos</h3>
+        <select class="form-select" id="reorder-cat" onchange="loadReorderList()" style="margin-bottom:10px;">
+          <option value="">-- Select a program --</option>
+        </select>
         <ul class="drag-list" id="reorder-list"></ul>
-        <div id="reorder-msg" style="font-size:13px;color:#9a8a7a;padding:8px 0;"></div>
       </div>
       <div class="admin-card">
         <h3>All Videos (<span id="video-count">0</span>)</h3>
@@ -199,7 +278,7 @@ body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
         <div class="form-row"><span class="form-label">Client Name</span><input class="form-input" id="c-name" placeholder="e.g. Sarah M." style="text-transform:none;" /></div>
         <div class="inline-row">
           <div class="form-row"><span class="form-label">Access Code</span><input class="form-input" id="c-code" placeholder="e.g. SARAH2024" /></div>
-          <button class="action-btn sec" id="gen-btn" style="white-space:nowrap;font-size:13px;margin-bottom:0;">Auto-generate</button>
+          <button class="action-btn sec" id="gen-btn" style="white-space:nowrap;font-size:13px;margin-bottom:0;">Generate</button>
         </div>
         <div class="form-row" style="margin-top:10px;">
           <span class="form-label">Access Level</span>
@@ -210,11 +289,8 @@ body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
         </div>
         <div id="program-picker" style="display:none;margin-bottom:12px;">
           <span class="form-label" style="display:block;margin-bottom:6px;">Select Programs</span>
-          <div class="program-checkboxes" id="program-checkboxes">
-            <p style="color:#9a8a7a;font-size:13px;">Add videos with categories first.</p>
-          </div>
+          <div class="program-checkboxes" id="program-checkboxes"></div>
         </div>
-        <p class="tip">Full Membership sees everything. Specific Programs lets you pick multiple programs.</p>
         <button class="action-btn" id="add-code-btn" style="margin-top:4px;">Create Code</button>
       </div>
       <div class="admin-card">
@@ -226,7 +302,7 @@ body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
     <div class="tab-content" id="atc-announce">
       <div class="admin-card">
         <h3>Post an Announcement</h3>
-        <div class="ok-msg" id="ok-ann">Announcement posted!</div>
+        <div class="ok-msg" id="ok-ann">Posted!</div>
         <div class="form-row"><span class="form-label">Type</span>
           <select class="form-select" id="a-type">
             <option value="zoom">Live Class / Zoom Link</option>
@@ -234,12 +310,12 @@ body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
             <option value="schedule">Schedule Update</option>
           </select>
         </div>
-        <div class="form-row"><span class="form-label">Title</span><input class="form-input" id="a-title" placeholder="e.g. Live Class This Saturday 10am!" style="text-transform:none;" /></div>
-        <div class="form-row"><span class="form-label">Message or Zoom Link</span><textarea class="form-textarea" id="a-body" placeholder="Paste your Zoom link or type a message..."></textarea></div>
-        <button class="action-btn" id="add-ann-btn">Post Announcement</button>
+        <div class="form-row"><span class="form-label">Title</span><input class="form-input" id="a-title" style="text-transform:none;" /></div>
+        <div class="form-row"><span class="form-label">Message or Zoom Link</span><textarea class="form-textarea" id="a-body"></textarea></div>
+        <button class="action-btn" id="add-ann-btn">Post</button>
       </div>
       <div class="admin-card">
-        <h3>Active Announcements (<span id="ann-count">0</span>)</h3>
+        <h3>Announcements (<span id="ann-count">0</span>)</h3>
         <div id="ann-list"></div>
       </div>
     </div>
@@ -250,7 +326,7 @@ body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
         <div class="ok-msg" id="ok-pass">Password updated!</div>
         <div class="form-row"><span class="form-label">Current Password</span><input type="password" class="form-input" id="pass-cur" /></div>
         <div class="form-row"><span class="form-label">New Password</span><input type="password" class="form-input" id="pass-new" /></div>
-        <div class="form-row"><span class="form-label">Confirm New Password</span><input type="password" class="form-input" id="pass-cf" /></div>
+        <div class="form-row"><span class="form-label">Confirm</span><input type="password" class="form-input" id="pass-cf" /></div>
         <button class="action-btn" id="pass-btn">Update Password</button>
       </div>
     </div>
@@ -260,10 +336,14 @@ body{font-family:Arial,sans-serif;background:#f5f0eb;min-height:100vh;}
 <script>
 var adminPass = "ADMIN123";
 var currentUser = null;
+var currentUserKey = null;
 var currentAccess = "ALL";
 var allVideos = [];
 var currentCat = null;
 var DB = null;
+var isDark = localStorage.getItem("es_dark") === "1";
+
+if(isDark) document.body.classList.add("dark");
 
 try {
   firebase.initializeApp({
@@ -290,6 +370,8 @@ function sp(id){
 function ex(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function showOk(id,msg){ var e=document.getElementById(id); if(msg) e.textContent=msg; e.style.display="block"; setTimeout(function(){ e.style.display="none"; },3000); }
 function getYTId(u){ var m=String(u).match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/); return m?m[1]:null; }
+function sk(s){ var r="",str=String(s); for(var i=0;i<str.length;i++){ var c=str[i]; r+=(c==="."||c==="#"||c==="$"||c==="["||c==="]"||c==="/")?"_":c; } return r; }
+function isNew(ts){ return ts && (Date.now()-ts) < 7*24*60*60*1000; }
 
 function canAccess(tag){
   if(currentAccess==="ALL") return true;
@@ -298,7 +380,11 @@ function canAccess(tag){
   return currentAccess===tag;
 }
 
-// Category icons mapping
+function isReleased(v){
+  if(!v.releaseDate) return true;
+  return new Date(v.releaseDate) <= new Date();
+}
+
 function getCatIcon(name){
   var n=(name||"").toLowerCase();
   if(n.indexOf("lower")!==-1) return "🦵";
@@ -312,6 +398,25 @@ function getCatIcon(name){
   return "🏅";
 }
 
+// DARK MODE
+document.getElementById("dark-btn").onclick = function(){
+  isDark=!isDark;
+  document.body.classList.toggle("dark",isDark);
+  localStorage.setItem("es_dark",isDark?"1":"0");
+  this.textContent=isDark?"☀️":"🌙";
+};
+if(isDark) document.getElementById("dark-btn").textContent="☀️";
+
+// PORTAL TABS
+function switchPortalTab(name,btn){
+  document.querySelectorAll(".portal-tab").forEach(function(t){ t.style.display="none"; });
+  document.querySelectorAll(".pnav-btn").forEach(function(b){ b.classList.remove("on"); });
+  document.getElementById("tab-"+name).style.display="block";
+  btn.classList.add("on");
+  if(name==="fav") renderFavorites();
+  if(name==="done") renderCompleted();
+}
+
 // LOGIN
 function doLogin(){
   var val=document.getElementById("code-in").value.trim().toUpperCase();
@@ -320,17 +425,18 @@ function doLogin(){
   if(!DB){ err.style.display="block"; err.textContent="Connecting... please wait a moment."; return; }
   DB.ref("codes").orderByChild("code").equalTo(val).once("value",function(snap){
     if(snap.exists()){
-      var found=null; snap.forEach(function(c){ found=c.val(); });
+      var found=null; var fkey=null;
+      snap.forEach(function(c){ found=c.val(); fkey=c.key; });
       currentUser=found.name;
+      currentUserKey=sk(found.name);
       if(!found.access||found.access==="ALL"){ currentAccess="ALL"; }
       else if(Array.isArray(found.access)){ currentAccess=found.access; }
       else{ currentAccess=[found.access]; }
       err.style.display="none";
       document.getElementById("welcome-bar").textContent="Welcome, "+found.name+"! Ready to get strong?";
-      var lbl=document.getElementById("acc-lbl");
-      lbl.textContent=currentAccess==="ALL"?"Choose a program to get started":"Your programs: "+(Array.isArray(currentAccess)?currentAccess.join(", "):currentAccess);
       loadVideos();
       loadAnnouncements();
+      loadStreak();
       sp("pg-portal");
     } else {
       err.style.display="block"; err.textContent="Incorrect code. Please check with your instructor.";
@@ -339,41 +445,79 @@ function doLogin(){
   });
 }
 
-// LOAD ALL VIDEOS
+// STREAK
+function loadStreak(){
+  if(!DB||!currentUserKey) return;
+  DB.ref("userdata/"+currentUserKey+"/completedDates").once("value",function(snap){
+    if(!snap.exists()){ return; }
+    var dates=[];
+    snap.forEach(function(c){ dates.push(c.key); });
+    dates.sort();
+    var today=new Date().toISOString().slice(0,10);
+    var streak=0;
+    var d=new Date();
+    while(true){
+      var ds=d.toISOString().slice(0,10);
+      if(dates.indexOf(ds)!==-1){ streak++; d.setDate(d.getDate()-1); }
+      else break;
+    }
+    if(streak>0){
+      document.getElementById("streak-bar").style.display="flex";
+      document.getElementById("streak-num").textContent=streak;
+      document.getElementById("streak-detail").textContent=streak===1?"Keep it up!":"You're on fire!";
+    }
+  });
+}
+
+// LOAD VIDEOS
 function loadVideos(){
   if(!DB) return;
   DB.ref("videos").on("value",function(snap){
     allVideos=[];
-    if(snap.exists()) snap.forEach(function(c){ var v=c.val(); v._k=c.key; if(canAccess(v.tag)) allVideos.push(v); });
+    if(snap.exists()) snap.forEach(function(c){ var v=c.val(); v._k=c.key; if(canAccess(v.tag)&&isReleased(v)) allVideos.push(v); });
     renderCategories();
   });
 }
 
-// RENDER CATEGORY CARDS
+// CATEGORIES
 function renderCategories(){
   var grid=document.getElementById("cat-grid");
-  // Group by category
   var cats={};
   allVideos.forEach(function(v){
     var tag=v.tag||"Uncategorized";
-    if(!cats[tag]) cats[tag]=[];
-    cats[tag].push(v);
+    if(!cats[tag]) cats[tag]={videos:[],img:v.catImg||null};
+    cats[tag].videos.push(v);
+    if(v.catImg) cats[tag].img=v.catImg;
   });
   var keys=Object.keys(cats);
-  if(!keys.length){
-    grid.innerHTML="<div class='empty-state'><p style='font-size:32px;margin-bottom:10px;'>🏋️</p><p>No workouts yet — check back soon!</p></div>";
-    return;
-  }
+  if(!keys.length){ grid.innerHTML="<div class='empty-state'><p style='font-size:32px;margin-bottom:10px;'>🏋️</p><p>No workouts yet — check back soon!</p></div>"; return; }
   var h="";
   keys.forEach(function(cat){
-    var count=cats[cat].length;
+    var data=cats[cat];
+    var count=data.videos.length;
+    // Calculate progress
+    var completedCount=0;
+    data.videos.forEach(function(v){ if(getUserData("completed",v._k)) completedCount++; });
+    var pct=count>0?Math.round(completedCount/count*100):0;
     h+="<div class='cat-card' onclick='openCategory(\""+ex(cat)+"\")'>";
-    h+="<div class='cat-icon'>"+getCatIcon(cat)+"</div>";
-    h+="<div class='cat-name'>"+ex(cat)+"</div>";
-    h+="<div class='cat-count'>"+count+" video"+(count!==1?"s":"")+"</div>";
-    h+="</div>";
+    if(data.img){ h+="<img class='cat-img' src='"+ex(data.img)+"' onerror='this.style.display=\"none\"' />"; }
+    else{ h+="<div class='cat-img-placeholder'>"+getCatIcon(cat)+"</div>"; }
+    h+="<div class='cat-info'><div class='cat-name'>"+ex(cat)+"</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
+    if(pct>0) h+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
+    h+="</div></div>";
   });
   grid.innerHTML=h;
+}
+
+// USER DATA (favorites, completed, notes stored in localStorage per user)
+function getUserData(type, videoKey){
+  try{ var d=JSON.parse(localStorage.getItem("es_"+currentUserKey+"_"+type)||"{}"); return d[videoKey]||null; } catch(e){ return null; }
+}
+function setUserData(type, videoKey, val){
+  try{ var d=JSON.parse(localStorage.getItem("es_"+currentUserKey+"_"+type)||"{}"); if(val===null) delete d[videoKey]; else d[videoKey]=val; localStorage.setItem("es_"+currentUserKey+"_"+type,JSON.stringify(d)); } catch(e){}
+}
+function getAllUserData(type){
+  try{ return JSON.parse(localStorage.getItem("es_"+currentUserKey+"_"+type)||"{}"); } catch(e){ return {}; }
 }
 
 // OPEN CATEGORY
@@ -382,30 +526,109 @@ function openCategory(cat){
   document.getElementById("cat-view").style.display="none";
   document.getElementById("vid-view").style.display="block";
   document.getElementById("vid-title").textContent=cat;
-  // Sort by order field
   var vids=allVideos.filter(function(v){ return (v.tag||"Uncategorized")===cat; });
   vids.sort(function(a,b){ return (a.order||0)-(b.order||0); });
   document.getElementById("vid-sub").textContent=vids.length+" video"+(vids.length!==1?"s":"");
-  var h="";
-  if(!vids.length){ h="<div class='empty-state'><p>No videos in this program yet.</p></div>"; }
-  else {
-    vids.forEach(function(v){
-      var ytId=getYTId(v.url);
-      var th=ytId?"<img src='https://img.youtube.com/vi/"+ytId+"/mqdefault.jpg' onerror='this.style.display=\"none\"' />":"";
-      h+="<div class='video-card' onclick='openVideo(\""+ex(v.url)+"\")'><div class='video-thumb'>"+th+"<div class='play-overlay'></div></div><div class='video-info'><div class='video-title'>"+ex(v.title)+"</div></div></div>";
-    });
-  }
-  document.getElementById("video-grid").innerHTML=h;
+  document.getElementById("video-grid").innerHTML=renderVideoCards(vids);
   window.scrollTo(0,0);
 }
 
+function renderVideoCards(vids){
+  if(!vids.length) return "<div class='empty-state'><p>No videos here yet.</p></div>";
+  var h="";
+  vids.forEach(function(v){
+    h+=buildVideoCard(v);
+  });
+  return h;
+}
+
+function buildVideoCard(v){
+  var ytId=getYTId(v.url);
+  var th=ytId?"<img src='https://img.youtube.com/vi/"+ytId+"/mqdefault.jpg' onerror='this.style.display=\"none\"' />":"";
+  var isFav=getUserData("fav",v._k);
+  var isDone=getUserData("completed",v._k);
+  var note=getUserData("note",v._k)||"";
+  var h="<div class='video-card' id='vc-"+v._k+"'>";
+  h+="<div class='video-thumb' onclick='openVideo(\""+ex(v.url)+"\")'>";
+  h+=th+"<div class='play-overlay'></div>";
+  if(isDone) h+="<span class='completed-badge'>✓ Done</span>";
+  if(isNew(v.ts)) h+="<span class='new-badge'>NEW</span>";
+  h+="</div>";
+  h+="<div class='video-info'><div class='video-title'>"+ex(v.title)+"</div>";
+  h+="<div class='video-actions'>";
+  h+="<button class='vact-btn "+(isFav?"active":"")+"' onclick='toggleFav(\""+v._k+"\")' title='Favorite'>"+(isFav?"⭐":"☆")+"</button>";
+  h+="<button class='vact-btn "+(isDone?"active":"")+"' onclick='toggleDone(\""+v._k+"\")' title='Mark complete'>"+(isDone?"✅":"○ Done")+"</button>";
+  h+="<button class='vact-btn' onclick='toggleNote(\""+v._k+"\")' title='Notes'>📝"+(note?" ·":"")+"</button>";
+  h+="</div>";
+  h+="<div class='note-box' id='nb-"+v._k+"'>";
+  h+="<textarea class='note-inp' id='ni-"+v._k+"' placeholder='Add a note... (weights used, how it felt, etc.)'>"+ex(note)+"</textarea>";
+  h+="<button class='note-save' onclick='saveNote(\""+v._k+"\")'>Save Note</button>";
+  if(note) h+="<div class='note-display'>"+ex(note)+"</div>";
+  h+="</div></div></div>";
+  return h;
+}
+
 function openVideo(url){ var ytId=getYTId(url); window.open(ytId?"https://www.youtube.com/watch?v="+ytId:url,"_blank"); }
+
+function toggleFav(key){
+  var cur=getUserData("fav",key);
+  setUserData("fav",key,cur?null:true);
+  refreshCard(key);
+}
+
+function toggleDone(key){
+  var cur=getUserData("completed",key);
+  setUserData("completed",key,cur?null:true);
+  // Save date to Firebase for streak
+  if(!cur&&DB&&currentUserKey){
+    var today=new Date().toISOString().slice(0,10);
+    DB.ref("userdata/"+currentUserKey+"/completedDates/"+today).set(true);
+  }
+  refreshCard(key); renderCategories(); loadStreak();
+}
+
+function toggleNote(key){
+  var nb=document.getElementById("nb-"+key);
+  nb.style.display=nb.style.display==="block"?"none":"block";
+}
+
+function saveNote(key){
+  var val=document.getElementById("ni-"+key).value.trim();
+  setUserData("note",key,val||null);
+  document.getElementById("nb-"+key).style.display="none";
+  refreshCard(key);
+}
+
+function refreshCard(key){
+  var v=null;
+  for(var i=0;i<allVideos.length;i++){ if(allVideos[i]._k===key){ v=allVideos[i]; break; } }
+  if(!v) return;
+  var el=document.getElementById("vc-"+key);
+  if(el) el.outerHTML=buildVideoCard(v);
+}
 
 function goBack(){
   document.getElementById("vid-view").style.display="none";
   document.getElementById("cat-view").style.display="block";
   currentCat=null;
+  renderCategories();
   window.scrollTo(0,0);
+}
+
+function renderFavorites(){
+  var favs=getAllUserData("fav");
+  var list=allVideos.filter(function(v){ return favs[v._k]; });
+  var grid=document.getElementById("fav-grid");
+  if(!list.length){ grid.innerHTML="<div class='empty-state'><p style='font-size:28px;margin-bottom:8px;'>⭐</p><p>No favorites yet — tap the star on any video!</p></div>"; return; }
+  grid.innerHTML=renderVideoCards(list);
+}
+
+function renderCompleted(){
+  var done=getAllUserData("completed");
+  var list=allVideos.filter(function(v){ return done[v._k]; });
+  var grid=document.getElementById("done-grid");
+  if(!list.length){ grid.innerHTML="<div class='empty-state'><p style='font-size:28px;margin-bottom:8px;'>✅</p><p>No completed workouts yet — mark videos as done!</p></div>"; return; }
+  grid.innerHTML=renderVideoCards(list);
 }
 
 // ANNOUNCEMENTS
@@ -425,7 +648,7 @@ function loadAnnouncements(){
   });
 }
 
-// ADMIN LOGIN
+// ADMIN
 function doAdmin(){
   var p=prompt("Instructor password:");
   if(p===null) return;
@@ -433,7 +656,6 @@ function doAdmin(){
   else alert("Incorrect password. Please try again.");
 }
 
-// ADMIN TABS
 document.getElementById("atab-videos").onclick=function(){ setAdmTab("videos",this); };
 document.getElementById("atab-codes").onclick=function(){ setAdmTab("codes",this); loadAdmCodes(); };
 document.getElementById("atab-announce").onclick=function(){ setAdmTab("announce",this); };
@@ -444,7 +666,6 @@ function setAdmTab(name,btn){
   btn.classList.add("on"); document.getElementById("atc-"+name).classList.add("on");
 }
 
-// ACCESS TYPE TOGGLE
 document.getElementById("c-access-type").onchange=function(){
   var show=this.value==="PROGRAMS";
   document.getElementById("program-picker").style.display=show?"block":"none";
@@ -457,8 +678,42 @@ function loadCategoryPicker(){
     var cats=[];
     if(snap.exists()) snap.forEach(function(c){ var t=c.val().tag; if(t&&cats.indexOf(t)===-1) cats.push(t); });
     var box=document.getElementById("program-checkboxes");
-    if(!cats.length){ box.innerHTML="<p style='color:#9a8a7a;font-size:13px;'>Add videos with categories first.</p>"; return; }
+    if(!cats.length){ box.innerHTML="<p style='color:var(--sub);font-size:13px;'>Add videos with categories first.</p>"; return; }
     box.innerHTML=cats.map(function(c){ return "<label class='program-check-item'><input type='checkbox' value='"+ex(c)+"' /> "+ex(c)+"</label>"; }).join("");
+  });
+}
+
+// EDIT MODAL
+function openEdit(key){
+  var v=null;
+  // find in admin list
+  DB.ref("videos/"+key).once("value",function(snap){
+    if(!snap.exists()) return;
+    v=snap.val();
+    document.getElementById("edit-key").value=key;
+    document.getElementById("edit-title").value=v.title||"";
+    document.getElementById("edit-url").value=v.url||"";
+    document.getElementById("edit-tag").value=v.tag||"";
+    document.getElementById("edit-release").value=v.releaseDate||"";
+    document.getElementById("edit-catimg").value=v.catImg||"";
+    document.getElementById("edit-modal").classList.add("open");
+  });
+}
+
+function closeEdit(){
+  document.getElementById("edit-modal").classList.remove("open");
+}
+
+function saveEdit(){
+  var key=document.getElementById("edit-key").value;
+  var t=document.getElementById("edit-title").value.trim();
+  var u=document.getElementById("edit-url").value.trim();
+  var tg=document.getElementById("edit-tag").value.trim();
+  var rd=document.getElementById("edit-release").value;
+  var ci=document.getElementById("edit-catimg").value.trim();
+  if(!t||!u){ alert("Please enter a title and link."); return; }
+  DB.ref("videos/"+key).update({title:t,url:u,tag:tg,releaseDate:rd||null,catImg:ci||null},function(e){
+    if(!e){ closeEdit(); showOk("ok-video","Video updated!"); }
   });
 }
 
@@ -466,18 +721,16 @@ function loadCategoryPicker(){
 function loadAdmVideos(){
   if(!DB) return;
   DB.ref("videos").on("value",function(snap){
-    var cnt=0,h="";
-    var cats=[];
+    var cnt=0,h="",cats=[];
     if(snap.exists()) snap.forEach(function(c){
       var v=c.val(); cnt++;
-      h+="<div class='list-item'><div class='list-item-left'>"+ex(v.title)+(v.tag?" <span class='badge'>"+ex(v.tag)+"</span>":"")+"</div><button class='del-btn' onclick='delVideo(\""+c.key+"\")'>Remove</button></div>";
+      var rd=v.releaseDate?(" <span style='font-size:11px;color:var(--sub);'>📅 "+v.releaseDate+"</span>"):"";
+      h+="<div class='list-item'><div class='list-item-left'>"+ex(v.title)+(v.tag?" <span class='badge'>"+ex(v.tag)+"</span>":"")+rd+"</div><div style='display:flex;gap:6px;'><button class='edit-btn' onclick='openEdit(\""+c.key+"\")'>✏️</button><button class='del-btn' onclick='delVideo(\""+c.key+"\")'>✕</button></div></div>";
       if(v.tag&&cats.indexOf(v.tag)===-1) cats.push(v.tag);
     });
     document.getElementById("video-count").textContent=cnt;
-    document.getElementById("video-list").innerHTML=h||"<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No videos yet.</p>";
-    // Update reorder dropdown
-    var sel=document.getElementById("reorder-cat");
-    var prev=sel.value;
+    document.getElementById("video-list").innerHTML=h||"<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No videos yet.</p>";
+    var sel=document.getElementById("reorder-cat"),prev=sel.value;
     sel.innerHTML="<option value=''>-- Select a program --</option>";
     cats.forEach(function(c){ sel.innerHTML+="<option value='"+ex(c)+"'>"+ex(c)+"</option>"; });
     if(prev) sel.value=prev;
@@ -488,33 +741,28 @@ function addVideo(){
   var t=document.getElementById("v-title").value.trim();
   var u=document.getElementById("v-url").value.trim();
   var tg=document.getElementById("v-tag").value.trim();
+  var rd=document.getElementById("v-release").value;
   if(!t||!u){ alert("Please enter a title and video link."); return; }
   if(!DB){ alert("Database not connected."); return; }
-  // Get current max order for this category
   DB.ref("videos").orderByChild("tag").equalTo(tg).once("value",function(snap){
     var maxOrder=0;
     if(snap.exists()) snap.forEach(function(c){ var o=c.val().order||0; if(o>maxOrder) maxOrder=o; });
-    DB.ref("videos").push({title:t,url:u,tag:tg,order:maxOrder+1,ts:Date.now()},function(e){
-      if(!e){ document.getElementById("v-title").value=""; document.getElementById("v-url").value=""; document.getElementById("v-tag").value=""; showOk("ok-video","Video saved!"); }
+    DB.ref("videos").push({title:t,url:u,tag:tg,order:maxOrder+1,releaseDate:rd||null,ts:Date.now()},function(e){
+      if(!e){ document.getElementById("v-title").value=""; document.getElementById("v-url").value=""; document.getElementById("v-tag").value=""; document.getElementById("v-release").value=""; showOk("ok-video","Video saved!"); }
     });
   });
 }
 
 function delVideo(key){ if(!confirm("Remove this video?")) return; DB.ref("videos/"+key).remove(); }
 
-// REORDER VIDEOS
 function loadReorderList(){
   var cat=document.getElementById("reorder-cat").value;
   var list=document.getElementById("reorder-list");
-  var msg=document.getElementById("reorder-msg");
-  if(!cat){ list.innerHTML=""; msg.textContent=""; return; }
-  if(!DB) return;
+  if(!cat||!DB){ list.innerHTML=""; return; }
   DB.ref("videos").orderByChild("tag").equalTo(cat).once("value",function(snap){
     var items=[];
     if(snap.exists()) snap.forEach(function(c){ var v=c.val(); v._k=c.key; items.push(v); });
     items.sort(function(a,b){ return (a.order||0)-(b.order||0); });
-    if(!items.length){ list.innerHTML="<p style='color:#9a8a7a;font-size:13px;padding:8px 0;'>No videos in this program.</p>"; return; }
-    msg.textContent="Use the arrows to reorder videos.";
     renderReorderList(items);
   });
 }
@@ -523,10 +771,7 @@ function renderReorderList(items){
   var list=document.getElementById("reorder-list");
   var h="";
   items.forEach(function(v,i){
-    h+="<li class='drag-item' data-key='"+v._k+"'>";
-    h+="<span class='drag-handle'>☰</span>";
-    h+="<span class='drag-info'>"+ex(v.title)+"</span>";
-    h+="<div class='drag-actions'>";
+    h+="<li class='drag-item'><span class='drag-handle'>☰</span><span class='drag-info'>"+ex(v.title)+"</span><div class='drag-actions'>";
     if(i>0) h+="<button class='order-btn' onclick='moveVideo("+i+",-1)'>↑</button>";
     if(i<items.length-1) h+="<button class='order-btn' onclick='moveVideo("+i+",1)'>↓</button>";
     h+="</div></li>";
@@ -541,13 +786,12 @@ function moveVideo(idx,dir){
   var newIdx=idx+dir;
   if(newIdx<0||newIdx>=items.length) return;
   var tmp=items[idx]; items[idx]=items[newIdx]; items[newIdx]=tmp;
-  // Save new order to Firebase
   var updates={};
   items.forEach(function(v,i){ updates["videos/"+v._k+"/order"]=i+1; });
   DB.ref().update(updates,function(){ renderReorderList(items); });
 }
 
-// ADMIN CODES
+// CODES
 function loadAdmCodes(){
   if(!DB) return;
   DB.ref("codes").on("value",function(snap){
@@ -556,10 +800,10 @@ function loadAdmCodes(){
       var cd=c.val(); cnt++;
       var al=cd.access==="ALL"||!cd.access?"Full Access":Array.isArray(cd.access)?cd.access.join(", "):cd.access;
       var bc=cd.access==="ALL"||!cd.access?"badge badge-all":"badge";
-      h+="<div class='list-item'><div class='list-item-left'>"+ex(cd.name)+" <span class='code-display'>"+ex(cd.code)+"</span> <span class='"+bc+"'>"+ex(al)+"</span></div><button class='del-btn' onclick='delCode(\""+c.key+"\")'>Remove</button></div>";
+      h+="<div class='list-item'><div class='list-item-left'>"+ex(cd.name)+" <span class='code-display'>"+ex(cd.code)+"</span> <span class='"+bc+"'>"+ex(al)+"</span></div><button class='del-btn' onclick='delCode(\""+c.key+"\")'>✕</button></div>";
     });
     document.getElementById("code-count").textContent=cnt;
-    document.getElementById("code-list").innerHTML=h||"<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No codes yet.</p>";
+    document.getElementById("code-list").innerHTML=h||"<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No codes yet.</p>";
   });
 }
 
@@ -572,8 +816,7 @@ function addCode(){
   var access;
   if(atype==="ALL"){ access="ALL"; }
   else{
-    var checked=document.querySelectorAll("#program-checkboxes input:checked");
-    var programs=[];
+    var checked=document.querySelectorAll("#program-checkboxes input:checked"),programs=[];
     checked.forEach(function(cb){ programs.push(cb.value); });
     if(!programs.length){ alert("Please select at least one program."); return; }
     access=programs;
@@ -583,54 +826,41 @@ function addCode(){
   DB.ref("codes").orderByChild("code").equalTo(c).once("value",function(snap){
     if(snap.exists()){ alert("That code already exists."); return; }
     DB.ref("codes").push({name:n,code:c,access:access},function(e){
-      if(!e){
-        var label=Array.isArray(access)?access.join(", "):"Full Access";
-        showOk("ok-code","Code for "+n+": "+c+" ("+label+")");
-        document.getElementById("c-name").value=""; document.getElementById("c-code").value="";
-        document.getElementById("c-access-type").value="ALL";
-        document.getElementById("program-picker").style.display="none";
-      }
+      if(!e){ showOk("ok-code","Code for "+n+": "+c); document.getElementById("c-name").value=""; document.getElementById("c-code").value=""; document.getElementById("c-access-type").value="ALL"; document.getElementById("program-picker").style.display="none"; }
     });
   });
 }
 
 function delCode(key){ if(!confirm("Remove this code?")) return; DB.ref("codes/"+key).remove(); }
 
-// ADMIN ANNOUNCEMENTS
+// ANNOUNCEMENTS
 function loadAdmAnn(){
   if(!DB) return;
   DB.ref("announcements").on("value",function(snap){
     var cnt=0,h="";
-    if(snap.exists()){ var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.unshift(a); cnt++; }); items.forEach(function(a){ h+="<div class='list-item'><div class='list-item-left'><strong>"+ex(a.title)+"</strong><br/><span style='font-size:11px;color:#9a8a7a;'>"+ex(a.date)+"</span></div><button class='del-btn' onclick='delAnn(\""+a._k+"\")'>Remove</button></div>"; }); }
+    if(snap.exists()){ var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.unshift(a); cnt++; }); items.forEach(function(a){ h+="<div class='list-item'><div class='list-item-left'><strong>"+ex(a.title)+"</strong><br/><span style='font-size:11px;color:var(--sub);'>"+ex(a.date)+"</span></div><button class='del-btn' onclick='delAnn(\""+a._k+"\")'>✕</button></div>"; }); }
     document.getElementById("ann-count").textContent=cnt;
-    document.getElementById("ann-list").innerHTML=h||"<p style='color:#9a8a7a;font-size:13px;padding:6px 0;'>No announcements yet.</p>";
+    document.getElementById("ann-list").innerHTML=h||"<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No announcements.</p>";
   });
 }
 
 function addAnn(){
-  var tp=document.getElementById("a-type").value;
-  var t=document.getElementById("a-title").value.trim();
-  var b=document.getElementById("a-body").value.trim();
+  var tp=document.getElementById("a-type").value,t=document.getElementById("a-title").value.trim(),b=document.getElementById("a-body").value.trim();
   if(!t||!b){ alert("Please enter a title and message."); return; }
-  if(!DB){ alert("Database not connected."); return; }
+  if(!DB) return;
   var d=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-  DB.ref("announcements").push({type:tp,title:t,body:b,date:d,ts:Date.now()},function(e){
-    if(!e){ document.getElementById("a-title").value=""; document.getElementById("a-body").value=""; showOk("ok-ann","Announcement posted!"); }
-  });
+  DB.ref("announcements").push({type:tp,title:t,body:b,date:d,ts:Date.now()},function(e){ if(!e){ document.getElementById("a-title").value=""; document.getElementById("a-body").value=""; showOk("ok-ann","Posted!"); } });
 }
 
 function delAnn(key){ if(!confirm("Remove?")) return; DB.ref("announcements/"+key).remove(); }
 
 // SETTINGS
 document.getElementById("pass-btn").onclick=function(){
-  var cur=document.getElementById("pass-cur").value;
-  var nw=document.getElementById("pass-new").value.trim();
-  var cf=document.getElementById("pass-cf").value.trim();
+  var cur=document.getElementById("pass-cur").value,nw=document.getElementById("pass-new").value.trim(),cf=document.getElementById("pass-cf").value.trim();
   if(cur!==adminPass){ alert("Current password is incorrect."); return; }
   if(!nw||nw!==cf){ alert("Passwords don't match."); return; }
   if(nw.length<6){ alert("Must be at least 6 characters."); return; }
-  adminPass=nw;
-  if(DB) DB.ref("adminPass").set(nw);
+  adminPass=nw; if(DB) DB.ref("adminPass").set(nw);
   document.getElementById("pass-cur").value=""; document.getElementById("pass-new").value=""; document.getElementById("pass-cf").value="";
   showOk("ok-pass","Password updated!");
 };
@@ -646,6 +876,7 @@ document.getElementById("gen-btn").onclick=genCode;
 document.getElementById("add-code-btn").onclick=addCode;
 document.getElementById("add-ann-btn").onclick=addAnn;
 document.getElementById("back-btn").onclick=goBack;
+document.getElementById("edit-modal").onclick=function(e){ if(e.target===this) closeEdit(); };
 </script>
 </body>
 </html>
