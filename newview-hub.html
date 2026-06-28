@@ -85,6 +85,11 @@ body{font-family:Arial,sans-serif;background:#f0f4f8;min-height:100vh;}
 .tt2{flex:1;font-size:14px;color:#2a3a4a;}
 .tt2.dn{text-decoration:line-through;color:#8aaac0;}
 .tg{font-size:11px;padding:2px 6px;border-radius:6px;background:#e3f2fd;color:#1565c0;margin-left:5px;}
+
+.wki-done{opacity:0.6;}
+.wki-done .pl{opacity:0.6;}
+.sched-chk{width:22px;height:22px;border-radius:50%;border:2px solid #1a3a5c;flex-shrink:0;cursor:pointer;background:none;color:transparent;font-size:12px;display:flex;align-items:center;justify-content:center;}
+.sched-chk-done{background:#1a3a5c;color:#fff;}
 .wkd{background:#fff;border-radius:10px;border:1px solid #e0e8f0;margin-bottom:10px;overflow:hidden;}
 .wkh{background:#1a3a5c;color:#fff;padding:8px 14px;font-size:13px;font-weight:700;}
 .wkb{padding:9px 14px;}
@@ -117,6 +122,34 @@ textarea.fi{min-height:75px;resize:vertical;}
 <body>
 
 <!-- LOGIN -->
+
+<!-- EDIT SCHEDULE MODAL -->
+<div id="edit-sched-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:#fff;border-radius:14px;padding:1.6rem;width:100%;max-width:400px;">
+    <h3 style="font-size:16px;color:#1a3a5c;margin-bottom:1rem;font-weight:700;">Edit Schedule Item</h3>
+    <input type="hidden" id="edit-sched-key" />
+    <label class="lb2">Day</label>
+    <select class="fi" id="edit-sched-day" style="margin-bottom:9px;">
+      <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+      <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+    </select>
+    <label class="lb2">What's Posting</label>
+    <input type="text" class="fi" id="edit-sched-txt" style="text-transform:none;" />
+    <label class="lb2">Platform</label>
+    <select class="fi" id="edit-sched-plat">
+      <option value="Instagram">Instagram</option>
+      <option value="TikTok">TikTok</option>
+      <option value="Facebook">Facebook</option>
+      <option value="All Platforms">All Platforms</option>
+    </select>
+    <label class="lb2">Time (optional)</label>
+    <input type="text" class="fi" id="edit-sched-time" placeholder="e.g. 9:00 AM" style="text-transform:none;" />
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="ab" onclick="saveSchedEdit()" style="flex:1;">Save</button>
+      <button class="ab" onclick="document.getElementById('edit-sched-modal').style.display='none';" style="background:#f0f4f8;color:#1a3a5c;flex:1;">Cancel</button>
+    </div>
+  </div>
+</div>
 <div class="page" id="pg-login" style="display:flex;">
   <div class="lw" style="width:100%;">
     <div class="lc">
@@ -138,16 +171,15 @@ textarea.fi{min-height:75px;resize:vertical;}
     <button class="sb" id="so-btn">Sign out</button>
   </div>
   <div class="nv">
-    <button class="nb on" onclick="goSec('posts',this)">📱 Posts</button>
+    <button class="nb on" onclick="goSec('ideas',this)">💡 Ideas</button>
     <button class="nb" onclick="goSec('sched',this)">📅 Schedule</button>
     <button class="nb" onclick="goSec('rec',this)">🎬 Record</button>
-    <button class="nb" onclick="goSec('ideas',this)">💡 Ideas</button>
     <button class="nb" onclick="goSec('settings',this)">⚙️ Settings</button>
   </div>
   <div class="pb">
 
     <!-- POSTS -->
-    <div class="sc on" id="sc-posts">
+    <div class="sc" id="sc-posts">
       <p class="st">Live Posts</p>
       <p class="ss">Completed posts across all platforms</p>
       <div class="fc">
@@ -209,27 +241,37 @@ textarea.fi{min-height:75px;resize:vertical;}
 
     <!-- RECORD -->
     <div class="sc" id="sc-rec">
-      <p class="st">To Record</p>
-      <p class="ss">Content that needs to be filmed</p>
-      <div class="fc">
-        <h3>Add to Recording List</h3>
-        <div class="ok" id="ok-rec">Added!</div>
-        <label class="lb2">What Needs Recording</label>
-        <input type="text" class="fi" id="r-txt" placeholder="e.g. Frame try-on video" style="text-transform:none;" />
-        <label class="lb2">Type</label>
-        <select class="fi" id="r-typ">
-          <option value="Reel">Reel</option>
-          <option value="TikTok">TikTok</option>
-          <option value="Photo">Photo</option>
-          <option value="Story">Story</option>
-        </select>
-        <button class="ab" id="rec-btn">Add to List</button>
+      <p class="st">Recording</p>
+      <p class="ss">Track what needs to be filmed</p>
+      <div class="idea-tabs">
+        <button class="idea-tab on" id="rec-tab-todo" onclick="goRecTab('todo',this)">🎬 To Record (<span id="rec-cnt-todo">0</span>)</button>
+        <button class="idea-tab" id="rec-tab-done" onclick="goRecTab('done',this)">✅ Recorded (<span id="rec-cnt-done">0</span>)</button>
       </div>
-      <div id="rec-el"><div class="em"><p>Loading...</p></div></div>
+      <div id="rec-sec-todo">
+        <div class="fc">
+          <h3>Add to Recording List</h3>
+          <div class="ok" id="ok-rec">Added!</div>
+          <label class="lb2">What Needs Recording</label>
+          <input type="text" class="fi" id="r-txt" placeholder="e.g. Frame try-on video" style="text-transform:none;" />
+          <label class="lb2">Type</label>
+          <select class="fi" id="r-typ">
+            <option value="Reel">Reel</option>
+            <option value="TikTok">TikTok</option>
+            <option value="Photo">Photo</option>
+            <option value="Story">Story</option>
+          </select>
+          <button class="ab" id="rec-btn">Add to List</button>
+        </div>
+        <div id="rec-el-todo"><div class="em"><p>Loading...</p></div></div>
+      </div>
+      <div id="rec-sec-done" style="display:none;">
+        <p style="font-size:13px;color:#8aaac0;margin-bottom:1rem;">Content that has been filmed and is ready for editing</p>
+        <div id="rec-el-done"><div class="em"><p>Loading...</p></div></div>
+      </div>
     </div>
 
     <!-- IDEAS -->
-    <div class="sc" id="sc-ideas">
+    <div class="sc on" id="sc-ideas">
       <p class="st">Ideas</p>
       <p class="ss">Track ideas from concept to completion</p>
       <div class="idea-tabs">
@@ -433,14 +475,19 @@ function loadPosts() {
     var el=document.getElementById("feed-el");
     if(!snap.exists()){ el.innerHTML="<div class='em'><p style='font-size:24px;margin-bottom:8px;'>📱</p><p>No posts yet — add the first one above!</p></div>"; return; }
     var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); });
-    items.sort(function(a,b){ return b.ts-a.ts; });
+    items.sort(function(a,b){ if(b.pinned&&!a.pinned) return 1; if(a.pinned&&!b.pinned) return -1; return b.ts-a.ts; });
     var h="";
     items.forEach(function(p){
       var lk=p.likes||{},lc=Object.keys(lk).length,liked=lk["Team"]?true:false;
       h+="<div class='cd'><div class='ch'>"+pb(p.plat);
+      if(p.pinned) h+=" <span style='background:#1a3a5c;color:#fff;font-size:10px;padding:2px 7px;border-radius:6px;font-weight:700;'>📌 PINNED</span>";
       if(p.typ) h+=" <span style='font-size:11px;background:#f0f4f8;color:#4a6a8a;padding:2px 7px;border-radius:6px;'>"+ex(p.typ)+"</span>";
       h+=" <span style='font-size:11px;color:#8aaac0;'>"+ex(p.date||"")+"</span>";
-      h+="<button class='db' onclick='delPost(\""+p._k+"\")'>Remove</button></div>";
+      var pinned=p.pinned?true:false;
+      h+="<div style='display:flex;gap:4px;'>";
+      var pinTxt=pinned?"Unpin":"📌 Pin";
+      h+="<button class='db' style='color:#1a3a5c;border-color:#d0dae4;' onclick='pinPost(\""+p._k+"\","+pinned+")'>" +pinTxt+"</button>";
+      h+="<button class='db' onclick='delPost(\""+p._k+"\")'> ✕</button></div></div>";
       h+="<div class='cb'>"+ex(p.cap); if(p.link) h+=platLink(p.link,p.plat); h+="</div>";
       h+="<div class='pa'><button class='lb "+(liked?"on":"")+"' onclick='togLike(\""+p._k+"\","+liked+")'>"+(liked?"❤️":"🤍")+" "+lc+"</button>";
       h+="<button class='ct' onclick='togCmt(\""+p._k+"\",this)'>💬 Comments</button></div>";
@@ -476,8 +523,18 @@ function loadSched(){
     var h="";
     DAYS.forEach(function(day){
       h+="<div class='wkd'><div class='wkh'>"+day+"</div><div class='wkb'>";
-      if(bd[day]&&bd[day].length){ bd[day].forEach(function(s){ h+="<div class='wki'>"+pb(s.plat)+" "+ex(s.txt)+(s.time?" @ "+ex(s.time):"")+
-      "<button class='db' onclick='delSched(\""+s._k+"\")'>X</button></div>"; }); }
+      if(bd[day]&&bd[day].length){ bd[day].forEach(function(s){
+        var done=s.done||false;
+        h+="<div class='wki "+(done?"wki-done":"")+"'>";
+        h+="<div style='display:flex;align-items:center;gap:6px;flex:1;'>";
+        h+="<button class='sched-chk "+(done?"sched-chk-done":"")+"' onclick='togSchedDone(\""+s._k+"\","+done+")' title='Mark complete'>"+(done?"✓":"")+"</button>";
+        h+=pb(s.plat)+" "+ex(s.txt)+(s.time?" <span style='color:#8aaac0;font-size:11px;'>@ "+ex(s.time)+"</span>":"");
+        h+="</div>";
+        h+="<div style='display:flex;gap:4px;'>";
+        h+="<button class='db' style='color:#2a6496;border-color:#d0dae4;' onclick='editSched(\""+s._k+"\",\""+ex(s.day)+"\",\""+ex(s.txt)+"\",\""+ex(s.plat)+"\",\""+ex(s.time||"")+"\")'>✏️</button>";
+        h+="<button class='db' onclick='delSched(\""+s._k+"\")'>✕</button>";
+        h+="</div></div>";
+      }); }
       else h+="<div class='wke'>Nothing scheduled</div>";
       h+="</div></div>";
     });
@@ -489,15 +546,40 @@ function addSched(){ var txt=document.getElementById("s-txt").value.trim(); if(!
 function delSched(key){ if(!confirm("Remove?")) return; DB.ref("nv5/sched/"+key).remove(); }
 
 // RECORD
+function goRecTab(name, btn){
+  document.getElementById("rec-sec-todo").style.display = name==="todo" ? "block" : "none";
+  document.getElementById("rec-sec-done").style.display = name==="done" ? "block" : "none";
+  document.querySelectorAll(".idea-tab").forEach(function(b){ if(b.id&&b.id.startsWith("rec-tab")) b.classList.remove("on"); });
+  btn.classList.add("on");
+}
+
 function loadRec(){
-  if(!DB){ document.getElementById("rec-el").innerHTML="<div class='em'><p>No tasks yet.</p></div>"; return; }
+  if(!DB) return;
   DB.ref("nv5/rec").on("value",function(snap){
-    var el=document.getElementById("rec-el");
-    if(!snap.exists()){ el.innerHTML="<div class='em'><p style='font-size:24px;margin-bottom:8px;'>🎬</p><p>No recording tasks yet.</p></div>"; return; }
-    var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); });
-    var h="<div class='cd' style='padding:11px 14px;'>";
-    items.forEach(function(t){ var dn=t.done||false; h+="<div class='tr'><div class='tk "+(dn?"dn":"")+"' onclick='togRec(\""+t._k+"\","+dn+")'>"+(dn?"✓":"")+"</div><div class='tt2 "+(dn?"dn":"")+"'>"+ex(t.txt)+"<span class='tg'>"+ex(t.typ)+"</span></div><button class='db' onclick='delRec(\""+t._k+"\")'>X</button></div>"; });
-    h+="</div>"; el.innerHTML=h;
+    var todoItems=[], doneItems=[];
+    if(snap.exists()) snap.forEach(function(c){ var a=c.val(); a._k=c.key; if(a.done) doneItems.push(a); else todoItems.push(a); });
+    document.getElementById("rec-cnt-todo").textContent = todoItems.length;
+    document.getElementById("rec-cnt-done").textContent = doneItems.length;
+    // Render To Record
+    var todoEl = document.getElementById("rec-el-todo");
+    if(!todoItems.length){ todoEl.innerHTML="<div class='em'><p style='font-size:24px;margin-bottom:8px;'>🎬</p><p>Nothing left to record!</p></div>"; }
+    else {
+      var h="<div class='cd' style='padding:11px 14px;'>";
+      todoItems.forEach(function(t){
+        h+="<div class='tr'><div class='tk' onclick='togRec(\""+t._k+"\",false)'></div><div class='tt2'>"+ex(t.txt)+"<span class='tg'>"+ex(t.typ)+"</span></div><button class='db' onclick='delRec(\""+t._k+"\")'>✕</button></div>";
+      });
+      h+="</div>"; todoEl.innerHTML=h;
+    }
+    // Render Recorded
+    var doneEl = document.getElementById("rec-el-done");
+    if(!doneItems.length){ doneEl.innerHTML="<div class='em'><p style='font-size:24px;margin-bottom:8px;'>✅</p><p>No recorded items yet — check off items from To Record!</p></div>"; }
+    else {
+      var h2="<div class='cd' style='padding:11px 14px;'>";
+      doneItems.forEach(function(t){
+        h2+="<div class='tr'><div class='tk dn' onclick='togRec(\""+t._k+"\",true)'>✓</div><div class='tt2 dn'>"+ex(t.txt)+"<span class='tg'>"+ex(t.typ)+"</span></div><button class='db' onclick='delRec(\""+t._k+"\")'>✕</button></div>";
+      });
+      h2+="</div>"; doneEl.innerHTML=h2;
+    }
   });
 }
 
@@ -540,7 +622,9 @@ function renderIdeaList(elId,items,stage){
     for(var s=1;s<=5;s++) h+="<span class='star "+(s<=Math.round(avg)?"on":"")+"' onclick='rateStar(\""+i._k+"\","+s+")'>★</span>";
     h+="<span class='avg-rating'>"+(total>0?avg+" ("+total+")":"No ratings")+"</span></div>";
     h+="</div>";
+    var votes=i.votes||{},vc=Object.keys(votes).length,voted=false;
     h+="<div class='ic-actions'>";
+    h+="<button class='ia-btn' style='background:#f5f0e8;color:#a0522d;font-weight:700;' onclick='voteIdea(\""+i._k+"\","+voted+")'>👍 "+vc+"</button>";
     if(stage==="new") h+="<button class='ia-btn ia-rec' onclick='moveIdea(\""+i._k+"\",\"recorded\")'>🎬 Mark Recorded</button>";
     if(stage==="recorded") h+="<button class='ia-btn ia-done' onclick='moveIdea(\""+i._k+"\",\"made\")'>✅ Mark Made</button>";
     h+="<button class='ia-btn ia-del' onclick='delIdea(\""+i._k+"\")'>🗑️ Delete</button>";
@@ -574,6 +658,52 @@ function addIdea(){
 function togIdeaCmt(key,btn){ var box=document.getElementById("icbx-"+key); if(box.style.display==="block"){ box.style.display="none"; btn.textContent="💬 Comments"; } else{ box.style.display="block"; btn.textContent="💬 Hide"; loadIdeaCmts(key); } }
 function loadIdeaCmts(key){ if(!DB) return; DB.ref("nv5/idea_cmts/"+key).on("value",function(snap){ var el=document.getElementById("icl-"+key); if(!el) return; if(!snap.exists()){ el.innerHTML="<p style='font-size:12px;color:#8aaac0;padding:5px 0;'>No comments yet.</p>"; return; } var items=[],h=""; snap.forEach(function(c){ items.push(c.val()); }); items.sort(function(a,b){ return b.ts-a.ts; }); items.forEach(function(c){ h+="<div class='ci2'><span class='cw'>"+ex(c.name)+"</span><span class='cwh'>"+ago(c.ts)+"</span><br/>"+ex(c.txt)+"</div>"; }); el.innerHTML=h; }); }
 function postIdeaCmt(key){ if(!DB) return; var n=document.getElementById("icn-"+key),inp=document.getElementById("ici-"+key); var name=n?n.value:"",txt=inp?inp.value.trim():""; if(!name){ alert("Please select your name."); return; } if(!txt) return; DB.ref("nv5/idea_cmts/"+key).push({name:name,txt:txt,ts:Date.now()},function(e){ if(!e){ inp.value=""; n.value=""; } }); }
+
+
+function togSchedDone(key, done){
+  if(!DB) return;
+  DB.ref("nv5/sched/"+key).update({done:!done});
+}
+
+function editSched(key, day, txt, plat, time){
+  document.getElementById("edit-sched-key").value=key;
+  document.getElementById("edit-sched-day").value=day;
+  document.getElementById("edit-sched-txt").value=txt;
+  document.getElementById("edit-sched-plat").value=plat;
+  document.getElementById("edit-sched-time").value=time;
+  document.getElementById("edit-sched-modal").style.display="flex";
+}
+
+function saveSchedEdit(){
+  var key=document.getElementById("edit-sched-key").value;
+  var day=document.getElementById("edit-sched-day").value;
+  var txt=document.getElementById("edit-sched-txt").value.trim();
+  var plat=document.getElementById("edit-sched-plat").value;
+  var time=document.getElementById("edit-sched-time").value.trim();
+  if(!txt){ alert("Please describe what's posting."); return; }
+  if(!DB) return;
+  DB.ref("nv5/sched/"+key).update({day:day,txt:txt,plat:plat,time:time},function(e){
+    if(!e) document.getElementById("edit-sched-modal").style.display="none";
+  });
+}
+
+
+function voteIdea(key, voted){
+  if(!DB) return;
+  var nameEl=document.querySelector('input[name="idea-name"]:checked');
+  var name=nameEl?nameEl.value:"";
+  if(!name){ 
+    name=prompt("Your name to save your vote (Heather, Katie, or Dr. Alperin):"); 
+    if(!name) return; 
+  }
+  var ref=DB.ref("nv5/ideas/"+key+"/votes/"+sk(name));
+  if(voted) ref.remove(); else ref.set(true);
+}
+
+function pinPost(key, pinned){
+  if(!DB) return;
+  DB.ref("nv5/posts/"+key).update({pinned:!pinned});
+}
 
 // WIRE UP
 document.getElementById("login-btn").onclick = doLogin;
