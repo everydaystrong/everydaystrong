@@ -185,6 +185,19 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
 </head>
 <body>
 
+
+<!-- COMMUNITY EDIT MODAL -->
+<div id="comm-edit-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:var(--card);border-radius:14px;padding:1.6rem;width:100%;max-width:420px;">
+    <h3 style="font-size:16px;color:var(--text);margin-bottom:1rem;font-weight:700;">Edit Post</h3>
+    <input type="hidden" id="comm-edit-key" />
+    <textarea class="form-textarea" id="comm-edit-text" style="min-height:100px;"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="action-btn" onclick="saveCommEdit()" style="flex:1;">Save</button>
+      <button class="action-btn" onclick="document.getElementById('comm-edit-modal').style.display='none';" style="flex:1;background:var(--inp);color:var(--text);">Cancel</button>
+    </div>
+  </div>
+</div>
 <!-- EDIT MODAL -->
 <div class="modal-overlay" id="edit-modal">
   <div class="modal">
@@ -1036,12 +1049,47 @@ function addCode(){
   }
   if(!n||!c){ alert("Please enter a name and code."); return; }
   if(!DB){ alert("Database not connected."); return; }
+  var isTrial=document.getElementById("c-trial").checked;
+  var expiresAt=isTrial?(Date.now()+7*24*60*60*1000):null;
   DB.ref("codes").orderByChild("code").equalTo(c).once("value",function(snap){
     if(snap.exists()){ alert("That code already exists."); return; }
-    DB.ref("codes").push({name:n,code:c,access:access},function(e){
-      if(!e){ showOk("ok-code","Code for "+n+": "+c); document.getElementById("c-name").value=""; document.getElementById("c-code").value=""; document.getElementById("c-access-type").value="ALL"; document.getElementById("program-picker").style.display="none"; }
+    DB.ref("codes").push({name:n,code:c,access:access,trial:isTrial||false,expiresAt:expiresAt,inactive:false},function(e){
+      if(!e){
+        var label=isTrial?" (7-day trial)":"";
+        showOk("ok-code","Code for "+n+": "+c+label);
+        document.getElementById("c-name").value="";
+        document.getElementById("c-code").value="";
+        document.getElementById("c-access-type").value="ALL";
+        document.getElementById("c-trial").checked=false;
+        document.getElementById("program-picker").style.display="none";
+      }
     });
   });
+}
+
+
+
+function openCommEdit(key, text){
+  document.getElementById("comm-edit-key").value = key;
+  document.getElementById("comm-edit-text").value = text;
+  document.getElementById("comm-edit-modal").style.display = "flex";
+}
+
+function saveCommEdit(){
+  var key = document.getElementById("comm-edit-key").value;
+  var txt = document.getElementById("comm-edit-text").value.trim();
+  if(!txt){ alert("Post cannot be empty."); return; }
+  if(!DB) return;
+  DB.ref("community/"+key).update({text:txt, edited:true}, function(e){
+    if(!e) document.getElementById("comm-edit-modal").style.display = "none";
+  });
+}
+
+function toggleCode(key, inactive){
+  if(!DB) return;
+  var msg=inactive?"Reactivate this code?":"Pause this code? The client won't be able to log in until you reactivate.";
+  if(!confirm(msg)) return;
+  DB.ref("codes/"+key).update({inactive:!inactive});
 }
 
 function delCode(key){ if(!confirm("Remove this code?")) return; DB.ref("codes/"+key).remove(); }
@@ -1140,6 +1188,12 @@ function loadCommunity(){
       var body=document.createElement("div");
       body.className="comm-post-body";
       body.textContent=p.text;
+      if(p.edited){
+        var editedTag=document.createElement("span");
+        editedTag.style.cssText="font-size:10px;color:var(--sub);font-style:italic;display:block;margin-top:4px;";
+        editedTag.textContent="(edited)";
+        body.appendChild(editedTag);
+      }
       d.appendChild(body);
 
       if(p.img){
@@ -1167,6 +1221,24 @@ function loadCommunity(){
       replyBtn.setAttribute("data-key",p._k);
       replyBtn.onclick=function(){ togCommReply(this.getAttribute("data-key"),this); };
       acts.appendChild(replyBtn);
+      // Allow post author to edit or delete their own post
+      if(p.name===currentUser){
+        var myEditBtn=document.createElement("button");
+        myEditBtn.className="comm-reply-btn";
+        myEditBtn.textContent="✏️";
+        myEditBtn.setAttribute("data-key",p._k);
+        myEditBtn.setAttribute("data-text",p.text);
+        myEditBtn.onclick=function(){ openCommEdit(this.getAttribute("data-key"), this.getAttribute("data-text")); };
+        acts.appendChild(myEditBtn);
+
+        var myDelBtn=document.createElement("button");
+        myDelBtn.className="comm-reply-btn";
+        myDelBtn.style.color="#c05040";
+        myDelBtn.textContent="🗑️";
+        myDelBtn.setAttribute("data-key",p._k);
+        myDelBtn.onclick=function(){ if(confirm("Delete your post?")) DB.ref("community/"+this.getAttribute("data-key")).remove(); };
+        acts.appendChild(myDelBtn);
+      }
       d.appendChild(acts);
 
       var replyBox=document.createElement("div");
