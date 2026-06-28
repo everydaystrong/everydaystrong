@@ -123,6 +123,14 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
 .comm-reply-inp{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--inp);color:var(--text);outline:none;}
 .comm-reply-post{padding:7px 12px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;}
 
+
+/* MESSAGES */
+.msg-bubble{background:var(--inp);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:14px;color:var(--text);}
+.msg-bubble.mine{background:var(--accent);color:#fff;margin-left:2rem;}
+.msg-bubble.heather{background:#3a2a1a;color:#f5f0eb;margin-right:2rem;}
+.msg-who{font-size:11px;font-weight:700;margin-bottom:4px;opacity:0.8;}
+.msg-when{font-size:11px;opacity:0.7;margin-top:4px;}
+
 /* ADMIN */
 .admin-header{background:#3a2a1a;padding:1rem 1.6rem;display:flex;align-items:center;justify-content:space-between;}
 .admin-body{padding:1.6rem;max-width:720px;margin:0 auto;background:var(--bg);min-height:calc(100vh - 62px);}
@@ -229,6 +237,8 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <button class="pnav-btn" id="pnav-fav" data-tab="fav" onclick="switchPortalTab(this.dataset.tab,this)">⭐ Favorites</button>
       <button class="pnav-btn" id="pnav-done" data-tab="done" onclick="switchPortalTab(this.dataset.tab,this)">✅ Completed</button>
       <button class="pnav-btn" id="pnav-comm" data-tab="comm" onclick="switchPortalTab(this.dataset.tab,this)">🏘️ Community</button>
+      <button class="pnav-btn" id="pnav-checkin" data-tab="checkin" onclick="switchPortalTab(this.dataset.tab,this)">📋 Check-in</button>
+      <button class="pnav-btn" id="pnav-msg" data-tab="msg" onclick="switchPortalTab(this.dataset.tab,this)">💌 Messages</button>
     </div>
 
     <!-- PROGRAMS TAB -->
@@ -290,6 +300,52 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         <button class="action-btn" id="comm-post-btn">Post</button>
       </div>
     </div>
+
+    <!-- CHECK-IN TAB -->
+    <div id="tab-checkin" class="portal-tab" style="display:none;">
+      <p class="section-title">📋 Weekly Check-in</p>
+      <p class="section-sub">Let Heather know how your week went!</p>
+      <div class="admin-card">
+        <h3>This Week's Check-in</h3>
+        <div class="ok-msg" id="ok-checkin">Check-in submitted! 🎉</div>
+        <div class="form-row">
+          <span class="form-label">How are you feeling overall? (1-5)</span>
+          <div style="display:flex;gap:10px;margin-top:4px;">
+            <label style="display:flex;flex-direction:column;align-items:center;gap:4px;font-size:20px;cursor:pointer;"><input type="radio" name="ci-feeling" value="1" style="accent-color:#a0522d;" />😩</label>
+            <label style="display:flex;flex-direction:column;align-items:center;gap:4px;font-size:20px;cursor:pointer;"><input type="radio" name="ci-feeling" value="2" style="accent-color:#a0522d;" />😕</label>
+            <label style="display:flex;flex-direction:column;align-items:center;gap:4px;font-size:20px;cursor:pointer;"><input type="radio" name="ci-feeling" value="3" style="accent-color:#a0522d;" />😐</label>
+            <label style="display:flex;flex-direction:column;align-items:center;gap:4px;font-size:20px;cursor:pointer;"><input type="radio" name="ci-feeling" value="4" style="accent-color:#a0522d;" />😊</label>
+            <label style="display:flex;flex-direction:column;align-items:center;gap:4px;font-size:20px;cursor:pointer;"><input type="radio" name="ci-feeling" value="5" style="accent-color:#a0522d;" />🔥</label>
+          </div>
+        </div>
+        <div class="form-row">
+          <span class="form-label">What went well this week?</span>
+          <textarea class="form-textarea" id="ci-good" placeholder="Workouts completed, felt strong, stayed consistent..."></textarea>
+        </div>
+        <div class="form-row">
+          <span class="form-label">What was challenging?</span>
+          <textarea class="form-textarea" id="ci-hard" placeholder="Low energy, missed a day, soreness..."></textarea>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Any questions for Heather?</span>
+          <textarea class="form-textarea" id="ci-q" placeholder="Ask anything about your workouts, form, nutrition..."></textarea>
+        </div>
+        <button class="action-btn" id="checkin-btn">Submit Check-in</button>
+      </div>
+      <div style="font-size:13px;color:var(--sub);text-align:center;padding:1rem 0;">Check-ins are private — only you and Heather can see them.</div>
+    </div>
+
+    <!-- MESSAGES TAB -->
+    <div id="tab-msg" class="portal-tab" style="display:none;">
+      <p class="section-title">💌 Messages</p>
+      <p class="section-sub">Send a message to Heather</p>
+      <div class="admin-card">
+        <div class="ok-msg" id="ok-msg">Message sent!</div>
+        <textarea class="form-textarea" id="msg-text" placeholder="Ask a question, share an update, or just say hi..."></textarea>
+        <button class="action-btn" id="msg-send-btn" style="margin-top:8px;">Send Message</button>
+      </div>
+      <div id="msg-thread"><div style="text-align:center;padding:2rem;color:var(--sub);font-size:14px;">Loading messages...</div></div>
+    </div>
     <!-- COMPLETED TAB -->
     <div id="tab-done" class="portal-tab" style="display:none;">
       <p class="section-title">✅ Completed Workouts</p>
@@ -313,6 +369,8 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <button class="tab-btn" id="atab-announce">📢 Announcements</button>
       <button class="tab-btn" id="atab-settings">⚙️ Settings</button>
       <button class="tab-btn" id="atab-community">🏘️ Community</button>
+      <button class="tab-btn" id="atab-checkins">📋 Check-ins</button>
+      <button class="tab-btn" id="atab-messages">💌 Messages</button>
     </div>
 
     <div class="tab-content on" id="atc-videos">
@@ -388,6 +446,30 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
     </div>
 
 
+
+    <div class="tab-content" id="atc-checkins">
+      <div class="admin-card">
+        <h3>Weekly Check-ins <span id="new-ci-badge" style="background:#c05040;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;display:none;">NEW</span></h3>
+        <div id="admin-ci-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="atc-messages">
+      <div class="admin-card">
+        <h3>Client Messages</h3>
+        <div id="admin-msg-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+      <div class="admin-card">
+        <h3>Reply to a Client</h3>
+        <div class="ok-msg" id="ok-admin-reply">Reply sent!</div>
+        <div class="form-row">
+          <span class="form-label">Client Name</span>
+          <input class="form-input" id="reply-to" placeholder="e.g. Sarah" style="text-transform:none;" />
+        </div>
+        <textarea class="form-textarea" id="reply-text" placeholder="Type your reply..."></textarea>
+        <button class="action-btn" id="admin-reply-btn">Send Reply</button>
+      </div>
+    </div>
     <div class="tab-content" id="atc-community">
       <div class="admin-card">
         <h3>Post to Community as Instructor</h3>
@@ -507,6 +589,8 @@ function switchPortalTab(name,btn){
   if(name==="fav") renderFavorites();
   if(name==="done") renderCompleted();
   if(name==="comm") loadCommunity();
+  if(name==="msg") loadMessages();
+  if(name==="checkin") {}
 }
 
 // LOGIN
@@ -1111,6 +1195,136 @@ function postToComm(){
 }
 
 
+
+// CHECK-INS
+function submitCheckin(){
+  var feeling=document.querySelector('input[name="ci-feeling"]:checked');
+  var good=document.getElementById("ci-good").value.trim();
+  var hard=document.getElementById("ci-hard").value.trim();
+  var q=document.getElementById("ci-q").value.trim();
+  if(!feeling){ alert("Please select how you are feeling!"); return; }
+  if(!good){ alert("Please fill in what went well."); return; }
+  if(!DB){ alert("Database not connected."); return; }
+  DB.ref("checkins").push({
+    name:currentUser, feeling:feeling.value,
+    good:good, hard:hard, q:q,
+    ts:Date.now(), read:false
+  }, function(e){
+    if(!e){
+      document.getElementById("ci-good").value="";
+      document.getElementById("ci-hard").value="";
+      document.getElementById("ci-q").value="";
+      if(feeling) feeling.checked=false;
+      showOk("ok-checkin","Check-in submitted! 🎉");
+    }
+  });
+}
+
+function loadAdminCheckins(){
+  if(!DB) return;
+  DB.ref("checkins").orderByChild("ts").on("value",function(snap){
+    var el=document.getElementById("admin-ci-list");
+    var badge=document.getElementById("new-ci-badge");
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No check-ins yet.</p>"; badge.style.display="none"; return; }
+    var items=[]; var hasNew=false;
+    snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); if(!a.read) hasNew=true; });
+    items.reverse();
+    badge.style.display=hasNew?"inline":"none";
+    var emojis={"1":"😩","2":"😕","3":"😐","4":"😊","5":"🔥"};
+    var h="";
+    items.forEach(function(ci){
+      var d=new Date(ci.ts).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+      h+="<div style='padding:12px 0;border-bottom:0.5px solid var(--border);'>";
+      if(!ci.read) h+="<span style='background:#c05040;color:#fff;font-size:10px;padding:1px 6px;border-radius:6px;margin-right:6px;'>NEW</span>";
+      h+="<strong>"+ex(ci.name)+"</strong> <span style='color:var(--sub);font-size:12px;'>"+d+"</span>";
+      h+=" <span style='font-size:18px;'>"+( emojis[ci.feeling]||"😐")+"</span>";
+      h+="<div style='margin-top:8px;font-size:13px;color:var(--text);'>";
+      h+="<p><strong style='color:var(--accent);'>✅ Went well:</strong> "+ex(ci.good)+"</p>";
+      if(ci.hard) h+="<p style='margin-top:4px;'><strong style='color:var(--accent);'>💪 Challenging:</strong> "+ex(ci.hard)+"</p>";
+      if(ci.q) h+="<p style='margin-top:4px;'><strong style='color:var(--accent);'>❓ Question:</strong> "+ex(ci.q)+"</p>";
+      h+="</div>";
+      if(!ci.read){ h+="<button class='action-btn sec' style='font-size:11px;padding:4px 10px;margin-top:8px;' onclick='markCiRead(\""+ci._k+"\")'>Mark as read</button>"; }
+      h+="</div>";
+    });
+    el.innerHTML=h||"<p style='color:var(--sub);font-size:13px;'>No check-ins yet.</p>";
+  });
+}
+
+function markCiRead(key){ if(DB) DB.ref("checkins/"+key).update({read:true}); }
+
+// MESSAGES
+function sendMessage(){
+  var txt=document.getElementById("msg-text").value.trim();
+  if(!txt){ alert("Please write a message first."); return; }
+  if(!DB){ alert("Database not connected."); return; }
+  DB.ref("messages/"+sk(currentUser)).push({
+    from:currentUser, text:txt, ts:Date.now(), fromClient:true
+  }, function(e){
+    if(!e){ document.getElementById("msg-text").value=""; showOk("ok-msg","Message sent!"); loadMessages(); }
+  });
+}
+
+function loadMessages(){
+  if(!DB||!currentUser) return;
+  DB.ref("messages/"+sk(currentUser)).on("value",function(snap){
+    var el=document.getElementById("msg-thread");
+    if(!snap.exists()){ el.innerHTML="<div style='text-align:center;padding:2rem;color:var(--sub);font-size:14px;'>No messages yet — send Heather a message above!</div>"; return; }
+    var items=[]; snap.forEach(function(c){ items.push(c.val()); });
+    items.sort(function(a,b){ return a.ts-b.ts; });
+    var h="";
+    items.forEach(function(m){
+      var isMe=m.fromClient;
+      h+="<div class='msg-bubble "+(isMe?"mine":"heather")+"'>";
+      h+="<div class='msg-who'>"+(isMe?ex(m.from):"Heather — Instructor")+"</div>";
+      h+=ex(m.text);
+      h+="<div class='msg-when'>"+ago2fn(m.ts)+"</div>";
+      h+="</div>";
+    });
+    el.innerHTML=h;
+    el.scrollTop=el.scrollHeight;
+  });
+}
+
+function loadAdminMessages(){
+  if(!DB) return;
+  DB.ref("messages").on("value",function(snap){
+    var el=document.getElementById("admin-msg-list");
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No messages yet.</p>"; return; }
+    var threads=[]; 
+    snap.forEach(function(c){ 
+      var msgs=[]; var name=c.key;
+      c.forEach(function(m){ msgs.push(m.val()); });
+      msgs.sort(function(a,b){ return b.ts-a.ts; });
+      if(msgs.length) threads.push({name:name, latest:msgs[0], count:msgs.length});
+    });
+    threads.sort(function(a,b){ return b.latest.ts-a.latest.ts; });
+    var h="";
+    threads.forEach(function(t){
+      var d=new Date(t.latest.ts).toLocaleDateString("en-US",{month:"short",day:"numeric"});
+      h+="<div style='padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;' onclick='showThread(\""+ex(t.name)+"\")'>"+
+        "<strong>"+ex(t.latest.from||t.name)+"</strong> <span style='color:var(--sub);font-size:11px;'>"+d+"</span><br/>"+
+        "<span style='font-size:13px;color:var(--sub);'>"+ex((t.latest.text||"").substring(0,50))+"...</span></div>";
+    });
+    el.innerHTML=h||"<p style='color:var(--sub);font-size:13px;'>No messages yet.</p>";
+  });
+}
+
+function showThread(clientKey){
+  document.getElementById("reply-to").value=clientKey;
+}
+
+function sendAdminReply(){
+  var to=document.getElementById("reply-to").value.trim();
+  var txt=document.getElementById("reply-text").value.trim();
+  if(!to||!txt){ alert("Please enter a client name and reply."); return; }
+  if(!DB) return;
+  DB.ref("messages/"+sk(to)).push({
+    from:"Heather", text:txt, ts:Date.now(), fromClient:false
+  }, function(e){
+    if(!e){ document.getElementById("reply-text").value=""; showOk("ok-admin-reply","Reply sent!"); }
+  });
+}
+
 // ADMIN COMMUNITY
 function postAdminToComm(){
   var txt=document.getElementById("admin-comm-text").value.trim();
@@ -1174,6 +1388,11 @@ document.getElementById("back-btn").onclick=goBack;
 document.getElementById("comm-post-btn").onclick=postToComm;
 document.getElementById("edit-modal").onclick=function(e){ if(e.target===this) closeEdit(); };
 document.getElementById("admin-comm-post-btn").onclick=postAdminToComm;
+document.getElementById("checkin-btn").onclick=submitCheckin;
+document.getElementById("msg-send-btn").onclick=sendMessage;
+document.getElementById("admin-reply-btn").onclick=sendAdminReply;
+document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
+document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); };
 </script>
 </body>
 </html>
