@@ -265,7 +265,21 @@ textarea.fi{min-height:75px;resize:vertical;}
         <div id="rec-el-todo"><div class="em"><p>Loading...</p></div></div>
       </div>
       <div id="rec-sec-done" style="display:none;">
-        <p style="font-size:13px;color:#8aaac0;margin-bottom:1rem;">Content that has been filmed and is ready for editing</p>
+        <p style="font-size:13px;color:#8aaac0;margin-bottom:1rem;">Content filmed and ready for editing</p>
+        <div class="fc">
+          <h3>Quick Add to Recorded</h3>
+          <div class="ok" id="ok-quick-rec">Added to Recorded!</div>
+          <label class="lb2">What was recorded</label>
+          <input type="text" class="fi" id="quick-rec-txt" placeholder="e.g. How many ducks video" style="text-transform:none;" />
+          <label class="lb2">Type</label>
+          <select class="fi" id="quick-rec-typ">
+            <option value="Reel">Reel</option>
+            <option value="TikTok">TikTok</option>
+            <option value="Photo">Photo</option>
+            <option value="Story">Story</option>
+          </select>
+          <button class="ab" id="quick-rec-btn">Add to Recorded</button>
+        </div>
         <div id="rec-el-done"><div class="em"><p>Loading...</p></div></div>
       </div>
     </div>
@@ -311,6 +325,26 @@ textarea.fi{min-height:75px;resize:vertical;}
       </div>
       <div class="idea-sec" id="idea-made">
         <p style="font-size:13px;color:#8aaac0;margin-bottom:1rem;">Ideas that have been edited and posted</p>
+        <div class="fc">
+          <h3>Quick Add to Made</h3>
+          <div class="ok" id="ok-quick-made">Added to Made!</div>
+          <label class="lb2">What was made/posted</label>
+          <input type="text" class="fi" id="quick-made-txt" placeholder="e.g. How many ducks you see" style="text-transform:none;" />
+          <label class="lb2">Type</label>
+          <select class="fi" id="quick-made-typ">
+            <option value="Reel">Reel</option>
+            <option value="TikTok">TikTok</option>
+            <option value="Photo">Photo</option>
+            <option value="Story">Story</option>
+          </select>
+          <label class="lb2">Your Name</label>
+          <div class="name-pick">
+            <label><input type="radio" name="quick-made-name" value="Heather" /> Heather</label>
+            <label><input type="radio" name="quick-made-name" value="Katie" /> Katie</label>
+            <label><input type="radio" name="quick-made-name" value="Dr. Alperin" /> Dr. Alperin</label>
+          </div>
+          <button class="ab" id="quick-made-btn">Add to Made</button>
+        </div>
         <div id="ideas-made-el"><div class="em"><p>Loading...</p></div></div>
       </div>
     </div>
@@ -705,6 +739,33 @@ function pinPost(key, pinned){
   DB.ref("nv5/posts/"+key).update({pinned:!pinned});
 }
 
+
+function quickAddRec(){
+  var txt=document.getElementById("quick-rec-txt").value.trim();
+  var typ=document.getElementById("quick-rec-typ").value;
+  if(!txt){ alert("Please describe what was recorded."); return; }
+  if(!DB){ alert("Database not connected."); return; }
+  DB.ref("nv5/rec").push({txt:txt, typ:typ, done:true, ts:Date.now()}, function(e){
+    if(!e){ document.getElementById("quick-rec-txt").value=""; showOk("ok-quick-rec","Added to Recorded!"); }
+  });
+}
+
+function quickAddMade(){
+  var txt=document.getElementById("quick-made-txt").value.trim();
+  var typ=document.getElementById("quick-made-typ").value;
+  var nameEl=document.querySelector('input[name="quick-made-name"]:checked');
+  var name=nameEl?nameEl.value:"Team";
+  if(!txt){ alert("Please describe what was made."); return; }
+  if(!DB){ alert("Database not connected."); return; }
+  DB.ref("nv5/ideas").push({
+    name:name, txt:txt, typ:typ,
+    status:"made", ts:Date.now(),
+    quickAdd:true
+  }, function(e){
+    if(!e){ document.getElementById("quick-made-txt").value=""; if(nameEl) nameEl.checked=false; showOk("ok-quick-made","Added to Made!"); }
+  });
+}
+
 // WIRE UP
 document.getElementById("login-btn").onclick = doLogin;
 document.getElementById("code-in").onkeydown = function(e){ if(e.key==="Enter") doLogin(); };
@@ -714,6 +775,8 @@ document.getElementById("post-btn").onclick = addPost;
 document.getElementById("sched-btn").onclick = addSched;
 document.getElementById("rec-btn").onclick = addRec;
 document.getElementById("idea-btn").onclick = addIdea;
+document.getElementById("quick-rec-btn").onclick = quickAddRec;
+document.getElementById("quick-made-btn").onclick = quickAddMade;
 document.getElementById("change-code-btn").onclick = changeTeamCode;
 
 // Check session on load
