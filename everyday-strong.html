@@ -438,7 +438,20 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         </div>
         <div class="form-row"><span class="form-label">Title</span><input class="form-input" id="a-title" style="text-transform:none;" /></div>
         <div class="form-row"><span class="form-label">Message or Zoom Link</span><textarea class="form-textarea" id="a-body"></textarea></div>
-        <button class="action-btn" id="add-ann-btn">Post</button>
+        <div class="form-row">
+          <span class="form-label">Who Should See This?</span>
+          <select class="form-select" id="a-audience">
+            <option value="ALL">Everyone</option>
+            <option value="FULL">Full Members Only</option>
+          </select>
+          <span style="font-size:11px;color:var(--sub);margin-top:4px;">Or target a specific program:</span>
+          <input class="form-input" id="a-program" placeholder="e.g. Live Classes, Bodyweight Program (leave blank for above)" style="text-transform:none;margin-top:6px;" />
+        </div>
+        <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">
+          <input type="checkbox" id="a-pin" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+          <label for="a-pin" style="font-size:13px;color:var(--text);cursor:pointer;">📌 Pin this announcement to the top</label>
+        </div>
+        <button class="action-btn" id="add-ann-btn">Post Announcement</button>
       </div>
       <div class="admin-card">
         <h3>Announcements (<span id="ann-count">0</span>)</h3>
@@ -809,17 +822,39 @@ function renderCompleted(){
 }
 
 // ANNOUNCEMENTS
+function annVisibleToUser(a){
+  // Everyone sees ALL announcements
+  if(!a.audience || a.audience==="ALL") return true;
+  // Full members only
+  if(a.audience==="FULL") return currentAccess==="ALL";
+  // Specific program
+  if(a.audience==="PROGRAM" && a.program){
+    if(currentAccess==="ALL") return true;
+    if(Array.isArray(currentAccess)) return currentAccess.indexOf(a.program)!==-1;
+    return currentAccess===a.program;
+  }
+  return true;
+}
+
 function loadAnnouncements(){
   if(!DB) return;
   DB.ref("announcements").on("value",function(snap){
     var sec=document.getElementById("ann-sec");
     if(!snap.exists()){ sec.innerHTML=""; return; }
     var lb={zoom:"Live Class",general:"Announcement",schedule:"Schedule"};
+    var items=[];
+    snap.forEach(function(c){ var a=c.val(); a._k=c.key; if(annVisibleToUser(a)) items.push(a); });
+    // Sort pinned first, then by date
+    items.sort(function(a,b){ if(b.pinned&&!a.pinned) return 1; if(a.pinned&&!b.pinned) return -1; return b.ts-a.ts; });
+    if(!items.length){ sec.innerHTML=""; return; }
     var h="<p class='section-title' style='margin-bottom:0.8rem;'>Announcements</p>";
-    var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.unshift(a); });
     items.forEach(function(a){
       var b=ex(a.body).replace(/https?:\/\/[^\s<]+/g,function(u){ return "<a href='"+u+"' target='_blank'>"+u+"</a>"; });
-      h+="<div class='announce-card'><div class='announce-header'>"+(lb[a.type]||"Announcement")+"</div><div class='announce-body'><strong>"+ex(a.title)+"</strong><br/>"+b+"</div><div class='announce-date'>"+ex(a.date)+"</div></div>";
+      h+="<div class='announce-card'>";
+      h+="<div class='announce-header'>"+(a.pinned?"📌 ":"")+( lb[a.type]||"Announcement")+"</div>";
+      h+="<div class='announce-body'><strong>"+ex(a.title)+"</strong><br/>"+b+"</div>";
+      h+="<div class='announce-date'>"+ex(a.date)+"</div>";
+      h+="</div>";
     });
     sec.innerHTML=h;
   });
@@ -1023,11 +1058,36 @@ function loadAdmAnn(){
 }
 
 function addAnn(){
-  var tp=document.getElementById("a-type").value,t=document.getElementById("a-title").value.trim(),b=document.getElementById("a-body").value.trim();
+  var tp=document.getElementById("a-type").value;
+  var t=document.getElementById("a-title").value.trim();
+  var b=document.getElementById("a-body").value.trim();
+  var aud=document.getElementById("a-audience").value;
+  var prog=document.getElementById("a-program").value.trim();
+  var pinned=document.getElementById("a-pin").checked;
   if(!t||!b){ alert("Please enter a title and message."); return; }
   if(!DB) return;
   var d=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-  DB.ref("announcements").push({type:tp,title:t,body:b,date:d,ts:Date.now()},function(e){ if(!e){ document.getElementById("a-title").value=""; document.getElementById("a-body").value=""; showOk("ok-ann","Posted!"); } });
+  DB.ref("announcements").push({
+    type:tp, title:t, body:b, date:d, ts:Date.now(),
+    audience: prog ? "PROGRAM" : aud,
+    program: prog || null,
+    pinned: pinned || false
+  }, function(e){
+    if(!e){
+      document.getElementById("a-title").value="";
+      document.getElementById("a-body").value="";
+      document.getElementById("a-program").value="";
+      document.getElementById("a-audience").value="ALL";
+      document.getElementById("a-pin").checked=false;
+      showOk("ok-ann","Announcement posted!");
+    }
+  });
+}
+
+
+function toggleAnnPin(key, pinned){
+  if(!DB) return;
+  DB.ref("announcements/"+key).update({pinned:!pinned});
 }
 
 function delAnn(key){ if(!confirm("Remove?")) return; DB.ref("announcements/"+key).remove(); }
