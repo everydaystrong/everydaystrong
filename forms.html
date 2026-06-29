@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Everyday Strong — New Client Forms</title>
+<meta name="description" content="Complete your Everyday Strong new client forms online." />
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:Arial,sans-serif;background:#faf6f2;color:#3a2a1a;}
+
+nav{background:#fff;border-bottom:1px solid #e8ddd2;padding:0.9rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+.nav-brand{font-family:Georgia,serif;font-size:18px;font-weight:700;color:#3a2a1a;}
+.nav-brand span{color:#a0522d;}
+.nav-back{font-size:13px;color:#a0522d;text-decoration:none;font-weight:600;}
+.nav-back:hover{color:#8b4513;}
+
+.hero{background:linear-gradient(135deg,#3a2a1a,#5a3a24);padding:4rem 1.5rem;text-align:center;}
+.hero h1{font-family:Georgia,serif;font-size:clamp(26px,4vw,40px);color:#fff;margin-bottom:0.8rem;}
+.hero p{font-size:15px;color:rgba(255,255,255,0.75);max-width:500px;margin:0 auto 2rem;}
+.steps-row{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;}
+.step-pill{background:rgba(255,255,255,0.12);border-radius:30px;padding:8px 20px;font-size:13px;color:#fff;font-weight:600;}
+.step-pill.done{background:rgba(160,82,45,0.6);}
+
+.forms-nav{background:#fff;border-bottom:1px solid #e8ddd2;display:flex;overflow-x:auto;}
+.fnav-btn{flex:1;min-width:120px;padding:14px 10px;border:none;background:none;font-size:13px;color:#9a8a7a;cursor:pointer;border-bottom:3px solid transparent;font-weight:600;white-space:nowrap;font-family:Arial,sans-serif;}
+.fnav-btn.on{color:#a0522d;border-bottom-color:#a0522d;background:#fdf9f6;}
+
+.form-section{display:none;padding:2.5rem 1.5rem;max-width:720px;margin:0 auto;}
+.form-section.on{display:block;}
+
+.form-card{background:#fff;border-radius:14px;border:0.5px solid #e8ddd2;padding:2rem;margin-bottom:1.5rem;box-shadow:0 2px 12px rgba(60,30,10,0.04);}
+.form-card h2{font-family:Georgia,serif;font-size:22px;color:#3a2a1a;margin-bottom:0.4rem;}
+.form-card .subtitle{font-size:13px;color:#9a8a7a;margin-bottom:1.5rem;line-height:1.5;}
+.divider{border:none;border-top:1px solid #e8ddd2;margin:1.5rem 0;}
+
+.field-group{margin-bottom:1.2rem;}
+.field-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#7a6a5a;display:block;margin-bottom:5px;}
+.field-required{color:#a0522d;}
+.field-input{width:100%;padding:11px 14px;border:1.5px solid #d8cfc6;border-radius:9px;font-size:15px;background:#f9f6f2;color:#3a2a1a;outline:none;font-family:Arial,sans-serif;}
+.field-input:focus{border-color:#a0522d;background:#fff;}
+.field-select{width:100%;padding:11px 14px;border:1.5px solid #d8cfc6;border-radius:9px;font-size:15px;background:#f9f6f2;color:#3a2a1a;outline:none;font-family:Arial,sans-serif;}
+.field-textarea{width:100%;padding:11px 14px;border:1.5px solid #d8cfc6;border-radius:9px;font-size:15px;background:#f9f6f2;color:#3a2a1a;outline:none;resize:vertical;min-height:80px;font-family:Arial,sans-serif;}
+.field-textarea:focus,.field-select:focus{border-color:#a0522d;background:#fff;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media(max-width:500px){.two-col{grid-template-columns:1fr;}}
+
+/* WAIVER SECTIONS */
+.waiver-section{background:#faf6f2;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1rem;border:0.5px solid #e8ddd2;}
+.waiver-section h3{font-size:14px;font-weight:700;color:#3a2a1a;margin-bottom:0.6rem;}
+.waiver-section p{font-size:13px;color:#5a4a38;line-height:1.7;}
+.initial-row{display:flex;align-items:center;gap:10px;margin-top:0.8rem;}
+.initial-label{font-size:12px;color:#7a6a5a;font-weight:600;white-space:nowrap;}
+.initial-input{padding:7px 12px;border:1.5px solid #d8cfc6;border-radius:7px;font-size:14px;background:#fff;color:#3a2a1a;outline:none;width:140px;font-family:Arial,sans-serif;}
+.initial-input:focus{border-color:#a0522d;}
+
+/* AGREEMENT */
+.policy-block{background:#faf6f2;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1rem;border:0.5px solid #e8ddd2;}
+.policy-block h3{font-size:13px;font-weight:700;color:#a0522d;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.5px;}
+.policy-block p{font-size:13px;color:#5a4a38;line-height:1.7;}
+
+/* CHECKBOX */
+.check-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;}
+.check-row input{width:18px;height:18px;accent-color:#a0522d;flex-shrink:0;margin-top:2px;cursor:pointer;}
+.check-row label{font-size:14px;color:#3a2a1a;line-height:1.5;cursor:pointer;}
+
+/* SUBMIT */
+.submit-btn{width:100%;padding:15px;background:#a0522d;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:Georgia,serif;letter-spacing:0.5px;transition:background 0.2s;}
+.submit-btn:hover{background:#8b4513;}
+.submit-btn:disabled{background:#c0a090;cursor:not-allowed;}
+.success-msg{display:none;background:#eaf6f0;border:0.5px solid #b0e0c8;border-radius:10px;padding:1.5rem;text-align:center;margin-top:1rem;}
+.success-msg h3{color:#1a7a4a;font-size:18px;margin-bottom:0.5rem;}
+.success-msg p{font-size:14px;color:#3a6a4a;line-height:1.5;}
+.err-msg{display:none;background:#fdf0ee;border:0.5px solid #e0b0a8;border-radius:10px;padding:1rem;text-align:center;margin-top:1rem;font-size:14px;color:#b03020;}
+
+.progress-bar{height:4px;background:#e8ddd2;border-radius:2px;margin-bottom:1.5rem;}
+.progress-fill{height:100%;background:#a0522d;border-radius:2px;transition:width 0.3s;}
+
+.note{font-size:12px;color:#9a8a7a;margin-top:5px;line-height:1.4;}
+.section-tag{display:inline-block;background:#f5ede6;color:#a0522d;font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.5px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">Everyday <span>Strong</span></div>
+  <a href="index.html" class="nav-back">← Back to Home</a>
+</nav>
+
+<div class="hero">
+  <h1>New Client Forms</h1>
+  <p>Please complete all three forms before your first class. This keeps everyone safe and gets you set up properly.</p>
+  <div class="steps-row">
+    <div class="step-pill" id="pill-1">1. Intake Form</div>
+    <div class="step-pill" id="pill-2">2. Client Agreement</div>
+    <div class="step-pill" id="pill-3">3. Waiver</div>
+  </div>
+</div>
+
+<div class="forms-nav">
+  <button class="fnav-btn on" onclick="switchForm('intake',this)">📋 Intake Form</button>
+  <button class="fnav-btn" onclick="switchForm('agreement',this)">📄 Client Agreement</button>
+  <button class="fnav-btn" onclick="switchForm('waiver',this)">✍️ Waiver</button>
+</div>
+
+<!-- ══════════════ INTAKE FORM ══════════════ -->
+<div class="form-section on" id="fs-intake">
+  <div class="form-card">
+    <div class="section-tag">Step 1 of 3</div>
+    <h2>Client Intake Form</h2>
+    <p class="subtitle">Tell us about yourself so we can tailor your experience at Everyday Strong.</p>
+    <div class="divider"></div>
+
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">First Name <span class="field-required">*</span></label>
+        <input class="field-input" type="text" id="i-fname" placeholder="First name" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">Last Name <span class="field-required">*</span></label>
+        <input class="field-input" type="text" id="i-lname" placeholder="Last name" />
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Email <span class="field-required">*</span></label>
+        <input class="field-input" type="email" id="i-email" placeholder="your@email.com" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">Phone <span class="field-required">*</span></label>
+        <input class="field-input" type="tel" id="i-phone" placeholder="(555) 000-0000" />
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Date of Birth <span class="field-required">*</span></label>
+        <input class="field-input" type="date" id="i-dob" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">Program Interest <span class="field-required">*</span></label>
+        <select class="field-select" id="i-program">
+          <option value="">Select a program...</option>
+          <option>Virtual Semi Private Classes</option>
+          <option>Private Coaching Virtual</option>
+          <option>Not sure yet</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <p class="field-label" style="margin-bottom:1rem;font-size:13px;color:#3a2a1a;text-transform:none;letter-spacing:0;">Fitness Background</p>
+
+    <div class="field-group">
+      <label class="field-label">Current fitness level <span class="field-required">*</span></label>
+      <select class="field-select" id="i-level">
+        <option value="">Select...</option>
+        <option>Complete beginner</option>
+        <option>Some experience (less than 1 year)</option>
+        <option>Intermediate (1 to 3 years)</option>
+        <option>Experienced (3+ years)</option>
+        <option>Returning after a break</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label class="field-label">What are your main goals? <span class="field-required">*</span></label>
+      <textarea class="field-textarea" id="i-goals" placeholder="e.g. Build strength, lose weight, improve energy, feel better day to day..."></textarea>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Do you have any injuries, medical conditions, or physical limitations we should know about?</label>
+      <textarea class="field-textarea" id="i-injuries" placeholder="If none, write None"></textarea>
+    </div>
+    <div class="field-group">
+      <label class="field-label">What equipment do you have access to?</label>
+      <textarea class="field-textarea" id="i-equipment" placeholder="e.g. Dumbbells, resistance bands, none — just bodyweight..." style="min-height:60px;"></textarea>
+    </div>
+    <div class="field-group">
+      <label class="field-label">How did you hear about Everyday Strong?</label>
+      <select class="field-select" id="i-referral">
+        <option value="">Select...</option>
+        <option>Instagram</option>
+        <option>Friend or family referral</option>
+        <option>Google</option>
+        <option>Facebook</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Anything else you want Heather to know?</label>
+      <textarea class="field-textarea" id="i-notes" placeholder="Questions, concerns, special circumstances..." style="min-height:60px;"></textarea>
+    </div>
+
+    <div class="err-msg" id="err-intake">Please fill in all required fields.</div>
+    <div class="success-msg" id="ok-intake">
+      <h3>Intake Form Submitted! 🎉</h3>
+      <p>Thank you! Heather will be in touch soon. Please continue to complete the Client Agreement and Waiver.</p>
+      <button onclick="switchFormByName('agreement')" style="margin-top:1rem;padding:10px 24px;background:#a0522d;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700;">Next: Client Agreement →</button>
+    </div>
+    <button class="submit-btn" id="btn-intake" onclick="submitIntake()">Submit Intake Form</button>
+  </div>
+</div>
+
+<!-- ══════════════ CLIENT AGREEMENT ══════════════ -->
+<div class="form-section" id="fs-agreement">
+  <div class="form-card">
+    <div class="section-tag">Step 2 of 3</div>
+    <h2>Client Agreement & Policies</h2>
+    <p class="subtitle">Please read each policy carefully before signing. This agreement covers payments, scheduling, cancellations, and expectations.</p>
+    <div class="divider"></div>
+
+    <div class="policy-block">
+      <h3>Session Packages & Payment</h3>
+      <p>Payment is required before participation in any training sessions. Session packages must be used within the expiration timeframe. For virtual sessions, Zoom access links will only be sent once payment has been received and confirmed.</p>
+    </div>
+    <div class="policy-block">
+      <h3>Scheduling</h3>
+      <p>Clients will schedule sessions based on available training times. For virtual sessions, clients are responsible for logging into scheduled sessions on time. Late arrivals may result in shortened sessions in order to maintain the schedule for other clients.</p>
+    </div>
+    <div class="policy-block">
+      <h3>Missed Sessions & Cancellations</h3>
+      <p>Clients should provide advance notice if they cannot attend a scheduled session. Missed sessions without notice may result in forfeiture of that session.</p>
+    </div>
+    <div class="policy-block">
+      <h3>Missed Virtual Sessions</h3>
+      <p>If a client is unable to attend a scheduled virtual training session, a recording of the session will be provided. Recorded session links will remain active for 7 days from the date of the class. Recorded sessions are provided for active clients only and are not intended to be shared or distributed.</p>
+    </div>
+    <div class="policy-block">
+      <h3>Zoom Access & Session Participation</h3>
+      <p>Zoom links are provided to registered Everyday Strong clients only. Session links may not be shared with others. Clients who share access links or allow non-registered participants to join sessions may lose access to future sessions.</p>
+    </div>
+    <div class="policy-block">
+      <h3>Virtual Training Requirements</h3>
+      <p>Clients are responsible for ensuring they have a safe workout space, appropriate equipment if needed, and a reliable internet connection.</p>
+    </div>
+    <div class="policy-block">
+      <h3>Client Communication</h3>
+      <p>Clients are encouraged to communicate openly about injuries, discomfort or pain, medical conditions, and scheduling conflicts. Everyday Strong will make reasonable efforts to respond to messages within 24 to 48 hours during normal business days.</p>
+    </div>
+    <div class="policy-block">
+      <h3>Results Disclaimer</h3>
+      <p>Results vary between individuals based on many factors including effort, consistency, nutrition, sleep, and lifestyle habits. Specific results cannot be guaranteed.</p>
+    </div>
+    <div class="policy-block">
+      <h3>Respectful Training Environment</h3>
+      <p>Everyday Strong is committed to providing a supportive and respectful environment. Clients are expected to treat trainers and fellow participants with respect during all sessions.</p>
+    </div>
+
+    <div class="divider"></div>
+    <div class="field-group">
+      <div class="check-row">
+        <input type="checkbox" id="a-agree" />
+        <label for="a-agree">I have read and agree to all of the above policies and understand my responsibilities as an Everyday Strong client.</label>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Full Name <span class="field-required">*</span></label>
+        <input class="field-input" type="text" id="a-name" placeholder="Your full name" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">Date <span class="field-required">*</span></label>
+        <input class="field-input" type="date" id="a-date" />
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Signature — Type your full name to sign <span class="field-required">*</span></label>
+      <input class="field-input" type="text" id="a-sig" placeholder="Type your full name as your signature" style="font-style:italic;font-family:Georgia,serif;font-size:17px;" />
+      <p class="note">By typing your name above, you are providing a legally binding electronic signature.</p>
+    </div>
+
+    <div class="err-msg" id="err-agreement">Please fill in all required fields and check the agreement box.</div>
+    <div class="success-msg" id="ok-agreement">
+      <h3>Client Agreement Signed! ✅</h3>
+      <p>Thank you for signing the Client Agreement. One last step — please complete the Waiver below.</p>
+      <button onclick="switchFormByName('waiver')" style="margin-top:1rem;padding:10px 24px;background:#a0522d;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700;">Next: Waiver →</button>
+    </div>
+    <button class="submit-btn" id="btn-agreement" onclick="submitAgreement()">Sign Client Agreement</button>
+  </div>
+</div>
+
+<!-- ══════════════ WAIVER ══════════════ -->
+<div class="form-section" id="fs-waiver">
+  <div class="form-card">
+    <div class="section-tag">Step 3 of 3</div>
+    <h2>Release of Liability & Waiver</h2>
+    <p class="subtitle">Please read each section carefully and initial to confirm your understanding. This is a legally binding document.</p>
+    <div class="divider"></div>
+
+    <div class="waiver-section">
+      <h3>1. Assumption of Risk</h3>
+      <p>I acknowledge that participation in exercise programs, personal training sessions, strength training, resistance training, mobility work, cardiovascular exercise, and related physical activities offered by Everyday Strong involves inherent risks. These risks may include but are not limited to muscle strains, joint injuries, sprains, dizziness, heart complications, falls, or other physical injury or illness. I voluntarily assume full responsibility for any risks, injuries, or damages that may occur.</p>
+      <div class="initial-row">
+        <span class="initial-label">Initials:</span>
+        <input class="initial-input field-input" type="text" id="w-i1" placeholder="Your initials" />
+      </div>
+    </div>
+
+    <div class="waiver-section">
+      <h3>2. Physical Health Acknowledgment</h3>
+      <p>I certify that I am physically capable of participating in exercise and fitness activities. I understand it is my responsibility to consult with a physician prior to beginning any exercise program if I have any medical concerns, conditions, injuries, or health limitations. I agree to inform my trainer immediately of any condition that may affect my ability to participate safely.</p>
+      <div class="initial-row">
+        <span class="initial-label">Initials:</span>
+        <input class="initial-input field-input" type="text" id="w-i2" placeholder="Your initials" />
+      </div>
+    </div>
+
+    <div class="waiver-section">
+      <h3>3. Responsibility to Follow Instructions</h3>
+      <p>I understand that I must follow the instructions provided by trainers during workouts and coaching sessions. I agree to exercise within my personal limits and to stop exercising immediately if I experience pain, dizziness, discomfort, or any unusual symptoms.</p>
+      <div class="initial-row">
+        <span class="initial-label">Initials:</span>
+        <input class="initial-input field-input" type="text" id="w-i3" placeholder="Your initials" />
+      </div>
+    </div>
+
+    <div class="waiver-section">
+      <h3>4. Virtual Training Acknowledgment</h3>
+      <p>I understand that some training sessions may be conducted virtually through video platforms such as Zoom. I acknowledge that my trainer may not be able to fully observe my physical environment or technique during virtual sessions. I accept full responsibility for ensuring that my workout environment is safe and free from hazards.</p>
+      <div class="initial-row">
+        <span class="initial-label">Initials:</span>
+        <input class="initial-input field-input" type="text" id="w-i4" placeholder="Your initials" />
+      </div>
+    </div>
+
+    <div class="waiver-section">
+      <h3>5. Equipment and Environment Responsibility</h3>
+      <p>I understand that I am responsible for the safe use of any equipment used during training sessions, whether at home, in a gym, or in any other environment. I agree to ensure that equipment is in safe working condition and used appropriately.</p>
+      <div class="initial-row">
+        <span class="initial-label">Initials:</span>
+        <input class="initial-input field-input" type="text" id="w-i5" placeholder="Your initials" />
+      </div>
+    </div>
+
+    <div class="waiver-section">
+      <h3>6. Release of Liability</h3>
+      <p>In consideration of being allowed to participate in fitness training services provided by Everyday Strong, I hereby release, waive, discharge, and hold harmless Everyday Strong and its representatives, trainers, contractors, or employees from any and all liability, claims, demands, damages, or causes of action arising out of or related to participation in training activities. This release includes claims arising from negligence to the fullest extent permitted by law.</p>
+      <div class="initial-row">
+        <span class="initial-label">Initials:</span>
+        <input class="initial-input field-input" type="text" id="w-i6" placeholder="Your initials" />
+      </div>
+    </div>
+
+    <div class="waiver-section">
+      <h3>7. Indemnification</h3>
+      <p>I agree to indemnify and hold harmless Everyday Strong and its representatives, trainers, contractors, or employees from any claims, damages, losses, liabilities, costs, or expenses arising from my participation in fitness activities.</p>
+      <div class="initial-row">
+        <span class="initial-label">Initials:</span>
+        <input class="initial-input field-input" type="text" id="w-i7" placeholder="Your initials" />
+      </div>
+    </div>
+
+    <div class="waiver-section">
+      <h3>8. Results Disclaimer</h3>
+      <p>I understand that fitness results vary between individuals. Everyday Strong does not guarantee specific results from participation in training programs. Progress depends on factors including effort, consistency, lifestyle habits, and overall health.</p>
+      <div class="initial-row">
+        <span class="initial-label">Initials:</span>
+        <input class="initial-input field-input" type="text" id="w-i8" placeholder="Your initials" />
+      </div>
+    </div>
+
+    <div class="waiver-section">
+      <h3>9. Governing Law</h3>
+      <p>This agreement shall be governed by the laws of the State of Michigan. Any disputes or claims arising from participation in Everyday Strong programs shall be resolved within the jurisdiction of Michigan courts.</p>
+      <div class="initial-row">
+        <span class="initial-label">Initials:</span>
+        <input class="initial-input field-input" type="text" id="w-i9" placeholder="Your initials" />
+      </div>
+    </div>
+
+    <div class="waiver-section">
+      <h3>10. Severability</h3>
+      <p>If any portion of this agreement is deemed invalid or unenforceable, the remaining portions shall remain in full force and effect.</p>
+      <div class="initial-row">
+        <span class="initial-label">Initials:</span>
+        <input class="initial-input field-input" type="text" id="w-i10" placeholder="Your initials" />
+      </div>
+    </div>
+
+    <div class="waiver-section">
+      <h3>11. Acknowledgment of Understanding</h3>
+      <p>I acknowledge that I have carefully read this agreement, understand its contents, and voluntarily agree to its terms. I understand that by signing this document I am waiving certain legal rights.</p>
+      <div class="initial-row">
+        <span class="initial-label">Initials:</span>
+        <input class="initial-input field-input" type="text" id="w-i11" placeholder="Your initials" />
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <p class="field-label" style="margin-bottom:1rem;font-size:13px;color:#3a2a1a;text-transform:none;letter-spacing:0;">Participant Information</p>
+
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Full Name <span class="field-required">*</span></label>
+        <input class="field-input" type="text" id="w-name" placeholder="Your full name" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">Date of Birth <span class="field-required">*</span></label>
+        <input class="field-input" type="date" id="w-dob" />
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Address <span class="field-required">*</span></label>
+        <input class="field-input" type="text" id="w-address" placeholder="Street address" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">Phone <span class="field-required">*</span></label>
+        <input class="field-input" type="tel" id="w-phone" placeholder="(555) 000-0000" />
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Emergency Contact Name <span class="field-required">*</span></label>
+        <input class="field-input" type="text" id="w-ec-name" placeholder="Emergency contact" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">Emergency Contact Phone <span class="field-required">*</span></label>
+        <input class="field-input" type="tel" id="w-ec-phone" placeholder="(555) 000-0000" />
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Signature — Type your full name to sign <span class="field-required">*</span></label>
+      <input class="field-input" type="text" id="w-sig" placeholder="Type your full name as your signature" style="font-style:italic;font-family:Georgia,serif;font-size:17px;" />
+      <p class="note">By typing your name above, you are providing a legally binding electronic signature.</p>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Parent / Guardian Signature (if under 18)</label>
+      <input class="field-input" type="text" id="w-guardian" placeholder="Type parent or guardian full name (if applicable)" style="font-style:italic;font-family:Georgia,serif;" />
+    </div>
+
+    <div class="field-group">
+      <div class="check-row">
+        <input type="checkbox" id="w-agree" />
+        <label for="w-agree">I confirm that I have read, understand, and voluntarily agree to all terms of this Release of Liability and Waiver. I understand I am waiving certain legal rights by signing.</label>
+      </div>
+    </div>
+
+    <div class="err-msg" id="err-waiver">Please complete all fields, initials, and the agreement checkbox.</div>
+    <div class="success-msg" id="ok-waiver">
+      <h3>All Forms Complete! 🎉</h3>
+      <p>You are all set! Heather will review your forms and be in touch shortly with next steps. We can't wait to get you started on your Everyday Strong journey!</p>
+      <p style="margin-top:0.8rem;font-size:13px;color:#5a7a5a;">Questions? Email us at <a href="mailto:Everydaystrongteam@gmail.com" style="color:#1a7a4a;">Everydaystrongteam@gmail.com</a></p>
+    </div>
+    <button class="submit-btn" id="btn-waiver" onclick="submitWaiver()">Submit Waiver & Complete Enrollment</button>
+  </div>
+</div>
+
+<script>
+// ── EmailJS Setup ─────────────────────────────────────────────────────
+// REPLACE THESE WITH YOUR EMAILJS VALUES AFTER SETUP:
+var EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
+var EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
+var EMAILJS_TEMPLATE_INTAKE = "YOUR_INTAKE_TEMPLATE_ID";
+var EMAILJS_TEMPLATE_AGREEMENT = "YOUR_AGREEMENT_TEMPLATE_ID";
+var EMAILJS_TEMPLATE_WAIVER = "YOUR_WAIVER_TEMPLATE_ID";
+
+emailjs.init(EMAILJS_PUBLIC_KEY);
+
+function switchForm(name, btn){
+  document.querySelectorAll(".form-section").forEach(function(s){ s.classList.remove("on"); });
+  document.querySelectorAll(".fnav-btn").forEach(function(b){ b.classList.remove("on"); });
+  document.getElementById("fs-"+name).classList.add("on");
+  btn.classList.add("on");
+  window.scrollTo(0,0);
+}
+
+function switchFormByName(name){
+  document.querySelectorAll(".form-section").forEach(function(s){ s.classList.remove("on"); });
+  document.querySelectorAll(".fnav-btn").forEach(function(b){ b.classList.remove("on"); });
+  document.getElementById("fs-"+name).classList.add("on");
+  document.querySelectorAll(".fnav-btn").forEach(function(b){
+    if(b.textContent.toLowerCase().indexOf(name.slice(0,4))!==-1) b.classList.add("on");
+  });
+  window.scrollTo(0,0);
+}
+
+function val(id){ return (document.getElementById(id)||{}).value||""; }
+
+function submitIntake(){
+  var fname=val("i-fname"),lname=val("i-lname"),email=val("i-email"),phone=val("i-phone"),dob=val("i-dob"),program=val("i-program"),level=val("i-level"),goals=val("i-goals");
+  var err=document.getElementById("err-intake");
+  if(!fname||!lname||!email||!phone||!dob||!program||!level||!goals){
+    err.style.display="block"; return;
+  }
+  err.style.display="none";
+  var btn=document.getElementById("btn-intake");
+  btn.disabled=true; btn.textContent="Sending...";
+
+  var params={
+    to_email:"Everydaystrongteam@gmail.com",
+    form_type:"NEW CLIENT INTAKE FORM",
+    client_name:fname+" "+lname,
+    client_email:email,
+    client_phone:phone,
+    dob:dob,
+    program:program,
+    fitness_level:level,
+    goals:goals,
+    injuries:val("i-injuries")||"None",
+    equipment:val("i-equipment")||"Not specified",
+    referral:val("i-referral")||"Not specified",
+    notes:val("i-notes")||"None"
+  };
+
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_INTAKE, params)
+    .then(function(){
+      document.getElementById("ok-intake").style.display="block";
+      btn.style.display="none";
+    }, function(){
+      btn.disabled=false; btn.textContent="Submit Intake Form";
+      alert("There was an error sending your form. Please email us directly at Everydaystrongteam@gmail.com");
+    });
+}
+
+function submitAgreement(){
+  var name=val("a-name"),date=val("a-date"),sig=val("a-sig");
+  var agreed=document.getElementById("a-agree").checked;
+  var err=document.getElementById("err-agreement");
+  if(!name||!date||!sig||!agreed){ err.style.display="block"; return; }
+  err.style.display="none";
+  var btn=document.getElementById("btn-agreement");
+  btn.disabled=true; btn.textContent="Sending...";
+
+  var params={
+    to_email:"Everydaystrongteam@gmail.com",
+    form_type:"CLIENT AGREEMENT",
+    client_name:name,
+    date_signed:date,
+    signature:sig
+  };
+
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_AGREEMENT, params)
+    .then(function(){
+      document.getElementById("ok-agreement").style.display="block";
+      btn.style.display="none";
+    }, function(){
+      btn.disabled=false; btn.textContent="Sign Client Agreement";
+      alert("There was an error. Please email us at Everydaystrongteam@gmail.com");
+    });
+}
+
+function submitWaiver(){
+  var name=val("w-name"),dob=val("w-dob"),address=val("w-address"),phone=val("w-phone");
+  var ecName=val("w-ec-name"),ecPhone=val("w-ec-phone"),sig=val("w-sig");
+  var agreed=document.getElementById("w-agree").checked;
+  var initials=[val("w-i1"),val("w-i2"),val("w-i3"),val("w-i4"),val("w-i5"),val("w-i6"),val("w-i7"),val("w-i8"),val("w-i9"),val("w-i10"),val("w-i11")];
+  var allInitialed=initials.every(function(i){ return i.trim().length>0; });
+  var err=document.getElementById("err-waiver");
+  if(!name||!dob||!address||!phone||!ecName||!ecPhone||!sig||!agreed||!allInitialed){
+    err.style.display="block"; err.textContent="Please complete all fields, provide initials for all sections, and check the agreement box."; return;
+  }
+  err.style.display="none";
+  var btn=document.getElementById("btn-waiver");
+  btn.disabled=true; btn.textContent="Submitting...";
+
+  var params={
+    to_email:"Everydaystrongteam@gmail.com",
+    form_type:"RELEASE OF LIABILITY WAIVER",
+    client_name:name,
+    dob:dob,
+    address:address,
+    phone:phone,
+    emergency_contact:ecName+" / "+ecPhone,
+    signature:sig,
+    guardian:val("w-guardian")||"N/A",
+    initials:initials.join(", ")
+  };
+
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_WAIVER, params)
+    .then(function(){
+      document.getElementById("ok-waiver").style.display="block";
+      btn.style.display="none";
+    }, function(){
+      btn.disabled=false; btn.textContent="Submit Waiver & Complete Enrollment";
+      alert("There was an error. Please email us at Everydaystrongteam@gmail.com");
+    });
+}
+</script>
+</body>
+</html>
