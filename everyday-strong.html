@@ -135,6 +135,11 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
 .progress-note{font-size:13px;color:var(--text);margin-top:4px;line-height:1.4;}
 .progress-private{font-size:10px;color:var(--sub);margin-top:4px;}
 
+
+.stat-card{background:var(--card);border-radius:10px;border:0.5px solid var(--border);padding:1rem;text-align:center;}
+.stat-num{font-size:26px;font-weight:700;color:var(--accent);margin-bottom:3px;}
+.stat-label{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;font-family:Arial,sans-serif;}
+
 /* MESSAGES */
 .msg-bubble{background:var(--inp);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:14px;color:var(--text);}
 .msg-bubble.mine{background:var(--accent);color:#fff;margin-left:2rem;}
@@ -489,8 +494,10 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
   </div>
   <div class="admin-body">
     <div class="admin-tabs">
-      <button class="tab-btn on" id="atab-videos">📹 Videos</button>
+      <button class="tab-btn on" id="atab-dashboard">📊 Dashboard</button>
+      <button class="tab-btn" id="atab-videos">📹 Videos</button>
       <button class="tab-btn" id="atab-codes">🔐 Codes</button>
+      <button class="tab-btn" id="atab-clients">👤 Clients</button>
       <button class="tab-btn" id="atab-announce">📢 Announcements</button>
       <button class="tab-btn" id="atab-settings">⚙️ Settings</button>
       <button class="tab-btn" id="atab-community">🏘️ Community</button>
@@ -498,7 +505,23 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <button class="tab-btn" id="atab-messages">💌 Messages</button>
     </div>
 
-    <div class="tab-content on" id="atc-videos">
+
+    <div class="tab-content on" id="atc-dashboard">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1rem;margin-bottom:1.2rem;" id="dash-stats"></div>
+      <div class="admin-card">
+        <h3>📋 New Check ins This Week</h3>
+        <div id="dash-checkins"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+      <div class="admin-card">
+        <h3>💌 Unread Messages</h3>
+        <div id="dash-messages"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+      <div class="admin-card">
+        <h3>🏘️ Recent Community Posts</h3>
+        <div id="dash-community"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+    </div>
+    <div class="tab-content" id="atc-videos">
       <div class="admin-card">
         <h3>Add a Workout Video</h3>
         <div class="ok-msg" id="ok-video">Video saved!</div>
@@ -521,6 +544,28 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       </div>
     </div>
 
+
+    <div class="tab-content" id="atc-clients">
+      <div class="admin-card">
+        <h3>Client Profiles</h3>
+        <p style="font-size:13px;color:var(--sub);margin-bottom:1rem;">Click a client to see their check ins, messages, and activity.</p>
+        <div id="clients-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+      <div class="admin-card" id="client-profile-card" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <h3 id="client-profile-name">Client</h3>
+          <button onclick="document.getElementById('client-profile-card').style.display='none';" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--sub);">✕</button>
+        </div>
+        <div class="admin-tabs" style="margin-bottom:1rem;">
+          <button class="tab-btn on" id="cp-tab-checkins" onclick="cpTab('checkins',this)">📋 Check ins</button>
+          <button class="tab-btn" id="cp-tab-msgs" onclick="cpTab('msgs',this)">💌 Messages</button>
+          <button class="tab-btn" id="cp-tab-progress" onclick="cpTab('progress',this)">📸 Progress</button>
+        </div>
+        <div id="cp-checkins"><p style="color:var(--sub);font-size:13px;">Select a client above.</p></div>
+        <div id="cp-msgs" style="display:none;"><p style="color:var(--sub);font-size:13px;">Select a client above.</p></div>
+        <div id="cp-progress" style="display:none;"><p style="color:var(--sub);font-size:13px;">Select a client above.</p></div>
+      </div>
+    </div>
     <div class="tab-content" id="atc-codes">
       <div class="admin-card">
         <h3>Create Access Code</h3>
@@ -725,6 +770,10 @@ if(isDark) document.getElementById("dark-btn").textContent="☀️";
 
 // PORTAL TABS
 function switchPortalTab(name,btn){
+  if(name==="all"){
+    var dot=document.querySelector(".ann-dot");
+    if(dot) dot.remove();
+  }
   document.querySelectorAll(".portal-tab").forEach(function(t){ t.style.display="none"; });
   document.querySelectorAll(".pnav-btn").forEach(function(b){ b.classList.remove("on"); });
   document.getElementById("tab-"+name).style.display="block";
@@ -758,6 +807,7 @@ function doLogin(){
       loadVideos();
       loadAnnouncements();
       loadStreak();
+      checkNewAnnouncements();
       sp("pg-portal");
     } else {
       err.style.display="block"; err.textContent="Incorrect code. Please check with your instructor.";
@@ -967,6 +1017,21 @@ function annVisibleToUser(a){
   return true;
 }
 
+function checkNewAnnouncements(){
+  if(!DB) return;
+  DB.ref("announcements").orderByChild("ts").limitToLast(1).once("value",function(snap){
+    if(snap.exists()){
+      var btn=document.getElementById("pnav-all");
+      if(btn && !btn.querySelector(".ann-dot")){
+        var dot=document.createElement("span");
+        dot.className="ann-dot";
+        dot.style.cssText="display:inline-block;width:8px;height:8px;background:#c05040;border-radius:50%;margin-left:5px;vertical-align:middle;";
+        btn.appendChild(dot);
+      }
+    }
+  });
+}
+
 function loadAnnouncements(){
   if(!DB) return;
   DB.ref("announcements").on("value",function(snap){
@@ -995,12 +1060,14 @@ function loadAnnouncements(){
 function doAdmin(){
   var p=prompt("Instructor password:");
   if(p===null) return;
-  if(p===adminPass){ loadAdmVideos(); loadAdmCodes(); loadAdmAnn(); sp("pg-admin"); }
+  if(p===adminPass){ loadDashboard(); loadAdmVideos(); loadAdmCodes(); loadAdmAnn(); sp("pg-admin"); }
   else alert("Incorrect password. Please try again.");
 }
 
+document.getElementById("atab-dashboard").onclick=function(){ setAdmTab("dashboard",this); loadDashboard(); };
 document.getElementById("atab-videos").onclick=function(){ setAdmTab("videos",this); };
 document.getElementById("atab-codes").onclick=function(){ setAdmTab("codes",this); loadAdmCodes(); };
+document.getElementById("atab-clients").onclick=function(){ setAdmTab("clients",this); loadClients(); };
 document.getElementById("atab-announce").onclick=function(){ setAdmTab("announce",this); };
 document.getElementById("atab-settings").onclick=function(){ setAdmTab("settings",this); };
 document.getElementById("atab-community").onclick=function(){ setAdmTab("community",this); loadAdminCommList(); };
@@ -1682,6 +1749,219 @@ function sendAdminReply(){
     from:"Heather", text:txt, ts:Date.now(), fromClient:false
   }, function(e){
     if(!e){ document.getElementById("reply-text").value=""; showOk("ok-admin-reply","Reply sent!"); }
+  });
+}
+
+
+// DASHBOARD
+function loadDashboard(){
+  if(!DB) return;
+  var weekAgo = Date.now() - 7*24*60*60*1000;
+  var statsEl = document.getElementById("dash-stats");
+
+  // Count active codes
+  DB.ref("codes").once("value",function(snap){
+    var total=0, active=0, trial=0;
+    if(snap.exists()) snap.forEach(function(c){
+      var cd=c.val(); total++;
+      if(!cd.inactive && !(cd.trial && cd.expiresAt && Date.now()>cd.expiresAt)) active++;
+      if(cd.trial && cd.expiresAt && Date.now()<=cd.expiresAt) trial++;
+    });
+    // Count videos
+    DB.ref("videos").once("value",function(vsnap){
+      var vcount=vsnap.exists()?vsnap.numChildren():0;
+      // Count community posts this week
+      DB.ref("community").orderByChild("ts").startAt(weekAgo).once("value",function(csnap){
+        var cposts=csnap.exists()?csnap.numChildren():0;
+        // Count new checkins
+        DB.ref("checkins").orderByChild("ts").startAt(weekAgo).once("value",function(cisnap){
+          var newci=cisnap.exists()?cisnap.numChildren():0;
+          statsEl.innerHTML=
+            "<div class='stat-card'><div class='stat-num'>"+active+"</div><div class='stat-label'>Active Members</div></div>"+
+            "<div class='stat-card'><div class='stat-num'>"+trial+"</div><div class='stat-label'>Trials</div></div>"+
+            "<div class='stat-card'><div class='stat-num'>"+vcount+"</div><div class='stat-label'>Videos</div></div>"+
+            "<div class='stat-card'><div class='stat-num'>"+newci+"</div><div class='stat-label'>Check ins (7 days)</div></div>"+
+            "<div class='stat-card'><div class='stat-num'>"+cposts+"</div><div class='stat-label'>Posts (7 days)</div></div>";
+        });
+      });
+    });
+  });
+
+  // Recent check ins
+  DB.ref("checkins").orderByChild("ts").startAt(weekAgo).on("value",function(snap){
+    var el=document.getElementById("dash-checkins");
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No check ins this week.</p>"; return; }
+    var items=[]; snap.forEach(function(c){ items.push(c.val()); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    var emojis={"1":"😩","2":"😕","3":"😐","4":"😊","5":"🔥"};
+    var h="";
+    items.forEach(function(ci){
+      h+="<div style='padding:8px 0;border-bottom:0.5px solid var(--border);font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:8px;'>";
+      h+="<div><strong>"+ex(ci.name)+"</strong> "+( emojis[ci.feeling]||"")+" <span style='font-size:11px;color:var(--sub);'>"+ex(ci.good?ci.good.substring(0,40):"")+"</span></div>";
+      h+="<span style='font-size:11px;color:var(--sub);white-space:nowrap;'>"+ago2fn(ci.ts)+"</span></div>";
+    });
+    el.innerHTML=h;
+  });
+
+  // Recent messages
+  DB.ref("messages").on("value",function(snap){
+    var el=document.getElementById("dash-messages");
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No messages yet.</p>"; return; }
+    var threads=[]; 
+    snap.forEach(function(c){
+      var msgs=[]; c.forEach(function(m){ msgs.push(m.val()); });
+      msgs.sort(function(a,b){ return b.ts-a.ts; });
+      var unread=msgs.filter(function(m){ return m.fromClient; });
+      if(unread.length) threads.push({name:c.key, latest:unread[0], count:unread.length});
+    });
+    threads.sort(function(a,b){ return b.latest.ts-a.latest.ts; });
+    el.innerHTML="";
+    if(!threads.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No unread messages.</p>"; return; }
+    var h="";
+    threads.slice(0,5).forEach(function(t){
+      var row=document.createElement("div");
+      row.style.cssText="padding:8px 0;border-bottom:0.5px solid var(--border);font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;";
+      row.setAttribute("data-msgname",t.name);
+      row.onclick=function(){ var n=this.getAttribute("data-msgname"); document.getElementById("atab-messages").click(); document.getElementById("reply-to").value=n; };
+      row.innerHTML="<div><strong>"+ex(t.latest.from||t.name)+"</strong><br/><span style='font-size:12px;color:var(--sub);'>"+ex((t.latest.text||"").substring(0,50))+"</span></div><span style='background:#c05040;color:#fff;font-size:10px;padding:2px 7px;border-radius:8px;white-space:nowrap;'>"+t.count+" new</span>";
+      el.appendChild(row);
+    });
+    el.innerHTML=h;
+  });
+
+  // Recent community
+  DB.ref("community").orderByChild("ts").limitToLast(5).on("value",function(snap){
+    var el=document.getElementById("dash-community");
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No posts yet.</p>"; return; }
+    var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    var h="";
+    items.forEach(function(p){
+      h+="<div style='padding:8px 0;border-bottom:0.5px solid var(--border);font-size:13px;'>";
+      h+="<strong>"+ex(p.name)+"</strong> <span style='font-size:11px;color:var(--sub);'>"+ago2fn(p.ts)+"</span><br/>";
+      h+="<span style='font-size:12px;color:var(--sub);'>"+ex((p.text||"").substring(0,60))+"</span></div>";
+    });
+    el.innerHTML=h;
+  });
+}
+
+// CLIENT PROFILES
+var currentClientKey = null;
+
+function loadClients(){
+  if(!DB) return;
+  DB.ref("codes").on("value",function(snap){
+    var el=document.getElementById("clients-list");
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No clients yet.</p>"; return; }
+    el.innerHTML="";
+    snap.forEach(function(c){
+      var cd=c.val();
+      var inactive=cd.inactive||false;
+      var expired=cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt;
+      var crow=document.createElement("div");
+      crow.style.cssText="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;";
+      crow.setAttribute("data-cname", cd.name);
+      crow.onclick=function(){ openClientProfile(this.getAttribute("data-cname")); };
+      var badges="";
+      if(inactive) badges+=" <span style='background:#888;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>PAUSED</span>";
+      if(cd.trial&&!expired) badges+=" <span style='background:#e8a020;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>TRIAL</span>";
+      if(expired) badges+=" <span style='background:#c05040;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>EXPIRED</span>";
+      crow.innerHTML="<div><strong style='font-size:14px;color:var(--text);'>"+ex(cd.name)+"</strong>"+badges+"<br/><span style='font-family:monospace;font-size:12px;color:var(--sub);'>"+ex(cd.code)+"</span></div><span style='color:var(--accent);font-size:13px;'>View →</span>";
+      el.appendChild(crow);
+    });
+  });
+}
+
+function openClientProfile(name){
+  currentClientKey = sk(name);
+  document.getElementById("client-profile-name").textContent = name + "  Profile";
+  document.getElementById("client-profile-card").style.display="block";
+  document.getElementById("client-profile-card").scrollIntoView({behavior:"smooth"});
+  cpTab("checkins", document.getElementById("cp-tab-checkins"));
+}
+
+function cpTab(name, btn){
+  ["checkins","msgs","progress"].forEach(function(t){ document.getElementById("cp-"+t).style.display="none"; });
+  document.querySelectorAll("[id^='cp-tab']").forEach(function(b){ b.classList.remove("on"); });
+  document.getElementById("cp-"+name).style.display="block";
+  btn.classList.add("on");
+  if(name==="checkins") loadClientCheckins();
+  if(name==="msgs") loadClientMsgs();
+  if(name==="progress") loadClientProgress();
+}
+
+function loadClientCheckins(){
+  if(!DB||!currentClientKey) return;
+  var el=document.getElementById("cp-checkins");
+  el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Loading...</p>";
+  DB.ref("checkins").orderByChild("name").once("value",function(snap){
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No check ins yet.</p>"; return; }
+    var items=[]; var emojis={"1":"😩","2":"😕","3":"😐","4":"😊","5":"🔥"};
+    snap.forEach(function(c){ var a=c.val(); if(sk(a.name)===currentClientKey) items.push(a); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    if(!items.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No check ins yet.</p>"; return; }
+    var h="";
+    items.forEach(function(ci){
+      var d=new Date(ci.ts).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+      h+="<div style='padding:12px 0;border-bottom:0.5px solid var(--border);'>";
+      h+="<div style='display:flex;justify-content:space-between;margin-bottom:6px;'><strong>"+d+"</strong> <span style='font-size:18px;'>"+(emojis[ci.feeling]||"")+"</span></div>";
+      h+="<p style='font-size:13px;color:var(--text);margin-bottom:4px;'><strong style='color:var(--accent);'>Went well:</strong> "+ex(ci.good)+"</p>";
+      if(ci.hard) h+="<p style='font-size:13px;color:var(--text);margin-bottom:4px;'><strong style='color:var(--accent);'>Challenging:</strong> "+ex(ci.hard)+"</p>";
+      if(ci.q) h+="<p style='font-size:13px;color:var(--text);'><strong style='color:var(--accent);'>Question:</strong> "+ex(ci.q)+"</p>";
+      h+="</div>";
+    });
+    el.innerHTML=h;
+  });
+}
+
+function loadClientMsgs(){
+  if(!DB||!currentClientKey) return;
+  var el=document.getElementById("cp-msgs");
+  el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Loading...</p>";
+  DB.ref("messages/"+currentClientKey).on("value",function(snap){
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No messages yet.</p>"; return; }
+    var items=[]; snap.forEach(function(c){ items.push(c.val()); });
+    items.sort(function(a,b){ return a.ts-b.ts; });
+    var h="<div style='max-height:300px;overflow-y:auto;margin-bottom:10px;'>";
+    items.forEach(function(m){
+      var isClient=m.fromClient;
+      h+="<div style='margin-bottom:8px;display:flex;flex-direction:column;align-items:"+(isClient?"flex-start":"flex-end")+";'>";
+      h+="<div style='background:"+(isClient?"var(--inp)":"var(--accent)")+";color:"+(isClient?"var(--text)":"#fff")+";border-radius:10px;padding:8px 12px;max-width:80%;font-size:13px;'>";
+      h+=ex(m.text)+"</div>";
+      h+="<span style='font-size:10px;color:var(--sub);margin-top:2px;'>"+ago2fn(m.ts)+"</span></div>";
+    });
+    h+="</div>";
+    h+="<div style='display:flex;gap:8px;'><input class='form-input' id='cp-reply-inp' placeholder='Reply...' style='flex:1;font-size:13px;padding:8px 12px;' /><button class='action-btn' style='font-size:12px;padding:8px 14px;' onclick='sendClientReply()'>Send</button></div>";
+    el.innerHTML=h;
+  });
+}
+
+function sendClientReply(){
+  var inp=document.getElementById("cp-reply-inp");
+  var txt=inp?inp.value.trim():"";
+  if(!txt||!currentClientKey) return;
+  DB.ref("messages/"+currentClientKey).push({from:"Heather",text:txt,ts:Date.now(),fromClient:false},function(e){ if(!e) inp.value=""; });
+}
+
+function loadClientProgress(){
+  if(!DB||!currentClientKey) return;
+  var el=document.getElementById("cp-progress");
+  el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Loading...</p>";
+  DB.ref("progress/"+currentClientKey).on("value",function(snap){
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No progress photos yet.</p>"; return; }
+    var items=[]; snap.forEach(function(c){ items.push(c.val()); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    var h="<div style='display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;'>";
+    items.forEach(function(p){
+      if(p.visibility==="self") return; // skip truly private
+      h+="<div style='background:var(--inp);border-radius:8px;overflow:hidden;'>";
+      h+="<img src='"+ex(p.img)+"' style='width:100%;aspect-ratio:1;object-fit:cover;display:block;' onerror=\"this.style.display='none'\" />";
+      h+="<div style='padding:6px 8px;font-size:11px;color:var(--sub);'>"+ex(p.date)+"</div>";
+      if(p.note) h+="<div style='padding:0 8px 6px;font-size:12px;color:var(--text);'>"+ex(p.note)+"</div>";
+      h+="</div>";
+    });
+    h+="</div>";
+    el.innerHTML=h;
   });
 }
 
