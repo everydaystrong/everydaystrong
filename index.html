@@ -122,6 +122,8 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
   .steps{grid-template-columns:1fr;}
 }
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -224,7 +226,6 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
         </div>
       </div>
       <div class="prog-card" style="cursor:pointer;" onclick="window.location='forms.html'">
-        <div class="prog-icon">📋</div>
         <h3 class="prog-title">New Client Info</h3>
         <div class="prog-price" style="color:#4a7c5c;">Start Here →</div>
         <p class="prog-desc">Everything you need to know before your first class.</p>
@@ -358,6 +359,15 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
 
 
 
+
+<!-- FEATURED PHOTOS -->
+<div id="featured-section" style="display:none;background:#faf6f2;padding:4rem 1.5rem;">
+  <div class="container">
+    <div class="section-label">Transformations</div>
+    <h2 class="section-title">Real results from real people</h2>
+    <div id="featured-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;margin-top:2rem;"></div>
+  </div>
+</div>
 <!-- TESTIMONIALS -->
 <section style="background:#fff;padding:5rem 1.5rem;">
   <div class="container">
@@ -463,6 +473,78 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
 </footer>
 
 <script>
+// Firebase for landing page
+try {
+  var landingApp = firebase.initializeApp({
+    apiKey:"AIzaSyDYVYxiuxraOm0NR03eAN2YeTwp8X32n3A",
+    authDomain:"everyday-strong-95844.firebaseapp.com",
+    databaseURL:"https://everyday-strong-95844-default-rtdb.firebaseio.com",
+    projectId:"everyday-strong-95844",
+    storageBucket:"everyday-strong-95844.firebasestorage.app",
+    messagingSenderId:"835314554846",
+    appId:"1:835314554846:web:cd5367a8002833c6ed2f4f"
+  }, "landing");
+  var landingDB = firebase.database(landingApp);
+
+  // Load testimonials
+  landingDB.ref("testimonials").on("value", function(snap){
+    var grid = document.getElementById("testimonials-grid");
+    if(!snap.exists()){
+      grid.innerHTML="<p style='text-align:center;color:#9a8a7a;font-size:14px;grid-column:1/-1;'>Testimonials coming soon!</p>";
+      return;
+    }
+    var items=[]; snap.forEach(function(c){ items.push(c.val()); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    grid.innerHTML="";
+    items.forEach(function(t){
+      var stars="★".repeat(t.stars||5);
+      var card=document.createElement("div");
+      card.style.cssText="background:#faf6f2;border-radius:14px;padding:2rem;border:0.5px solid #e8ddd2;";
+      var starsEl=document.createElement("div");
+      starsEl.style.cssText="font-size:22px;color:#a0522d;margin-bottom:0.8rem;";
+      starsEl.textContent=stars;
+      var quoteEl=document.createElement("p");
+      quoteEl.style.cssText="font-family:Arial,sans-serif;font-size:15px;color:#5a4a38;line-height:1.7;font-style:italic;margin-bottom:1rem;";
+      quoteEl.textContent="“"+t.quote+"”";
+      var nameEl=document.createElement("p");
+      nameEl.style.cssText="font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:#a0522d;";
+      nameEl.textContent=t.name;
+      card.appendChild(starsEl);
+      card.appendChild(quoteEl);
+      card.appendChild(nameEl);
+      grid.appendChild(card);
+    });
+  });
+
+  // Load featured photos
+  landingDB.ref("featured_photos").on("value", function(snap){
+    var sec = document.getElementById("featured-section");
+    var grid = document.getElementById("featured-grid");
+    if(!snap.exists()){ sec.style.display="none"; return; }
+    sec.style.display="block";
+    var items=[]; snap.forEach(function(c){ items.push(c.val()); });
+    grid.innerHTML="";
+    items.forEach(function(p){
+      var card=document.createElement("div");
+      card.style.cssText="border-radius:12px;overflow:hidden;background:#fff;border:0.5px solid #e8ddd2;";
+      var img=document.createElement("img");
+      img.src=p.img;
+      img.style.cssText="width:100%;aspect-ratio:1;object-fit:cover;display:block;";
+      img.onerror=function(){ this.closest("div").style.display="none"; };
+      card.appendChild(img);
+      if(p.caption||p.name){
+        var info=document.createElement("div");
+        info.style.cssText="padding:10px 12px;";
+        if(p.caption) info.innerHTML="<p style='font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:#3a2a1a;'>"+p.caption+"</p>";
+        if(p.name) info.innerHTML+="<p style='font-family:Arial,sans-serif;font-size:12px;color:#9a8a7a;'>"+p.name+"</p>";
+        card.appendChild(info);
+      }
+      grid.appendChild(card);
+    });
+  });
+
+} catch(e){ console.log("Firebase not available"); }
+
 function toggleMenu(){
   var m=document.getElementById("mobile-menu");
   m.classList.toggle("open");

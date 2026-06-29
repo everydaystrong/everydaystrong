@@ -501,6 +501,8 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <button class="tab-btn" id="atab-announce">📢 Announcements</button>
       <button class="tab-btn" id="atab-settings">⚙️ Settings</button>
       <button class="tab-btn" id="atab-community">🏘️ Community</button>
+      <button class="tab-btn" id="atab-testimonials">⭐ Testimonials</button>
+      <button class="tab-btn" id="atab-featured">📸 Featured Photos</button>
       <button class="tab-btn" id="atab-checkins">📋 Check-ins</button>
       <button class="tab-btn" id="atab-messages">💌 Messages</button>
     </div>
@@ -656,6 +658,63 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         </div>
         <textarea class="form-textarea" id="reply-text" placeholder="Type your reply..."></textarea>
         <button class="action-btn" id="admin-reply-btn">Send Reply</button>
+      </div>
+    </div>
+
+    <!-- TESTIMONIALS TAB -->
+    <div class="tab-content" id="atc-testimonials">
+      <div class="admin-card">
+        <h3>Add Testimonial</h3>
+        <div class="ok-msg" id="ok-test">Testimonial added!</div>
+        <div class="form-row">
+          <span class="form-label">Client Name (or leave as "Member")</span>
+          <input class="form-input" type="text" id="test-name" placeholder="e.g. Sarah M." style="text-transform:none;" />
+        </div>
+        <div class="form-row">
+          <span class="form-label">Quote</span>
+          <textarea class="form-textarea" id="test-quote" placeholder="What did they say about Everyday Strong?"></textarea>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Star Rating</span>
+          <select class="form-select" id="test-stars">
+            <option value="5">★★★★★</option>
+            <option value="4">★★★★</option>
+            <option value="3">★★★</option>
+          </select>
+        </div>
+        <button class="action-btn" id="add-test-btn">Add to Website</button>
+      </div>
+      <div class="admin-card">
+        <h3>Live Testimonials on Website</h3>
+        <p style="font-size:12px;color:var(--sub);margin-bottom:1rem;">These show on everydaystrongfit.com automatically.</p>
+        <div id="test-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+    </div>
+
+    <!-- FEATURED PHOTOS TAB -->
+    <div class="tab-content" id="atc-featured">
+      <div class="admin-card">
+        <h3>Add Featured Photo</h3>
+        <p style="font-size:12px;color:var(--sub);margin-bottom:1rem;">Add progress or workout photos to display on your landing page as social proof.</p>
+        <div class="ok-msg" id="ok-feat">Photo added!</div>
+        <div class="form-row">
+          <span class="form-label">Image Link (Imgur)</span>
+          <input class="form-input" type="text" id="feat-img" placeholder="https://i.imgur.com/..." style="text-transform:none;" />
+        </div>
+        <div class="form-row">
+          <span class="form-label">Caption (optional)</span>
+          <input class="form-input" type="text" id="feat-caption" placeholder="e.g. 8 week transformation!" style="text-transform:none;" />
+        </div>
+        <div class="form-row">
+          <span class="form-label">Client Name (optional)</span>
+          <input class="form-input" type="text" id="feat-name" placeholder="e.g. Sarah or leave blank for anonymous" style="text-transform:none;" />
+        </div>
+        <button class="action-btn" id="add-feat-btn">Add to Website</button>
+      </div>
+      <div class="admin-card">
+        <h3>Featured Photos on Website</h3>
+        <p style="font-size:12px;color:var(--sub);margin-bottom:1rem;">These show on everydaystrongfit.com automatically.</p>
+        <div id="feat-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
       </div>
     </div>
     <div class="tab-content" id="atc-community">
@@ -1071,6 +1130,10 @@ document.getElementById("atab-clients").onclick=function(){ setAdmTab("clients",
 document.getElementById("atab-announce").onclick=function(){ setAdmTab("announce",this); };
 document.getElementById("atab-settings").onclick=function(){ setAdmTab("settings",this); };
 document.getElementById("atab-community").onclick=function(){ setAdmTab("community",this); loadAdminCommList(); };
+document.getElementById("atab-testimonials").onclick=function(){ setAdmTab("testimonials",this); loadTestimonialsAdmin(); };
+document.getElementById("atab-featured").onclick=function(){ setAdmTab("featured",this); loadFeaturedAdmin(); };
+document.getElementById("add-test-btn").onclick=addTestimonial;
+document.getElementById("add-feat-btn").onclick=addFeaturedPhoto;
 function setAdmTab(name,btn){
   document.querySelectorAll(".tab-btn").forEach(function(t){ t.classList.remove("on"); });
   document.querySelectorAll(".tab-content").forEach(function(t){ t.classList.remove("on"); });
@@ -1963,6 +2026,120 @@ function loadClientProgress(){
     h+="</div>";
     el.innerHTML=h;
   });
+}
+
+
+// TESTIMONIALS ADMIN
+function addTestimonial(){
+  var name=document.getElementById("test-name").value.trim()||"Member";
+  var quote=document.getElementById("test-quote").value.trim();
+  var stars=document.getElementById("test-stars").value;
+  if(!quote){ alert("Please enter a quote."); return; }
+  if(!DB) return;
+  DB.ref("testimonials").push({name:name,quote:quote,stars:parseInt(stars),ts:Date.now()},function(e){
+    if(!e){
+      document.getElementById("test-name").value="";
+      document.getElementById("test-quote").value="";
+      showOk("ok-test","Added to website!");
+      loadTestimonialsAdmin();
+    }
+  });
+}
+
+function loadTestimonialsAdmin(){
+  if(!DB) return;
+  DB.ref("testimonials").on("value",function(snap){
+    var el=document.getElementById("test-list");
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No testimonials yet.</p>"; return; }
+    var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    el.innerHTML="";
+    items.forEach(function(t){
+      var row=document.createElement("div");
+      row.style.cssText="padding:12px 0;border-bottom:0.5px solid var(--border);";
+      var stars="★".repeat(t.stars||5);
+      var stars="★".repeat(t.stars||5);
+      var left=document.createElement("div");
+      left.style.cssText="flex:1;";
+      left.innerHTML="<span style='color:#e8a020;font-size:14px;'>"+stars+"</span><br/><strong style='font-size:13px;'>"+ex(t.name)+"</strong><br/><span style='font-size:13px;color:var(--sub);font-style:italic;'>"+ex(t.quote.substring(0,80))+(t.quote.length>80?"...":"")+"</span>";
+      var delBtn=document.createElement("button");
+      delBtn.className="del-btn";
+      delBtn.textContent="✕";
+      delBtn.setAttribute("data-key",t._k);
+      delBtn.onclick=function(){ delTestimonial(this.getAttribute("data-key")); };
+      row.style.cssText="padding:12px 0;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:8px;";
+      row.appendChild(left);
+      row.appendChild(delBtn);
+      el.appendChild(row);
+    });
+  });
+}
+
+function delTestimonial(key){
+  if(!confirm("Remove this testimonial from the website?")) return;
+  DB.ref("testimonials/"+key).remove();
+}
+
+// FEATURED PHOTOS ADMIN
+function addFeaturedPhoto(){
+  var img=document.getElementById("feat-img").value.trim();
+  var caption=document.getElementById("feat-caption").value.trim();
+  var name=document.getElementById("feat-name").value.trim();
+  if(!img){ alert("Please paste an image link."); return; }
+  if(!DB) return;
+  DB.ref("featured_photos").push({img:img,caption:caption||null,name:name||null,ts:Date.now()},function(e){
+    if(!e){
+      document.getElementById("feat-img").value="";
+      document.getElementById("feat-caption").value="";
+      document.getElementById("feat-name").value="";
+      showOk("ok-feat","Photo added to website!");
+      loadFeaturedAdmin();
+    }
+  });
+}
+
+function loadFeaturedAdmin(){
+  if(!DB) return;
+  DB.ref("featured_photos").on("value",function(snap){
+    var el=document.getElementById("feat-list");
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No featured photos yet.</p>"; return; }
+    var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    var grid=document.createElement("div");
+    grid.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;";
+    items.forEach(function(p){
+      var dBtn=document.createElement("button");
+      dBtn.className="del-btn";
+      dBtn.textContent="✕";
+      dBtn.style.cssText="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);color:#fff;border-color:transparent;";
+      dBtn.setAttribute("data-key",p._k);
+      dBtn.onclick=function(){ delFeatured(this.getAttribute("data-key")); };
+      var wrap=document.createElement("div");
+      wrap.style.cssText="background:var(--inp);border-radius:8px;overflow:hidden;position:relative;";
+      var img2=document.createElement("img");
+      img2.src=p.img;
+      img2.style.cssText="width:100%;aspect-ratio:1;object-fit:cover;display:block;";
+      img2.onerror=function(){ this.style.display="none"; };
+      wrap.appendChild(img2);
+      if(p.caption||p.name){
+        var info=document.createElement("div");
+        info.style.padding="6px 8px";
+        if(p.caption) info.innerHTML="<div style='font-size:12px;font-weight:700;color:var(--text);'>"+ex(p.caption)+"</div>";
+        if(p.name) info.innerHTML+="<div style='font-size:11px;color:var(--sub);'>"+ex(p.name)+"</div>";
+        wrap.appendChild(info);
+      }
+      wrap.appendChild(dBtn);
+      grid.appendChild(wrap);
+      h+="</div>";
+    });
+    el.innerHTML="";
+    el.appendChild(grid);
+  });
+}
+
+function delFeatured(key){
+  if(!confirm("Remove this photo from the website?")) return;
+  DB.ref("featured_photos/"+key).remove();
 }
 
 // ADMIN COMMUNITY
