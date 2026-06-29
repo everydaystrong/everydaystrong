@@ -418,15 +418,20 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
     <a href="forms.html" class="btn-primary" style="margin-top:1.5rem;display:inline-block;">Reserve Your Spot</a>
   </div>
 </section>
-<!-- INSTAGRAM -->
+<!-- SOCIAL -->
 <section style="background:#faf6f2;padding:3rem 1.5rem;text-align:center;">
   <div class="container">
     <div style="font-size:32px;margin-bottom:0.8rem;">📲</div>
-    <h2 style="font-family:Georgia,serif;font-size:26px;color:#3a2a1a;margin-bottom:0.6rem;">Follow Along on Instagram</h2>
+    <h2 style="font-family:Georgia,serif;font-size:26px;color:#3a2a1a;margin-bottom:0.6rem;">Follow Along</h2>
     <p style="font-family:Arial,sans-serif;font-size:15px;color:#6a5a48;margin-bottom:1.5rem;">Workout tips, motivation, and a peek behind the scenes of Everyday Strong.</p>
-    <a href="https://instagram.com/everydaystrong" target="_blank" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;">
-      <span style="font-size:18px;">📸</span> Follow @everydaystrong
-    </a>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+      <a href="https://instagram.com/everydaystrong13" target="_blank" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:#c13584;">
+        <span style="font-size:18px;">📸</span> Instagram @everydaystrong13
+      </a>
+      <a href="https://tiktok.com/@everydaystrong13" target="_blank" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:#010101;">
+        <span style="font-size:18px;">🎵</span> TikTok @everydaystrong13
+      </a>
+    </div>
   </div>
 </section>
 <!-- FORMS -->
@@ -469,7 +474,7 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
 </section>
 
 <footer>
-  <p>© 2025 Everyday Strong · <a href="https://everydaystrong.github.io/everydaystrong/everyday-strong.html">Member Login</a> · <a href="mailto:Everydaystrongteam@gmail.com">Contact</a></p>
+  <p>© 2025 Everyday Strong · <a href="https://everydaystrong.github.io/everydaystrong/everyday-strong.html">Member Login</a> · <a href="mailto:Everydaystrongteam@gmail.com">Contact</a> · <a href="https://instagram.com/everydaystrong13" target="_blank">Instagram</a> · <a href="https://tiktok.com/@everydaystrong13" target="_blank">TikTok</a></p>
 </footer>
 
 <script>
@@ -485,6 +490,39 @@ try {
     appId:"1:835314554846:web:cd5367a8002833c6ed2f4f"
   }, "landing");
   var landingDB = firebase.database(landingApp);
+
+  // Load programs
+  landingDB.ref("programs").on("value", function(snap){
+    var grid = document.getElementById("programs-grid");
+    if(!snap.exists()){
+      grid.innerHTML="<p style='text-align:center;color:#9a8a7a;font-size:14px;grid-column:1/-1;'>Programs coming soon!</p>";
+      return;
+    }
+    var items=[]; snap.forEach(function(c){ var a=c.val(); if(a.showWeb) items.push(a); });
+    items.sort(function(a,b){ return a.ts-b.ts; });
+    if(!items.length){
+      grid.innerHTML="<p style='text-align:center;color:#9a8a7a;font-size:14px;grid-column:1/-1;'>Programs coming soon!</p>";
+      return;
+    }
+    grid.innerHTML="";
+    var icons=["🎥","💪","⭐","🏋️","🔥","🧘"];
+    items.forEach(function(p,idx){
+      var card=document.createElement("div");
+      card.className="prog-card";
+      var detailsHtml="";
+      if(p.details){
+        p.details.split("\n").forEach(function(d){
+          if(d.trim()) detailsHtml+="<div class='prog-detail'>"+d.trim()+"</div>";
+        });
+      }
+      card.innerHTML="<div class='prog-icon'>"+(icons[idx%icons.length])+"</div>"+
+        "<h3 class='prog-title'>"+p.name+"</h3>"+
+        (p.price?"<div class='prog-price'>"+p.price+"</div>":"")+
+        (p.desc?"<p class='prog-desc'>"+p.desc+"</p>":"")+
+        (detailsHtml?"<div class='prog-details'>"+detailsHtml+"</div>":"");
+      grid.appendChild(card);
+    });
+  });
 
   // Load testimonials
   landingDB.ref("testimonials").on("value", function(snap){

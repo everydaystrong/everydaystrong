@@ -501,6 +501,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <button class="tab-btn" id="atab-announce">📢 Announcements</button>
       <button class="tab-btn" id="atab-settings">⚙️ Settings</button>
       <button class="tab-btn" id="atab-community">🏘️ Community</button>
+      <button class="tab-btn" id="atab-programs">📋 Programs</button>
       <button class="tab-btn" id="atab-testimonials">⭐ Testimonials</button>
       <button class="tab-btn" id="atab-featured">📸 Featured Photos</button>
       <button class="tab-btn" id="atab-checkins">📋 Check-ins</button>
@@ -529,7 +530,11 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         <div class="ok-msg" id="ok-video">Video saved!</div>
         <div class="form-row"><span class="form-label">Video Title</span><input class="form-input" id="v-title" placeholder="e.g. Lower Body — Week 1" style="text-transform:none;" /></div>
         <div class="form-row"><span class="form-label">YouTube Link</span><input class="form-input" id="v-url" placeholder="https://youtube.com/watch?v=..." style="text-transform:none;" /></div>
-        <div class="form-row"><span class="form-label">Program / Category</span><input class="form-input" id="v-tag" placeholder="e.g. Lower Body, Upper Body" style="text-transform:none;" /></div>
+        <div class="form-row"><span class="form-label">Program / Category</span>
+          <input class="form-input" id="v-tag" placeholder="Select or type a program..." list="program-list" style="text-transform:none;" />
+          <datalist id="program-list" id="program-datalist"></datalist>
+          <p class="tip">Choose an existing program or type a new one to create it.</p>
+        </div>
         <div class="form-row"><span class="form-label">Release Date (optional)</span><input type="date" class="form-input" id="v-release" /><span style="font-size:11px;color:var(--sub);margin-top:3px;">Leave blank to show immediately. Set a future date to schedule.</span></div>
         <button class="action-btn" id="add-video-btn">Save Video</button>
       </div>
@@ -662,6 +667,42 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
     </div>
 
     <!-- TESTIMONIALS TAB -->
+
+    <div class="tab-content" id="atc-programs">
+      <div class="admin-card">
+        <h3>Add a Program</h3>
+        <div class="ok-msg" id="ok-prog">Program saved!</div>
+        <div class="form-row">
+          <span class="form-label">Program Name</span>
+          <input class="form-input" type="text" id="prog-name" placeholder="e.g. Bodyweight Program" style="text-transform:none;" />
+        </div>
+        <div class="form-row">
+          <span class="form-label">Short Description (shown on website)</span>
+          <textarea class="form-textarea" id="prog-desc-admin" placeholder="What is this program? Who is it for? What will they get?"></textarea>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Price</span>
+          <input class="form-input" type="text" id="prog-price" placeholder="e.g. $30/week or $80/session" style="text-transform:none;" />
+        </div>
+        <div class="form-row">
+          <span class="form-label">Details (bullet points, one per line)</span>
+          <textarea class="form-textarea" id="prog-details-admin" placeholder="e.g.&#10;No equipment needed&#10;All fitness levels&#10;2x per week live classes"></textarea>
+        </div>
+        <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">
+          <input type="checkbox" id="prog-show-web" checked style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+          <label for="prog-show-web" style="font-size:13px;color:var(--text);cursor:pointer;">Show on website (everydaystrongfit.com)</label>
+        </div>
+        <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">
+          <input type="checkbox" id="prog-show-forms" checked style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+          <label for="prog-show-forms" style="font-size:13px;color:var(--text);cursor:pointer;">Show in new client forms dropdown</label>
+        </div>
+        <button class="action-btn" id="add-prog-btn">Save Program</button>
+      </div>
+      <div class="admin-card">
+        <h3>Your Programs</h3>
+        <div id="admin-prog-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+    </div>
     <div class="tab-content" id="atc-testimonials">
       <div class="admin-card">
         <h3>Add Testimonial</h3>
@@ -1119,18 +1160,20 @@ function loadAnnouncements(){
 function doAdmin(){
   var p=prompt("Instructor password:");
   if(p===null) return;
-  if(p===adminPass){ loadDashboard(); loadAdmVideos(); loadAdmCodes(); loadAdmAnn(); sp("pg-admin"); }
+  if(p===adminPass){ loadDashboard(); loadAdmVideos(); populateProgramDatalist(); loadAdmCodes(); loadAdmAnn(); loadAdminPrograms(); sp("pg-admin"); }
   else alert("Incorrect password. Please try again.");
 }
 
 document.getElementById("atab-dashboard").onclick=function(){ setAdmTab("dashboard",this); loadDashboard(); };
-document.getElementById("atab-videos").onclick=function(){ setAdmTab("videos",this); };
+document.getElementById("atab-videos").onclick=function(){ setAdmTab("videos",this); loadAdmVideos(); populateProgramDatalist(); };
 document.getElementById("atab-codes").onclick=function(){ setAdmTab("codes",this); loadAdmCodes(); };
 document.getElementById("atab-clients").onclick=function(){ setAdmTab("clients",this); loadClients(); };
 document.getElementById("atab-announce").onclick=function(){ setAdmTab("announce",this); };
 document.getElementById("atab-settings").onclick=function(){ setAdmTab("settings",this); };
 document.getElementById("atab-community").onclick=function(){ setAdmTab("community",this); loadAdminCommList(); };
+document.getElementById("atab-programs").onclick=function(){ setAdmTab("programs",this); loadAdminPrograms(); };
 document.getElementById("atab-testimonials").onclick=function(){ setAdmTab("testimonials",this); loadTestimonialsAdmin(); };
+document.getElementById("add-prog-btn").onclick=saveProgram;
 document.getElementById("atab-featured").onclick=function(){ setAdmTab("featured",this); loadFeaturedAdmin(); };
 document.getElementById("add-test-btn").onclick=addTestimonial;
 document.getElementById("add-feat-btn").onclick=addFeaturedPhoto;
@@ -1192,6 +1235,22 @@ function saveEdit(){
 }
 
 // ADMIN VIDEOS
+function populateProgramDatalist(){
+  if(!DB) return;
+  DB.ref("videos").once("value", function(snap){
+    var cats = {};
+    if(snap.exists()) snap.forEach(function(c){ var t=c.val().tag; if(t) cats[t]=true; });
+    var dl = document.getElementById("program-list");
+    if(!dl) return;
+    dl.innerHTML = "";
+    Object.keys(cats).sort().forEach(function(cat){
+      var opt = document.createElement("option");
+      opt.value = cat;
+      dl.appendChild(opt);
+    });
+  });
+}
+
 function loadAdmVideos(){
   if(!DB) return;
   DB.ref("videos").on("value",function(snap){
@@ -2028,6 +2087,61 @@ function loadClientProgress(){
   });
 }
 
+
+
+// PROGRAMS ADMIN
+function saveProgram(){
+  var name=document.getElementById("prog-name").value.trim();
+  var desc=document.getElementById("prog-desc-admin").value.trim();
+  var price=document.getElementById("prog-price").value.trim();
+  var details=document.getElementById("prog-details-admin").value.trim();
+  var showWeb=document.getElementById("prog-show-web").checked;
+  var showForms=document.getElementById("prog-show-forms").checked;
+  if(!name){ alert("Please enter a program name."); return; }
+  if(!DB) return;
+  DB.ref("programs").push({
+    name:name, desc:desc, price:price,
+    details:details, showWeb:showWeb, showForms:showForms,
+    ts:Date.now()
+  }, function(e){
+    if(!e){
+      document.getElementById("prog-name").value="";
+      document.getElementById("prog-desc-admin").value="";
+      document.getElementById("prog-price").value="";
+      document.getElementById("prog-details-admin").value="";
+      showOk("ok-prog","Program saved!");
+      loadAdminPrograms();
+    }
+  });
+}
+
+function loadAdminPrograms(){
+  if(!DB) return;
+  DB.ref("programs").on("value",function(snap){
+    var el=document.getElementById("admin-prog-list");
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No programs yet. Add your first one above!</p>"; return; }
+    var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); });
+    items.sort(function(a,b){ return a.ts-b.ts; });
+    el.innerHTML="";
+    items.forEach(function(p){
+      var row=document.createElement("div");
+      row.style.cssText="padding:12px 0;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:8px;";
+      var left=document.createElement("div");
+      left.style.flex="1";
+      var webBadge=p.showWeb?"<span style='background:#4a7c5c;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;margin-right:4px;'>🌐 Website</span>":"";
+      var formBadge=p.showForms?"<span style='background:#a0522d;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>📋 Forms</span>":"";
+      left.innerHTML="<strong style='font-size:14px;color:var(--text);'>"+ex(p.name)+"</strong> "+webBadge+formBadge+"<br/><span style='font-size:12px;color:var(--accent);font-weight:700;'>"+ex(p.price||"")+"</span><br/><span style='font-size:12px;color:var(--sub);'>"+ex((p.desc||"").substring(0,60))+(p.desc&&p.desc.length>60?"...":"")+"</span>";
+      var del=document.createElement("button");
+      del.className="del-btn";
+      del.textContent="✕";
+      del.setAttribute("data-key",p._k);
+      del.onclick=function(){ if(confirm("Delete this program?")) DB.ref("programs/"+this.getAttribute("data-key")).remove(); };
+      row.appendChild(left);
+      row.appendChild(del);
+      el.appendChild(row);
+    });
+  });
+}
 
 // TESTIMONIALS ADMIN
 function addTestimonial(){

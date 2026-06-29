@@ -30,10 +30,10 @@ nav{background:#fff;border-bottom:1px solid #e8ddd2;padding:0.9rem 2rem;display:
 .fnav-btn{flex:1;min-width:120px;padding:14px 10px;border:none;background:none;font-size:13px;color:#9a8a7a;cursor:pointer;border-bottom:3px solid transparent;font-weight:600;white-space:nowrap;font-family:Arial,sans-serif;}
 .fnav-btn.on{color:#a0522d;border-bottom-color:#a0522d;background:#fdf9f6;}
 
-.form-section{display:none;padding:2.5rem 1.5rem;max-width:720px;margin:0 auto;}
+.form-section{display:none;padding:1.5rem 1rem;max-width:720px;margin:0 auto;}
 .form-section.on{display:block;}
 
-.form-card{background:#fff;border-radius:14px;border:0.5px solid #e8ddd2;padding:2rem;margin-bottom:1.5rem;box-shadow:0 2px 12px rgba(60,30,10,0.04);}
+.form-card{background:#fff;border-radius:14px;border:0.5px solid #e8ddd2;padding:1.4rem;margin-bottom:1.2rem;box-shadow:0 2px 12px rgba(60,30,10,0.04);}
 .form-card h2{font-family:Georgia,serif;font-size:22px;color:#3a2a1a;margin-bottom:0.4rem;}
 .form-card .subtitle{font-size:13px;color:#9a8a7a;margin-bottom:1.5rem;line-height:1.5;}
 .divider{border:none;border-top:1px solid #e8ddd2;margin:1.5rem 0;}
@@ -47,7 +47,7 @@ nav{background:#fff;border-bottom:1px solid #e8ddd2;padding:0.9rem 2rem;display:
 .field-textarea{width:100%;padding:11px 14px;border:1.5px solid #d8cfc6;border-radius:9px;font-size:15px;background:#f9f6f2;color:#3a2a1a;outline:none;resize:vertical;min-height:80px;font-family:Arial,sans-serif;}
 .field-textarea:focus,.field-select:focus{border-color:#a0522d;background:#fff;}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
-@media(max-width:500px){.two-col{grid-template-columns:1fr;}}
+@media(max-width:600px){.two-col{grid-template-columns:1fr;}}
 
 /* WAIVER SECTIONS */
 .waiver-section{background:#faf6f2;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1rem;border:0.5px solid #e8ddd2;}
@@ -82,6 +82,16 @@ nav{background:#fff;border-bottom:1px solid #e8ddd2;padding:0.9rem 2rem;display:
 
 .note{font-size:12px;color:#9a8a7a;margin-top:5px;line-height:1.4;}
 .section-tag{display:inline-block;background:#f5ede6;color:#a0522d;font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.5px;}
+
+@media(max-width:480px){
+  .hero{padding:2rem 1rem;}
+  .hero h1{font-size:24px;}
+  .steps-row{gap:0.5rem;}
+  .step-pill{font-size:11px;padding:6px 12px;}
+  .form-section{padding:1rem 0.8rem;}
+  .form-card{padding:1.2rem 1rem;}
+  .field-input,.field-select,.field-textarea{font-size:14px;padding:10px 12px;}
+}
 </style>
 </head>
 <body>
@@ -499,18 +509,18 @@ try {
 } catch(e){ loadFallbackPrograms(); }
 
 function loadPrograms(){
-  fbDB.ref("videos").once("value", function(snap){
-    var cats = ["7 Day Trial", "Full Membership"];
+  fbDB.ref("programs").once("value", function(snap){
+    var opts=["7 Day Trial"];
     if(snap.exists()) snap.forEach(function(c){
-      var t = c.val().tag;
-      if(t && cats.indexOf(t) === -1) cats.push(t);
+      var p=c.val();
+      if(p.showForms && p.name && p.name!=="7 Day Trial") opts.push(p.name+(p.price?" ("+p.price+")":""));
     });
-    buildProgramSelect(cats);
+    buildProgramSelect(opts);
   });
 }
 
 function loadFallbackPrograms(){
-  buildProgramSelect(["7 Day Trial","Full Membership","Virtual Semi Private Classes","Private Coaching Virtual"]);
+  buildProgramSelect(["7 Day Trial","Virtual Semi Private Classes","Private Coaching Virtual"]);
 }
 
 function buildProgramSelect(cats){
