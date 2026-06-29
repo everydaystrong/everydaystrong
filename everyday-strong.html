@@ -126,6 +126,19 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
 
 
 
+
+.recipe-card{background:var(--card);border-radius:12px;border:0.5px solid var(--border);margin-bottom:1rem;overflow:hidden;}
+.recipe-card-img{width:100%;height:160px;object-fit:cover;display:block;}
+.recipe-card-body{padding:14px;}
+.recipe-card-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.recipe-card-meta{font-size:12px;color:var(--sub);margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap;}
+.recipe-tag{background:var(--inp);padding:2px 8px;border-radius:8px;font-size:11px;color:var(--sub);}
+.recipe-expand{display:none;}
+.recipe-expand.open{display:block;}
+.recipe-section-title{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin:10px 0 6px;}
+.recipe-step{font-size:13px;color:var(--text);padding:4px 0;border-bottom:0.5px solid var(--border);line-height:1.5;}
+.recipe-step:last-child{border-bottom:none;}
+
 /* PROGRESS PHOTOS */
 .progress-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.8rem;margin-top:1rem;}
 .progress-card{background:var(--card);border-radius:10px;border:0.5px solid var(--border);overflow:hidden;}
@@ -274,6 +287,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <button class="pnav-btn" id="pnav-msg" data-tab="msg" onclick="switchPortalTab(this.dataset.tab,this)">💌 Messages</button>
       <button class="pnav-btn" id="pnav-progress" data-tab="progress" onclick="switchPortalTab(this.dataset.tab,this)">📸 Progress</button>
       <button class="pnav-btn" id="pnav-food" data-tab="food" onclick="switchPortalTab(this.dataset.tab,this)">🥗 Food Journal</button>
+      <button class="pnav-btn" id="pnav-recipes" data-tab="recipes" onclick="switchPortalTab(this.dataset.tab,this)">🍽️ Recipes</button>
     </div>
 
     <!-- PROGRAMS TAB -->
@@ -488,6 +502,30 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       </div>
       <div id="msg-thread"><div style="text-align:center;padding:2rem;color:var(--sub);font-size:14px;">Loading messages...</div></div>
     </div>
+
+    <!-- RECIPES TAB -->
+    <div id="tab-recipes" class="portal-tab" style="display:none;">
+      <p class="section-title">🍽️ Recipes</p>
+      <p class="section-sub">Healthy recipes to fuel your workouts</p>
+
+      <!-- FILTERS -->
+      <div style="background:var(--card);border-radius:12px;padding:1rem;margin-bottom:1rem;border:0.5px solid var(--border);">
+        <p style="font-size:12px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Filter Recipes</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;" id="recipe-filters">
+          <button class="comm-cat-btn on" data-filter="all" onclick="filterRecipes('all',this)">All</button>
+          <button class="comm-cat-btn" data-filter="breakfast" onclick="filterRecipes('breakfast',this)">🌅 Breakfast</button>
+          <button class="comm-cat-btn" data-filter="lunch" onclick="filterRecipes('lunch',this)">☀️ Lunch</button>
+          <button class="comm-cat-btn" data-filter="dinner" onclick="filterRecipes('dinner',this)">🌙 Dinner</button>
+          <button class="comm-cat-btn" data-filter="snack" onclick="filterRecipes('snack',this)">🍎 Snacks</button>
+          <button class="comm-cat-btn" data-filter="dairyfree" onclick="filterRecipes('dairyfree',this)">🥛 Dairy Free</button>
+          <button class="comm-cat-btn" data-filter="glutenfree" onclick="filterRecipes('glutenfree',this)">🌾 Gluten Free</button>
+          <button class="comm-cat-btn" data-filter="highprotein" onclick="filterRecipes('highprotein',this)">💪 High Protein</button>
+          <button class="comm-cat-btn" data-filter="quickeasy" onclick="filterRecipes('quickeasy',this)">⚡ Quick & Easy</button>
+        </div>
+      </div>
+
+      <div id="recipes-list"><div class="empty-state"><p style="font-size:28px;margin-bottom:8px;">🍽️</p><p>Loading recipes...</p></div></div>
+    </div>
     <!-- COMPLETED TAB -->
     <div id="tab-done" class="portal-tab" style="display:none;">
       <p class="section-title">✅ Completed Workouts</p>
@@ -516,6 +554,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <button class="tab-btn" id="atab-programs">📋 Programs</button>
       <button class="tab-btn" id="atab-testimonials">⭐ Testimonials</button>
       <button class="tab-btn" id="atab-featured">📸 Featured Photos</button>
+      <button class="tab-btn" id="atab-recipes-admin">🍽️ Recipes</button>
       <button class="tab-btn" id="atab-attendance">📅 Attendance</button>
       <button class="tab-btn" id="atab-bulk">📧 Bulk Message</button>
       <button class="tab-btn" id="atab-report">📊 Monthly Report</button>
@@ -731,6 +770,67 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       </div>
     </div>
 
+
+    <!-- ADMIN RECIPES TAB -->
+    <div class="tab-content" id="atc-recipes-admin">
+      <div class="admin-card">
+        <h3>Add a Recipe</h3>
+        <div class="ok-msg" id="ok-recipe">Recipe added!</div>
+        <div class="form-row">
+          <span class="form-label">Recipe Name</span>
+          <input class="form-input" type="text" id="rec-name" placeholder="e.g. High Protein Egg Muffins" style="text-transform:none;" />
+        </div>
+        <div class="form-row">
+          <span class="form-label">Category</span>
+          <select class="form-select" id="rec-cat">
+            <option value="breakfast">🌅 Breakfast</option>
+            <option value="lunch">☀️ Lunch</option>
+            <option value="dinner">🌙 Dinner</option>
+            <option value="snack">🍎 Snack</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Tags (check all that apply)</span>
+          <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:6px;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="rec-df" style="accent-color:var(--accent);" /> Dairy Free</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="rec-gf" style="accent-color:var(--accent);" /> Gluten Free</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="rec-hp" style="accent-color:var(--accent);" /> High Protein</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="rec-qe" style="accent-color:var(--accent);" /> Quick & Easy</label>
+          </div>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Description</span>
+          <textarea class="form-textarea" id="rec-desc" placeholder="Brief description of the recipe..."></textarea>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Ingredients (one per line)</span>
+          <textarea class="form-textarea" id="rec-ingredients" placeholder="e.g.&#10;6 eggs&#10;1 cup spinach&#10;1/2 cup cheese"></textarea>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Instructions (one step per line)</span>
+          <textarea class="form-textarea" id="rec-instructions" placeholder="e.g.&#10;Preheat oven to 375F&#10;Mix eggs together&#10;Bake for 20 minutes"></textarea>
+        </div>
+        <div class="two-col">
+          <div class="form-row">
+            <span class="form-label">Prep Time</span>
+            <input class="form-input" type="text" id="rec-prep" placeholder="e.g. 10 min" style="text-transform:none;" />
+          </div>
+          <div class="form-row">
+            <span class="form-label">Servings</span>
+            <input class="form-input" type="text" id="rec-servings" placeholder="e.g. 4 servings" style="text-transform:none;" />
+          </div>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Photo Link (Imgur, optional)</span>
+          <input class="form-input" type="text" id="rec-img" placeholder="https://i.imgur.com/..." style="text-transform:none;" />
+        </div>
+        <button class="action-btn" id="add-recipe-btn">Add Recipe</button>
+      </div>
+      <div class="admin-card">
+        <h3>All Recipes</h3>
+        <div id="admin-recipe-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+    </div>
     <!-- ATTENDANCE TAB -->
     <div class="tab-content" id="atc-attendance">
       <div class="admin-card">
@@ -981,6 +1081,7 @@ function switchPortalTab(name,btn){
   if(name==="msg") loadMessages();
   if(name==="progress") loadProgress();
   if(name==="food") loadFood();
+  if(name==="recipes") loadRecipes();
   if(name==="checkin"){ loadGoal(); }
 }
 
@@ -1278,7 +1379,9 @@ document.getElementById("add-prog-btn").onclick=saveProgram;
 document.getElementById("atab-featured").onclick=function(){ setAdmTab("featured",this); loadFeaturedAdmin(); };
 document.getElementById("add-test-btn").onclick=addTestimonial;
 document.getElementById("add-feat-btn").onclick=addFeaturedPhoto;
+document.getElementById("atab-recipes-admin").onclick=function(){ setAdmTab("recipes-admin",this); loadAdminRecipes(); };
 document.getElementById("atab-attendance").onclick=function(){ setAdmTab("attendance",this); loadAttendanceClients(); loadAttendanceHistory(); };
+document.getElementById("add-recipe-btn").onclick=addRecipe;
 document.getElementById("atab-bulk").onclick=function(){ setAdmTab("bulk",this); };
 document.getElementById("atab-report").onclick=function(){ setAdmTab("report",this); initReportYears(); };
 document.getElementById("att-save-btn").onclick=saveAttendance;
@@ -2362,6 +2465,147 @@ function loadClientProgress(){
 
 
 
+
+
+// RECIPES
+var activeRecipeFilter = "all";
+var allRecipes = [];
+
+function filterRecipes(filter, btn){
+  activeRecipeFilter = filter;
+  document.querySelectorAll("#recipe-filters .comm-cat-btn").forEach(function(b){ b.classList.remove("on"); });
+  btn.classList.add("on");
+  renderRecipes();
+}
+
+function loadRecipes(){
+  if(!DB) return;
+  DB.ref("recipes").on("value", function(snap){
+    allRecipes = [];
+    if(snap.exists()) snap.forEach(function(c){ var a=c.val(); a._k=c.key; allRecipes.push(a); });
+    allRecipes.sort(function(a,b){ return b.ts-a.ts; });
+    renderRecipes();
+  });
+}
+
+function renderRecipes(){
+  var el = document.getElementById("recipes-list");
+  var catLabels={breakfast:"🌅 Breakfast",lunch:"☀️ Lunch",dinner:"🌙 Dinner",snack:"🍎 Snack"};
+  var filtered = allRecipes.filter(function(r){
+    if(activeRecipeFilter==="all") return true;
+    if(activeRecipeFilter===r.cat) return true;
+    if(activeRecipeFilter==="dairyfree"&&r.dairyfree) return true;
+    if(activeRecipeFilter==="glutenfree"&&r.glutenfree) return true;
+    if(activeRecipeFilter==="highprotein"&&r.highprotein) return true;
+    if(activeRecipeFilter==="quickeasy"&&r.quickeasy) return true;
+    return false;
+  });
+  if(!filtered.length){
+    el.innerHTML="<div class='empty-state'><p style='font-size:28px;margin-bottom:8px;'>🍽️</p><p>No recipes in this category yet.</p></div>";
+    return;
+  }
+  el.innerHTML="";
+  filtered.forEach(function(r){
+    var card=document.createElement("div");
+    card.className="recipe-card";
+    var tags="";
+    if(r.dairyfree) tags+="<span class='recipe-tag'>Dairy Free</span>";
+    if(r.glutenfree) tags+="<span class='recipe-tag'>Gluten Free</span>";
+    if(r.highprotein) tags+="<span class='recipe-tag'>High Protein</span>";
+    if(r.quickeasy) tags+="<span class='recipe-tag'>Quick & Easy</span>";
+    var ingList="", instList="";
+    if(r.ingredients) r.ingredients.split("\n").forEach(function(i){ if(i.trim()) ingList+="<div class='recipe-step'>• "+ex(i.trim())+"</div>"; });
+    if(r.instructions) r.instructions.split("\n").forEach(function(s,idx){ if(s.trim()) instList+="<div class='recipe-step'>"+(idx+1)+". "+ex(s.trim())+"</div>"; });
+    if(r.img){
+      var rimg=document.createElement("img");
+      rimg.className="recipe-card-img";
+      rimg.src=r.img;
+      rimg.onerror=function(){ this.style.display="none"; };
+      card.appendChild(rimg);
+    }
+    var rbody=document.createElement("div");
+    rbody.className="recipe-card-body";
+    rbody.innerHTML=
+      "<div class='recipe-card-title'>"+ex(r.name)+"</div>"+
+      "<div class='recipe-card-title'>"+ex(r.name)+"</div>"+
+      "<div class='recipe-card-meta'><span>"+(catLabels[r.cat]||r.cat)+"</span>"+(r.prep?"<span>⏱️ "+ex(r.prep)+"</span>":"")+(r.servings?"<span>👥 "+ex(r.servings)+"</span>":"")+"</div>"+
+      (tags?"<div style='display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;'>"+tags+"</div>":"")+
+      (r.desc?"<p style='font-size:13px;color:var(--sub);margin-bottom:8px;'>"+ex(r.desc)+"</p>":"")+
+      "<button class='action-btn sec' style='font-size:12px;padding:6px 14px;' onclick='togRecipe(this)'>View Recipe ↓</button>"+
+      "<div class='recipe-expand' id='re-"+r._k+"'>"+
+      (ingList?"<div class='recipe-section-title'>Ingredients</div>"+ingList:"")+
+      (instList?"<div class='recipe-section-title'>Instructions</div>"+instList:"")+
+      "</div>";
+    card.appendChild(rbody);
+    el.appendChild(card);
+  });
+}
+
+function togRecipe(btn){
+  var expand=btn.nextElementSibling;
+  if(expand.classList.contains("open")){
+    expand.classList.remove("open");
+    btn.textContent="View Recipe ↓";
+  } else {
+    expand.classList.add("open");
+    btn.textContent="Hide Recipe ↑";
+  }
+}
+
+// ADMIN RECIPES
+function addRecipe(){
+  var name=document.getElementById("rec-name").value.trim();
+  var cat=document.getElementById("rec-cat").value;
+  var desc=document.getElementById("rec-desc").value.trim();
+  var ingredients=document.getElementById("rec-ingredients").value.trim();
+  var instructions=document.getElementById("rec-instructions").value.trim();
+  var prep=document.getElementById("rec-prep").value.trim();
+  var servings=document.getElementById("rec-servings").value.trim();
+  var img=document.getElementById("rec-img").value.trim();
+  var df=document.getElementById("rec-df").checked;
+  var gf=document.getElementById("rec-gf").checked;
+  var hp=document.getElementById("rec-hp").checked;
+  var qe=document.getElementById("rec-qe").checked;
+  if(!name||!ingredients){ alert("Please enter at least a name and ingredients."); return; }
+  if(!DB) return;
+  DB.ref("recipes").push({
+    name:name,cat:cat,desc:desc,ingredients:ingredients,instructions:instructions,
+    prep:prep,servings:servings,img:img||null,
+    dairyfree:df,glutenfree:gf,highprotein:hp,quickeasy:qe,ts:Date.now()
+  },function(e){
+    if(!e){
+      ["rec-name","rec-desc","rec-ingredients","rec-instructions","rec-prep","rec-servings","rec-img"].forEach(function(id){ document.getElementById(id).value=""; });
+      ["rec-df","rec-gf","rec-hp","rec-qe"].forEach(function(id){ document.getElementById(id).checked=false; });
+      showOk("ok-recipe","Recipe added!");
+      loadAdminRecipes();
+    }
+  });
+}
+
+function loadAdminRecipes(){
+  if(!DB) return;
+  DB.ref("recipes").on("value",function(snap){
+    var el=document.getElementById("admin-recipe-list");
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No recipes yet.</p>"; return; }
+    var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    el.innerHTML="";
+    items.forEach(function(r){
+      var row=document.createElement("div");
+      row.style.cssText="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border);gap:8px;";
+      var left=document.createElement("div");
+      left.innerHTML="<strong style='font-size:14px;'>"+ex(r.name)+"</strong><br/><span style='font-size:12px;color:var(--sub);'>"+ex(r.cat)+"</span>";
+      var del=document.createElement("button");
+      del.className="del-btn";
+      del.textContent="✕";
+      del.setAttribute("data-key",r._k);
+      del.onclick=function(){ if(confirm("Delete this recipe?")) DB.ref("recipes/"+this.getAttribute("data-key")).remove(); };
+      row.appendChild(left);
+      row.appendChild(del);
+      el.appendChild(row);
+    });
+  });
+}
 
 // ATTENDANCE
 var attendanceChecks = {};
