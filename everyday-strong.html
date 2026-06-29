@@ -245,6 +245,9 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
 
 <!-- PORTAL -->
 <div class="page" id="pg-portal">
+  <div id="new-video-banner" style="display:none;background:#a0522d;color:#fff;padding:10px 1.2rem;text-align:center;font-family:Arial,sans-serif;font-size:14px;font-weight:600;cursor:pointer;" onclick="document.getElementById('new-video-banner').style.display='none';switchPortalTab('all',document.getElementById('pnav-all'));">
+    🎥 New workout added! Tap to view →
+  </div>
   <div class="portal-header">
     <div class="portal-brand">Everyday <span>Strong</span></div>
     <div class="hdr-right">
@@ -255,6 +258,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
   <div class="welcome-bar" id="welcome-bar">Welcome back!</div>
   <div class="portal-body">
     <div id="ann-sec"></div>
+      <div id="workout-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1rem;"></div>
     <div class="streak-bar" id="streak-bar" style="display:none;">
       <span class="streak-fire">🔥</span>
       <div><div class="streak-num" id="streak-num">0</div><div class="streak-label">day streak</div></div>
@@ -420,6 +424,14 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
     <div id="tab-checkin" class="portal-tab" style="display:none;">
       <p class="section-title">📋 Weekly Check-in</p>
       <p class="section-sub">Let Heather know how your week went!</p>
+      <div class="admin-card" id="goal-card" style="margin-bottom:1rem;">
+        <h3>🎯 My Goal</h3>
+        <div class="ok-msg" id="ok-goal">Goal saved!</div>
+        <p style="font-size:13px;color:var(--sub);margin-bottom:8px;">What are you working toward? Heather can see this on your profile.</p>
+        <textarea class="form-textarea" id="goal-text" placeholder="e.g. Build strength, lose 20 lbs, feel more confident, run a 5K..."></textarea>
+        <button class="action-btn" id="goal-btn" style="margin-top:4px;">Save My Goal</button>
+        <div id="current-goal" style="margin-top:8px;display:none;background:var(--inp);border-radius:8px;padding:10px 12px;font-size:14px;color:var(--text);"></div>
+      </div>
       <div class="admin-card">
         <h3>This Week's Check-in</h3>
         <div class="ok-msg" id="ok-checkin">Check-in submitted! 🎉</div>
@@ -504,6 +516,9 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <button class="tab-btn" id="atab-programs">📋 Programs</button>
       <button class="tab-btn" id="atab-testimonials">⭐ Testimonials</button>
       <button class="tab-btn" id="atab-featured">📸 Featured Photos</button>
+      <button class="tab-btn" id="atab-attendance">📅 Attendance</button>
+      <button class="tab-btn" id="atab-bulk">📧 Bulk Message</button>
+      <button class="tab-btn" id="atab-report">📊 Monthly Report</button>
       <button class="tab-btn" id="atab-checkins">📋 Check-ins</button>
       <button class="tab-btn" id="atab-messages">💌 Messages</button>
     </div>
@@ -715,6 +730,76 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         <div id="admin-prog-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
       </div>
     </div>
+
+    <!-- ATTENDANCE TAB -->
+    <div class="tab-content" id="atc-attendance">
+      <div class="admin-card">
+        <h3>Mark Class Attendance</h3>
+        <div class="ok-msg" id="ok-attendance">Attendance saved!</div>
+        <div class="two-col" style="margin-bottom:1rem;">
+          <div>
+            <span class="form-label">Class Date</span>
+            <input type="date" class="form-input" id="att-date" />
+          </div>
+          <div>
+            <span class="form-label">Class Day</span>
+            <select class="form-select" id="att-day">
+              <option value="Monday">Monday</option>
+              <option value="Wednesday">Wednesday</option>
+            </select>
+          </div>
+        </div>
+        <span class="form-label" style="display:block;margin-bottom:8px;">Who attended?</span>
+        <div id="att-client-list" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;"></div>
+        <button class="action-btn" id="att-save-btn">Save Attendance</button>
+      </div>
+      <div class="admin-card">
+        <h3>Recent Attendance</h3>
+        <div id="att-history"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+    </div>
+
+    <!-- BULK MESSAGE TAB -->
+    <div class="tab-content" id="atc-bulk">
+      <div class="admin-card">
+        <h3>📧 Message All Clients</h3>
+        <p style="font-size:13px;color:var(--sub);margin-bottom:1rem;">Send a message that appears in every active client's Messages tab at once.</p>
+        <div class="ok-msg" id="ok-bulk">Message sent to all clients!</div>
+        <div class="form-row">
+          <span class="form-label">Send To</span>
+          <select class="form-select" id="bulk-audience">
+            <option value="all">All Active Clients</option>
+            <option value="trial">Trial Members Only</option>
+            <option value="full">Full Members Only</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Message</span>
+          <textarea class="form-textarea" id="bulk-text" placeholder="Type your message to all clients..." style="min-height:120px;"></textarea>
+        </div>
+        <button class="action-btn" id="bulk-send-btn">Send to All Clients</button>
+      </div>
+    </div>
+
+    <!-- MONTHLY REPORT TAB -->
+    <div class="tab-content" id="atc-report">
+      <div class="admin-card">
+        <h3>📊 Monthly Report</h3>
+        <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
+          <select class="form-select" id="report-month" style="width:auto;">
+            <option value="0">January</option><option value="1">February</option>
+            <option value="2">March</option><option value="3">April</option>
+            <option value="4">May</option><option value="5">June</option>
+            <option value="6">July</option><option value="7">August</option>
+            <option value="8">September</option><option value="9">October</option>
+            <option value="10">November</option><option value="11">December</option>
+          </select>
+          <select class="form-select" id="report-year" style="width:auto;"></select>
+          <button class="action-btn" id="report-gen-btn" style="padding:8px 16px;">Generate</button>
+        </div>
+        <div id="report-output"><p style="color:var(--sub);font-size:13px;">Select a month and click Generate.</p></div>
+      </div>
+    </div>
     <div class="tab-content" id="atc-testimonials">
       <div class="admin-card">
         <h3>Add Testimonial</h3>
@@ -896,7 +981,7 @@ function switchPortalTab(name,btn){
   if(name==="msg") loadMessages();
   if(name==="progress") loadProgress();
   if(name==="food") loadFood();
-  if(name==="checkin") {}
+  if(name==="checkin"){ loadGoal(); }
 }
 
 // LOGIN
@@ -920,6 +1005,10 @@ function doLogin(){
       loadAnnouncements();
       loadStreak();
       checkNewAnnouncements();
+      checkBirthday();
+      checkNewVideo();
+      loadGoal();
+      loadWorkoutStats();
       sp("pg-portal");
     } else {
       err.style.display="block"; err.textContent="Incorrect code. Please check with your instructor.";
@@ -1189,6 +1278,12 @@ document.getElementById("add-prog-btn").onclick=saveProgram;
 document.getElementById("atab-featured").onclick=function(){ setAdmTab("featured",this); loadFeaturedAdmin(); };
 document.getElementById("add-test-btn").onclick=addTestimonial;
 document.getElementById("add-feat-btn").onclick=addFeaturedPhoto;
+document.getElementById("atab-attendance").onclick=function(){ setAdmTab("attendance",this); loadAttendanceClients(); loadAttendanceHistory(); };
+document.getElementById("atab-bulk").onclick=function(){ setAdmTab("bulk",this); };
+document.getElementById("atab-report").onclick=function(){ setAdmTab("report",this); initReportYears(); };
+document.getElementById("att-save-btn").onclick=saveAttendance;
+document.getElementById("bulk-send-btn").onclick=sendBulkMessage;
+document.getElementById("report-gen-btn").onclick=generateReport;
 function setAdmTab(name,btn){
   document.querySelectorAll(".tab-btn").forEach(function(t){ t.classList.remove("on"); });
   document.querySelectorAll(".tab-content").forEach(function(t){ t.classList.remove("on"); });
@@ -1757,6 +1852,99 @@ function loadProgress(){
   });
 }
 
+
+// BIRTHDAY CHECK
+function checkBirthday(){
+  if(!DB||!currentUser) return;
+  DB.ref("codes").orderByChild("code").once("value",function(snap){
+    snap.forEach(function(c){
+      var cd=c.val();
+      if(cd.name===currentUser && cd.dob){
+        var today=new Date();
+        var dob=new Date(cd.dob);
+        if(dob.getMonth()===today.getMonth()&&dob.getDate()===today.getDate()){
+          showBirthdayBanner();
+        }
+      }
+    });
+  });
+}
+
+function showBirthdayBanner(){
+  var banner=document.getElementById("new-video-banner");
+  banner.style.background="#c05040";
+  banner.style.display="block";
+  banner.textContent="🎂 Happy Birthday! Wishing you a wonderful day! 🎉";
+  banner.onclick=function(){ this.style.display="none"; };
+  // Post to community
+  if(DB&&currentUser){
+    DB.ref("community").push({
+      name:"Heather — Instructor",
+      text:"🎂 Happy Birthday "+currentUser+"! Wishing you an amazing day! 🎉",
+      cat:"announcement", ts:Date.now(), likes:{}, isInstructor:true
+    });
+  }
+}
+
+// GOAL FUNCTIONS
+function saveGoal(){
+  var txt=document.getElementById("goal-text").value.trim();
+  if(!txt){ alert("Please enter a goal."); return; }
+  if(!DB) return;
+  DB.ref("goals/"+sk(currentUser)).set({goal:txt,ts:Date.now()},function(e){
+    if(!e){ showOk("ok-goal","Goal saved!"); loadGoal(); }
+  });
+}
+
+function loadGoal(){
+  if(!DB||!currentUser) return;
+  DB.ref("goals/"+sk(currentUser)).once("value",function(snap){
+    if(snap.exists()){
+      var g=snap.val();
+      var el=document.getElementById("current-goal");
+      if(el){ el.style.display="block"; el.innerHTML="<strong style='color:var(--accent);font-size:12px;'>CURRENT GOAL</strong><br/>"+ex(g.goal); }
+      var inp=document.getElementById("goal-text");
+      if(inp) inp.value=g.goal;
+    }
+  });
+}
+
+// NEW VIDEO BANNER
+function checkNewVideo(){
+  if(!DB) return;
+  var lastSeen=localStorage.getItem("es_last_video_seen")||"0";
+  DB.ref("videos").orderByChild("ts").limitToLast(1).once("value",function(snap){
+    if(snap.exists()){
+      var latest=0;
+      snap.forEach(function(c){ latest=c.val().ts||0; });
+      if(latest>parseInt(lastSeen)){
+        document.getElementById("new-video-banner").style.display="block";
+        document.getElementById("new-video-banner").onclick=function(){
+          this.style.display="none";
+          localStorage.setItem("es_last_video_seen",Date.now());
+          switchPortalTab("all",document.getElementById("pnav-all"));
+        };
+      }
+    }
+  });
+}
+
+// WORKOUT STATS
+function loadWorkoutStats(){
+  if(!DB||!currentUser) return;
+  DB.ref("userdata/"+sk(currentUser)+"/completed").once("value",function(snap){
+    var total=snap.exists()?Object.keys(snap.val()).length:0;
+    DB.ref("checkins").orderByChild("name").once("value",function(csnap){
+      var weeks=0;
+      if(csnap.exists()) csnap.forEach(function(c){ if(c.val().name===currentUser) weeks++; });
+      var statsEl=document.getElementById("workout-stats");
+      if(statsEl) statsEl.innerHTML=
+        "<div class='stat-card'><div class='stat-num'>"+total+"</div><div class='stat-label'>Workouts Done</div></div>"+
+        "<div class='stat-card'><div class='stat-num'>"+weeks+"</div><div class='stat-label'>Weekly Check ins</div></div>";
+    });
+  });
+}
+
 // CHECK-INS
 function submitCheckin(){
   var feeling=document.querySelector('input[name="ci-feeling"]:checked');
@@ -2174,6 +2362,145 @@ function loadClientProgress(){
 
 
 
+
+// ATTENDANCE
+var attendanceChecks = {};
+
+function loadAttendanceClients(){
+  if(!DB) return;
+  DB.ref("codes").once("value",function(snap){
+    var el=document.getElementById("att-client-list");
+    el.innerHTML="";
+    attendanceChecks={};
+    if(!snap.exists()) return;
+    snap.forEach(function(c){
+      var cd=c.val();
+      if(cd.inactive||(cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt)) return;
+      var row=document.createElement("label");
+      row.style.cssText="display:flex;align-items:center;gap:8px;padding:8px;background:var(--inp);border-radius:8px;cursor:pointer;font-size:14px;color:var(--text);";
+      var cb=document.createElement("input");
+      cb.type="checkbox";
+      cb.style.cssText="width:16px;height:16px;accent-color:var(--accent);";
+      cb.setAttribute("data-name",cd.name);
+      cb.onchange=function(){ attendanceChecks[this.getAttribute("data-name")]=this.checked; };
+      row.appendChild(cb);
+      row.appendChild(document.createTextNode(cd.name));
+      el.appendChild(row);
+    });
+  });
+}
+
+function saveAttendance(){
+  var date=document.getElementById("att-date").value;
+  var day=document.getElementById("att-day").value;
+  if(!date){ alert("Please select a date."); return; }
+  if(!DB) return;
+  var attended=Object.keys(attendanceChecks).filter(function(n){ return attendanceChecks[n]; });
+  DB.ref("attendance/"+date.replace(/-/g,"")).set({
+    date:date, day:day, attended:attended, ts:Date.now()
+  }, function(e){
+    if(!e){ showOk("ok-attendance","Attendance saved!"); loadAttendanceHistory(); }
+  });
+}
+
+function loadAttendanceHistory(){
+  if(!DB) return;
+  DB.ref("attendance").orderByChild("ts").limitToLast(10).on("value",function(snap){
+    var el=document.getElementById("att-history");
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No attendance recorded yet.</p>"; return; }
+    var items=[]; snap.forEach(function(c){ items.push(c.val()); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    var h="";
+    items.forEach(function(a){
+      h+="<div style='padding:10px 0;border-bottom:0.5px solid var(--border);'>";
+      h+="<strong style='font-size:14px;'>"+ex(a.day)+" "+ex(a.date)+"</strong> <span style='font-size:12px;color:var(--sub);'>"+((a.attended||[]).length)+" attended</span><br/>";
+      h+="<span style='font-size:12px;color:var(--sub);'>"+(a.attended||[]).map(ex).join(", ")+"</span></div>";
+    });
+    el.innerHTML=h;
+  });
+}
+
+// BULK MESSAGE
+function sendBulkMessage(){
+  var txt=document.getElementById("bulk-text").value.trim();
+  var aud=document.getElementById("bulk-audience").value;
+  if(!txt){ alert("Please write a message."); return; }
+  if(!confirm("Send this message to all "+aud+" clients?")) return;
+  if(!DB) return;
+  DB.ref("codes").once("value",function(snap){
+    if(!snap.exists()) return;
+    var count=0;
+    snap.forEach(function(c){
+      var cd=c.val();
+      var expired=cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt;
+      if(cd.inactive||expired) return;
+      if(aud==="trial"&&!cd.trial) return;
+      if(aud==="full"&&cd.trial) return;
+      DB.ref("messages/"+sk(cd.name)).push({
+        from:"Heather",text:txt,ts:Date.now(),fromClient:false
+      });
+      count++;
+    });
+    document.getElementById("bulk-text").value="";
+    showOk("ok-bulk","Message sent to "+count+" clients!");
+  });
+}
+
+// MONTHLY REPORT
+function generateReport(){
+  var month=parseInt(document.getElementById("report-month").value);
+  var year=parseInt(document.getElementById("report-year").value);
+  var start=new Date(year,month,1).getTime();
+  var end=new Date(year,month+1,1).getTime();
+  var el=document.getElementById("report-output");
+  el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Generating...</p>";
+  if(!DB) return;
+
+  var data={members:0,trials:0,checkins:0,posts:0,newClients:0,attendance:[]};
+
+  DB.ref("codes").once("value",function(snap){
+    if(snap.exists()) snap.forEach(function(c){
+      var cd=c.val();
+      if(cd.trial) data.trials++; else data.members++;
+    });
+    DB.ref("checkins").orderByChild("ts").startAt(start).endAt(end).once("value",function(csnap){
+      data.checkins=csnap.exists()?csnap.numChildren():0;
+      DB.ref("community").orderByChild("ts").startAt(start).endAt(end).once("value",function(psnap){
+        data.posts=psnap.exists()?psnap.numChildren():0;
+        DB.ref("attendance").once("value",function(asnap){
+          if(asnap.exists()) asnap.forEach(function(a){
+            var av=a.val();
+            if(av.ts>=start&&av.ts<end) data.attendance.push(av);
+          });
+          var avgAtt=data.attendance.length?Math.round(data.attendance.reduce(function(s,a){ return s+(a.attended||[]).length; },0)/data.attendance.length):0;
+          var mname=["January","February","March","April","May","June","July","August","September","October","November","December"][month];
+          el.innerHTML=
+            "<div style='display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;'>"+
+            "<div class='stat-card'><div class='stat-num'>"+data.members+"</div><div class='stat-label'>Full Members</div></div>"+
+            "<div class='stat-card'><div class='stat-num'>"+data.trials+"</div><div class='stat-label'>Trial Members</div></div>"+
+            "<div class='stat-card'><div class='stat-num'>"+data.checkins+"</div><div class='stat-label'>Check ins</div></div>"+
+            "<div class='stat-card'><div class='stat-num'>"+data.posts+"</div><div class='stat-label'>Community Posts</div></div>"+
+            "<div class='stat-card'><div class='stat-num'>"+data.attendance.length+"</div><div class='stat-label'>Classes Held</div></div>"+
+            "<div class='stat-card'><div class='stat-num'>"+avgAtt+"</div><div class='stat-label'>Avg Attendance</div></div>"+
+            "</div>"+
+            "<p style='font-size:12px;color:var(--sub);'>Report for "+mname+" "+year+"</p>";
+        });
+      });
+    });
+  });
+}
+
+function initReportYears(){
+  var sel=document.getElementById("report-year");
+  var y=new Date().getFullYear();
+  for(var i=y;i>=y-3;i--){
+    var opt=document.createElement("option");
+    opt.value=i; opt.textContent=i;
+    sel.appendChild(opt);
+  }
+  document.getElementById("report-month").value=new Date().getMonth();
+}
+
 // PROGRAMS ADMIN
 function saveProgram(){
   var name=document.getElementById("prog-name").value.trim();
@@ -2405,6 +2732,7 @@ document.getElementById("comm-post-btn").onclick=postToComm;
 document.getElementById("edit-modal").onclick=function(e){ if(e.target===this) closeEdit(); };
 document.getElementById("admin-comm-post-btn").onclick=postAdminToComm;
 document.getElementById("checkin-btn").onclick=submitCheckin;
+document.getElementById("goal-btn").onclick=saveGoal;
 document.getElementById("msg-send-btn").onclick=sendMessage;
 document.getElementById("progress-btn").onclick=logProgress;
 document.getElementById("food-btn").onclick=logFood;
