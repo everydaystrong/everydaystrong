@@ -391,10 +391,21 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         <div class="form-row">
           <span class="form-label">Image Link (optional)</span>
           <input class="form-input" id="food-img" placeholder="https://i.imgur.com/... photo of your meal" style="text-transform:none;" />
+                  <div class="form-row">
+          <span class="form-label">Who can see this?</span>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;padding:8px 0;border-bottom:0.5px solid var(--border);">
+            <input type="radio" name="food-visibility" value="self" checked style="accent-color:var(--accent);width:16px;height:16px;" />
+            🔐 Only me — completely private
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;padding:8px 0;border-bottom:0.5px solid var(--border);">
+            <input type="radio" name="food-visibility" value="instructor" style="accent-color:var(--accent);width:16px;height:16px;" />
+            🔒 Me and Heather only
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;padding:8px 0;">
+            <input type="radio" name="food-visibility" value="community" style="accent-color:var(--accent);width:16px;height:16px;" />
+            🌐 Share with the community
+          </label>
         </div>
-        <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">
-          <input type="checkbox" id="food-private" checked style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
-          <label for="food-private" style="font-size:13px;color:var(--text);cursor:pointer;">🔒 Keep private (only Heather sees this)</label>
         </div>
         <button class="action-btn" id="food-btn" style="margin-top:4px;">Log Meal</button>
       </div>
@@ -428,14 +439,21 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         <div class="form-row">
           <span class="form-label">Any questions for Heather?</span>
           <textarea class="form-textarea" id="ci-q" placeholder="Ask anything about your workouts, form, nutrition..."></textarea>
+                  <div class="form-row">
+          <span class="form-label">Who can see this?</span>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;padding:8px 0;border-bottom:0.5px solid var(--border);">
+            <input type="radio" name="ci-visibility" value="self" checked style="accent-color:var(--accent);width:16px;height:16px;" />
+            🔐 Only me — completely private
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;padding:8px 0;border-bottom:0.5px solid var(--border);">
+            <input type="radio" name="ci-visibility" value="instructor" style="accent-color:var(--accent);width:16px;height:16px;" />
+            🔒 Me and Heather only
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;padding:8px 0;">
+            <input type="radio" name="ci-visibility" value="community" style="accent-color:var(--accent);width:16px;height:16px;" />
+            🌐 Share with the community
+          </label>
         </div>
-        <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">
-          <input type="checkbox" id="ci-private" checked style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
-          <label for="ci-private" style="font-size:13px;color:var(--text);cursor:pointer;">🔒 Keep private (only Heather sees this)</label>
-        </div>
-                <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">
-          <input type="checkbox" id="ci-private" checked style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
-          <label for="ci-private" style="font-size:13px;color:var(--text);cursor:pointer;">🔒 Keep private (only Heather sees this)</label>
         </div>
         <button class="action-btn" id="checkin-btn">Submit Check-in</button>
       </div>
@@ -1474,7 +1492,7 @@ function loadFood(){
       if(f.img) h+="<img src='"+ex(f.img)+"' style='width:100%;max-height:200px;object-fit:cover;display:block;' onerror=\"this.style.display='none'\" />";
       h+="<div style='padding:10px 14px;font-size:14px;color:var(--text);'>"+ex(f.desc)+"</div>";
       if(f.feeling) h+="<div style='padding:0 14px 10px;font-size:12px;color:var(--sub);'>💭 "+ex(f.feeling)+"</div>";
-      h+="<div style='padding:0 14px 10px;font-size:10px;color:var(--sub);'>"+(f.private?"🔒 Private":"🔒 Shared with Heather")+"</div>";
+      var fvisLabel=f.visibility==="self"?"🔐 Only me":f.visibility==="community"?"🌐 Community":"🔒 Me & Heather"; h+="<div style='padding:0 14px 10px;font-size:10px;color:var(--sub);'>" +fvisLabel+"</div>";
       h+="</div>";
     });
     el.innerHTML=h;
@@ -1544,11 +1562,12 @@ function submitCheckin(){
   if(!feeling){ alert("Please select how you are feeling!"); return; }
   if(!good){ alert("Please fill in what went well."); return; }
   if(!DB){ alert("Database not connected."); return; }
-  var isPrivate=document.getElementById("ci-private").checked;
+  var ciVisEl=document.querySelector('input[name="ci-visibility"]:checked');
+  var ciVisibility=ciVisEl?ciVisEl.value:"instructor";
   DB.ref("checkins").push({
     name:currentUser, feeling:feeling.value,
     good:good, hard:hard, q:q,
-    ts:Date.now(), read:false, private:isPrivate
+    ts:Date.now(), read:false, visibility:ciVisibility
   }, function(e){
     if(!e){
       document.getElementById("ci-good").value="";
@@ -1583,7 +1602,7 @@ function loadAdminCheckins(){
       if(ci.hard) h+="<p style='margin-top:4px;'><strong style='color:var(--accent);'>💪 Challenging:</strong> "+ex(ci.hard)+"</p>";
       if(ci.q) h+="<p style='margin-top:4px;'><strong style='color:var(--accent);'>❓ Question:</strong> "+ex(ci.q)+"</p>";
       h+="</div>";
-      h+="<div style='font-size:11px;color:var(--sub);margin-top:4px;'>"+(ci.private!==false?"🔒 Private":"🌐 Shared")+"</div>";
+      var cvisLabel=ci.visibility==="self"?"🔐 Only client":ci.visibility==="community"?"🌐 Community":"🔒 Client & Heather"; h+="<div style='font-size:11px;color:var(--sub);margin-top:4px;'>"+cvisLabel+"</div>";
       if(!ci.read){ h+="<button class='action-btn sec' style='font-size:11px;padding:4px 10px;margin-top:8px;' onclick='markCiRead(\""+ci._k+"\")'>Mark as read</button>"; }
       h+="</div>";
     });
