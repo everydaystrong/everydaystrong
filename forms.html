@@ -6,6 +6,8 @@
 <title>Everyday Strong — New Client Forms</title>
 <meta name="description" content="Complete your Everyday Strong new client forms online." />
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
@@ -99,6 +101,31 @@ nav{background:#fff;border-bottom:1px solid #e8ddd2;padding:0.9rem 2rem;display:
   </div>
 </div>
 
+
+<div style="background:#fff;border-bottom:1px solid #e8ddd2;padding:1.5rem 1.5rem;">
+  <div style="max-width:720px;margin:0 auto;">
+    <p style="font-family:Arial,sans-serif;font-size:13px;color:#6a5a48;margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;text-align:center;">Payment Information</p>
+    <p style="font-family:Arial,sans-serif;font-size:14px;color:#3a2a1a;text-align:center;margin-bottom:1rem;">Payment is due every <strong>Sunday</strong> for the upcoming week. All payments are made via Venmo.</p>
+    <div style="text-align:center;margin-bottom:1.2rem;">
+      <a href="https://venmo.com/hduff13" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#3D95CE;color:#fff;padding:10px 24px;border-radius:20px;font-family:Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;">💙 Pay via Venmo @hduff13</a>
+    </div>
+    <div style="background:#f0f6ff;border-radius:12px;padding:1.2rem 1.4rem;border:0.5px solid #d0e4f8;">
+      <p style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:#3D95CE;margin-bottom:0.6rem;">⚡ Set Up Automatic Weekly Payments on Venmo</p>
+      <p style="font-family:Arial,sans-serif;font-size:13px;color:#3a4a5a;line-height:1.6;margin-bottom:0.8rem;">Save yourself from remembering every Sunday by setting up a recurring payment:</p>
+      <ol style="font-family:Arial,sans-serif;font-size:13px;color:#3a4a5a;line-height:1.8;padding-left:1.2rem;">
+        <li>Open the <strong>Venmo app</strong> on your phone</li>
+        <li>Tap <strong>Pay or Request</strong> at the bottom</li>
+        <li>Search for <strong>@hduff13</strong></li>
+        <li>Enter your weekly amount ($30 or $50)</li>
+        <li>Tap the <strong>calendar icon</strong> next to the amount</li>
+        <li>Select <strong>Weekly</strong> and choose <strong>Sunday</strong> as the day</li>
+        <li>Add a note like "Weekly class payment" and tap <strong>Pay</strong></li>
+      </ol>
+      <p style="font-family:Arial,sans-serif;font-size:12px;color:#6a8aac;margin-top:0.8rem;">You can cancel or adjust recurring payments anytime in your Venmo settings under Scheduled Payments.</p>
+    </div>
+    <p style="font-family:Arial,sans-serif;font-size:12px;color:#9a8a7a;margin-top:0.8rem;text-align:center;">Questions about payment? Email <a href="mailto:Everydaystrongteam@gmail.com" style="color:#a0522d;">Everydaystrongteam@gmail.com</a></p>
+  </div>
+</div>
 <div class="forms-nav">
   <button class="fnav-btn on" onclick="switchForm('intake',this)">📋 Intake Form</button>
   <button class="fnav-btn" onclick="switchForm('agreement',this)">📄 Client Agreement</button>
@@ -141,10 +168,7 @@ nav{background:#fff;border-bottom:1px solid #e8ddd2;padding:0.9rem 2rem;display:
       <div class="field-group">
         <label class="field-label">Program Interest <span class="field-required">*</span></label>
         <select class="field-select" id="i-program">
-          <option value="">Select a program...</option>
-          <option>Virtual Semi Private Classes</option>
-          <option>Private Coaching Virtual</option>
-          <option>Not sure yet</option>
+          <option value="">Loading programs...</option>
         </select>
       </div>
     </div>
@@ -459,6 +483,46 @@ var EMAILJS_TEMPLATE_ID = "template_yfxtkhj";
 
 emailjs.init(EMAILJS_PUBLIC_KEY);
 
+// Firebase for dynamic program list
+try {
+  var fbApp = firebase.initializeApp({
+    apiKey:"AIzaSyDYVYxiuxraOm0NR03eAN2YeTwp8X32n3A",
+    authDomain:"everyday-strong-95844.firebaseapp.com",
+    databaseURL:"https://everyday-strong-95844-default-rtdb.firebaseio.com",
+    projectId:"everyday-strong-95844",
+    storageBucket:"everyday-strong-95844.firebasestorage.app",
+    messagingSenderId:"835314554846",
+    appId:"1:835314554846:web:cd5367a8002833c6ed2f4f"
+  }, "forms");
+  var fbDB = firebase.database(fbApp);
+  loadPrograms();
+} catch(e){ loadFallbackPrograms(); }
+
+function loadPrograms(){
+  fbDB.ref("videos").once("value", function(snap){
+    var cats = ["7 Day Trial", "Full Membership"];
+    if(snap.exists()) snap.forEach(function(c){
+      var t = c.val().tag;
+      if(t && cats.indexOf(t) === -1) cats.push(t);
+    });
+    buildProgramSelect(cats);
+  });
+}
+
+function loadFallbackPrograms(){
+  buildProgramSelect(["7 Day Trial","Full Membership","Virtual Semi Private Classes","Private Coaching Virtual"]);
+}
+
+function buildProgramSelect(cats){
+  var sel = document.getElementById("i-program");
+  sel.innerHTML = '<option value="">Select a program...</option>';
+  cats.forEach(function(c){
+    var opt = document.createElement("option");
+    opt.value = c; opt.textContent = c;
+    sel.appendChild(opt);
+  });
+}
+
 function switchForm(name, btn){
   document.querySelectorAll(".form-section").forEach(function(s){ s.classList.remove("on"); });
   document.querySelectorAll(".fnav-btn").forEach(function(b){ b.classList.remove("on"); });
@@ -509,8 +573,17 @@ function submitIntake(){
     client_email:email
   };
 
+  // Send to Heather
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
     .then(function(){
+      // Send auto-reply to client
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: email,
+        subject: "Welcome to Everyday Strong! Next Steps Inside",
+        message: "Hi "+fname+"!\n\nThank you for submitting your Everyday Strong intake form! We are so excited to have you.\n\nNext steps:\n1. Complete the Client Agreement (Step 2)\n2. Complete the Waiver (Step 3)\n3. Heather will be in touch shortly with payment info and your first class details!\n\nIf you have any questions in the meantime, reply to this email or reach us at Everydaystrongteam@gmail.com\n\nSee you soon!\nHeather\nEveryday Strong",
+        client_name: fname,
+        client_email: email
+      });
       document.getElementById("ok-intake").style.display="block";
       btn.style.display="none";
     }, function(){
@@ -595,6 +668,14 @@ function submitWaiver(){
 
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
     .then(function(){
+      // Send completion auto-reply
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: "",
+        subject: "You are all set with Everyday Strong!",
+        message: "Hi "+name+"!\n\nAll three of your Everyday Strong forms have been received and you are officially enrolled!\n\nWhat happens next:\n- Heather will review your forms and reach out shortly\n- Payment is due every Sunday for the upcoming week\n- Pay via Venmo @hduff13\n- Your Zoom link will be sent the night before or morning of class after payment is confirmed\n\nWelcome to the Everyday Strong family!\nHeather\nEveryday Strong\nEverydaystrongteam@gmail.com",
+        client_name: name,
+        client_email: ""
+      });
       document.getElementById("ok-waiver").style.display="block";
       btn.style.display="none";
     }, function(){
