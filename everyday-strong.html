@@ -264,6 +264,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <button class="pnav-btn" id="pnav-checkin" data-tab="checkin" onclick="switchPortalTab(this.dataset.tab,this)">📋 Check-in</button>
       <button class="pnav-btn" id="pnav-msg" data-tab="msg" onclick="switchPortalTab(this.dataset.tab,this)">💌 Messages</button>
       <button class="pnav-btn" id="pnav-progress" data-tab="progress" onclick="switchPortalTab(this.dataset.tab,this)">📸 Progress</button>
+      <button class="pnav-btn" id="pnav-food" data-tab="food" onclick="switchPortalTab(this.dataset.tab,this)">🥗 Food Journal</button>
     </div>
 
     <!-- PROGRAMS TAB -->
@@ -343,17 +344,61 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
           <span class="form-label">Note (optional)</span>
           <textarea class="form-textarea" id="prog-note" placeholder="How are you feeling? What's changed? Measurements..."></textarea>
         </div>
-        <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">
-          <input type="checkbox" id="prog-private" checked style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
-          <label for="prog-private" style="font-size:13px;color:var(--text);cursor:pointer;">🔒 Keep private (only Heather sees this)</label>
-        </div>
-        <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">
-          <input type="checkbox" id="prog-community" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
-          <label for="prog-community" style="font-size:13px;color:var(--text);cursor:pointer;">🌐 Share with community (inspires others!)</label>
+        <div class="form-row">
+          <span class="form-label">Who can see this?</span>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;padding:8px 0;border-bottom:0.5px solid var(--border);">
+            <input type="radio" name="prog-visibility" value="self" checked style="accent-color:var(--accent);width:16px;height:16px;" />
+            🔐 Only me — completely private
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;padding:8px 0;border-bottom:0.5px solid var(--border);">
+            <input type="radio" name="prog-visibility" value="instructor" style="accent-color:var(--accent);width:16px;height:16px;" />
+            🔒 Me and Heather only
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;padding:8px 0;">
+            <input type="radio" name="prog-visibility" value="community" style="accent-color:var(--accent);width:16px;height:16px;" />
+            🌐 Share with the community
+          </label>
         </div>
         <button class="action-btn" id="progress-btn" style="margin-top:4px;">Log Progress Photo</button>
       </div>
       <div id="progress-list"><div style="text-align:center;padding:2rem;color:var(--sub);font-size:14px;">Loading...</div></div>
+    </div>
+
+    <!-- FOOD JOURNAL TAB -->
+    <div id="tab-food" class="portal-tab" style="display:none;">
+      <p class="section-title">🥗 Food Journal</p>
+      <p class="section-sub">Log your meals and nutrition notes</p>
+      <div class="admin-card">
+        <h3>Log a Meal</h3>
+        <div class="ok-msg" id="ok-food">Meal logged!</div>
+        <div class="form-row">
+          <span class="form-label">Meal</span>
+          <select class="form-select" id="food-meal">
+            <option value="Breakfast">🌅 Breakfast</option>
+            <option value="Lunch">☀️ Lunch</option>
+            <option value="Dinner">🌙 Dinner</option>
+            <option value="Snack">🍎 Snack</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <span class="form-label">What did you eat?</span>
+          <textarea class="form-textarea" id="food-desc" placeholder="e.g. Grilled chicken, rice, broccoli..."></textarea>
+        </div>
+        <div class="form-row">
+          <span class="form-label">How did you feel after? (optional)</span>
+          <input class="form-input" id="food-feeling" placeholder="e.g. Energized, bloated, satisfied..." style="text-transform:none;" />
+        </div>
+        <div class="form-row">
+          <span class="form-label">Image Link (optional)</span>
+          <input class="form-input" id="food-img" placeholder="https://i.imgur.com/... photo of your meal" style="text-transform:none;" />
+        </div>
+        <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">
+          <input type="checkbox" id="food-private" checked style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+          <label for="food-private" style="font-size:13px;color:var(--text);cursor:pointer;">🔒 Keep private (only Heather sees this)</label>
+        </div>
+        <button class="action-btn" id="food-btn" style="margin-top:4px;">Log Meal</button>
+      </div>
+      <div id="food-list"><div style="text-align:center;padding:2rem;color:var(--sub);font-size:14px;">Loading...</div></div>
     </div>
     <!-- CHECK-IN TAB -->
     <div id="tab-checkin" class="portal-tab" style="display:none;">
@@ -478,7 +523,12 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
           <span class="form-label" style="display:block;margin-bottom:6px;">Select Programs</span>
           <div class="program-checkboxes" id="program-checkboxes"></div>
         </div>
-        <button class="action-btn" id="add-code-btn" style="margin-top:4px;">Create Code</button>
+        <p class="tip" style="margin-top:8px;">Full Membership sees everything. Specific Programs lets you pick multiple programs.</p>
+        <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;margin-top:4px;">
+          <input type="checkbox" id="c-trial" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+          <label for="c-trial" style="font-size:13px;color:var(--text);cursor:pointer;">⏱️ 7-day trial — auto-deactivates after 7 days</label>
+        </div>
+        <button class="action-btn" id="add-code-btn" style="margin-top:10px;">Create Code</button>
       </div>
       <div class="admin-card">
         <h3>Active Codes (<span id="code-count">0</span>)</h3>
@@ -666,6 +716,7 @@ function switchPortalTab(name,btn){
   if(name==="comm") loadCommunity();
   if(name==="msg") loadMessages();
   if(name==="progress") loadProgress();
+  if(name==="food") loadFood();
   if(name==="checkin") {}
 }
 
@@ -1379,18 +1430,69 @@ function postToComm(){
 
 
 
+
+// FOOD JOURNAL
+function logFood(){
+  var meal=document.getElementById("food-meal").value;
+  var desc=document.getElementById("food-desc").value.trim();
+  var feeling=document.getElementById("food-feeling").value.trim();
+  var img=document.getElementById("food-img").value.trim();
+  var isPrivate=document.getElementById("food-private").checked;
+  if(!desc){ alert("Please describe what you ate."); return; }
+  if(!DB) return;
+  var d=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+  DB.ref("food/"+sk(currentUser)).push({
+    name:currentUser, meal:meal, desc:desc,
+    feeling:feeling, img:img||null,
+    private:isPrivate, date:d, ts:Date.now()
+  }, function(e){
+    if(!e){
+      document.getElementById("food-desc").value="";
+      document.getElementById("food-feeling").value="";
+      document.getElementById("food-img").value="";
+      showOk("ok-food","Meal logged!");
+      loadFood();
+    }
+  });
+}
+
+function loadFood(){
+  if(!DB||!currentUser) return;
+  DB.ref("food/"+sk(currentUser)).on("value",function(snap){
+    var el=document.getElementById("food-list");
+    if(!snap.exists()){ el.innerHTML="<div class='empty-state'><p style='font-size:32px;margin-bottom:10px;'>🥗</p><p>No meals logged yet — start tracking above!</p></div>"; return; }
+    var items=[];
+    snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    var mealIcons={Breakfast:"🌅",Lunch:"☀️",Dinner:"🌙",Snack:"🍎"};
+    var h="";
+    items.forEach(function(f){
+      h+="<div style='background:var(--card);border-radius:10px;border:0.5px solid var(--border);margin-bottom:10px;overflow:hidden;'>";
+      h+="<div style='padding:10px 14px;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;'>";
+      h+="<span style='font-size:14px;font-weight:700;color:var(--text);'>"+(mealIcons[f.meal]||"🍽️")+" "+ex(f.meal)+"</span>";
+      h+="<span style='font-size:11px;color:var(--sub);'>"+ex(f.date)+"</span></div>";
+      if(f.img) h+="<img src='"+ex(f.img)+"' style='width:100%;max-height:200px;object-fit:cover;display:block;' onerror=\"this.style.display='none'\" />";
+      h+="<div style='padding:10px 14px;font-size:14px;color:var(--text);'>"+ex(f.desc)+"</div>";
+      if(f.feeling) h+="<div style='padding:0 14px 10px;font-size:12px;color:var(--sub);'>💭 "+ex(f.feeling)+"</div>";
+      h+="<div style='padding:0 14px 10px;font-size:10px;color:var(--sub);'>"+(f.private?"🔒 Private":"🔒 Shared with Heather")+"</div>";
+      h+="</div>";
+    });
+    el.innerHTML=h;
+  });
+}
+
 // PROGRESS PHOTOS
 function logProgress(){
   var img=document.getElementById("prog-img").value.trim();
   var note=document.getElementById("prog-note").value.trim();
-  var isPrivate=document.getElementById("prog-private").checked;
-  var shareComm=document.getElementById("prog-community").checked;
+  var visEl=document.querySelector('input[name="prog-visibility"]:checked');
+  var visibility=visEl?visEl.value:"self";
   if(!img){ alert("Please paste an image link first."); return; }
   if(!DB) return;
   var d=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
   DB.ref("progress/"+sk(currentUser)).push({
     name:currentUser, img:img, note:note,
-    private:isPrivate, community:shareComm,
+    visibility:visibility,
     date:d, ts:Date.now()
   }, function(e){
     if(!e){
@@ -1398,8 +1500,7 @@ function logProgress(){
       document.getElementById("prog-note").value="";
       showOk("ok-progress","Photo logged!");
       loadProgress();
-      // If sharing to community, also post there
-      if(shareComm){
+      if(visibility==="community"){
         DB.ref("community").push({
           name:currentUser,
           text:"📸 Progress photo"+(note?" — "+note:""),
@@ -1425,7 +1526,8 @@ function loadProgress(){
       h+="<div class='progress-info'>";
       h+="<div class='progress-date'>"+ex(p.date)+"</div>";
       if(p.note) h+="<div class='progress-note'>"+ex(p.note)+"</div>";
-      h+="<div class='progress-private'>"+(p.private?"🔒 Private":(p.community?"🌐 Shared with community":""))+"</div>";
+      var visLabel=p.visibility==="self"?"🔐 Only me":p.visibility==="instructor"?"🔒 Me & Heather":p.visibility==="community"?"🌐 Community":"🔒 Private";
+      h+="<div class='progress-private'>"+visLabel+"</div>";
       h+="</div></div>";
     });
     h+="</div>";
@@ -1630,6 +1732,7 @@ document.getElementById("admin-comm-post-btn").onclick=postAdminToComm;
 document.getElementById("checkin-btn").onclick=submitCheckin;
 document.getElementById("msg-send-btn").onclick=sendMessage;
 document.getElementById("progress-btn").onclick=logProgress;
+document.getElementById("food-btn").onclick=logFood;
 document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); };
