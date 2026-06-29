@@ -594,6 +594,15 @@ function submitIntake(){
         client_name: fname,
         client_email: email
       });
+      // Save to Firebase client profile
+      try {
+        var fbForms = firebase.database(fbApp);
+        var cname = (fname+" "+lname).toLowerCase().replace(/[^a-z0-9]/g,"_");
+        fbForms.ref("client_forms/"+cname).push({
+          formType:"Intake Form", ts:Date.now(),
+          data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None"}
+        });
+      } catch(e){}
       document.getElementById("ok-intake").style.display="block";
       btn.style.display="none";
     }, function(){
@@ -626,6 +635,15 @@ function submitAgreement(){
 
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
     .then(function(){
+      // Save to Firebase
+      try {
+        var fbForms3 = firebase.database(fbApp);
+        var cname3 = name.toLowerCase().replace(/[^a-z0-9]/g,"_");
+        fbForms3.ref("client_forms/"+cname3).push({
+          formType:"Client Agreement", ts:Date.now(),
+          data:{Name:name,"Date Signed":date,"Signature":sig,"Agreed":"Yes"}
+        });
+      } catch(e){}
       document.getElementById("ok-agreement").style.display="block";
       btn.style.display="none";
     }, function(){
@@ -686,6 +704,15 @@ function submitWaiver(){
         client_name: name,
         client_email: ""
       });
+      // Save waiver to Firebase client profile
+      try {
+        var fbForms2 = firebase.database(fbApp);
+        var cname2 = name.toLowerCase().replace(/[^a-z0-9]/g,"_");
+        fbForms2.ref("client_forms/"+cname2).push({
+          formType:"Waiver", ts:Date.now(),
+          data:{Name:name,DOB:dob,Address:address,Phone:phone,"Emergency Contact":ecName+" / "+ecPhone,Signature:sig,"Parent/Guardian":val("w-guardian")||"N/A","All sections initialed":"Yes"}
+        });
+      } catch(e){}
       document.getElementById("ok-waiver").style.display="block";
       btn.style.display="none";
     }, function(){
