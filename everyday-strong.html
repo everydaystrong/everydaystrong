@@ -125,6 +125,16 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
 .comm-reply-post{padding:7px 12px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;}
 
 
+
+/* PROGRESS PHOTOS */
+.progress-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.8rem;margin-top:1rem;}
+.progress-card{background:var(--card);border-radius:10px;border:0.5px solid var(--border);overflow:hidden;}
+.progress-img{width:100%;aspect-ratio:1;object-fit:cover;display:block;}
+.progress-info{padding:8px 10px;}
+.progress-date{font-size:11px;color:var(--sub);}
+.progress-note{font-size:13px;color:var(--text);margin-top:4px;line-height:1.4;}
+.progress-private{font-size:10px;color:var(--sub);margin-top:4px;}
+
 /* MESSAGES */
 .msg-bubble{background:var(--inp);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:14px;color:var(--text);}
 .msg-bubble.mine{background:var(--accent);color:#fff;margin-left:2rem;}
@@ -253,6 +263,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <button class="pnav-btn" id="pnav-comm" data-tab="comm" onclick="switchPortalTab(this.dataset.tab,this)">🏘️ Community</button>
       <button class="pnav-btn" id="pnav-checkin" data-tab="checkin" onclick="switchPortalTab(this.dataset.tab,this)">📋 Check-in</button>
       <button class="pnav-btn" id="pnav-msg" data-tab="msg" onclick="switchPortalTab(this.dataset.tab,this)">💌 Messages</button>
+      <button class="pnav-btn" id="pnav-progress" data-tab="progress" onclick="switchPortalTab(this.dataset.tab,this)">📸 Progress</button>
     </div>
 
     <!-- PROGRAMS TAB -->
@@ -315,6 +326,35 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       </div>
     </div>
 
+
+    <!-- PROGRESS PHOTOS TAB -->
+    <div id="tab-progress" class="portal-tab" style="display:none;">
+      <p class="section-title">📸 Progress Photos</p>
+      <p class="section-sub">Track your transformation over time</p>
+      <div class="admin-card">
+        <h3>Add a Progress Photo</h3>
+        <div class="ok-msg" id="ok-progress">Photo logged!</div>
+        <div class="form-row">
+          <span class="form-label">Imgur Image Link</span>
+          <input type="text" class="form-input" id="prog-img" placeholder="https://i.imgur.com/..." style="text-transform:none;" />
+          <span style="font-size:11px;color:var(--sub);margin-top:4px;">Upload your photo to imgur.com first, then paste the link here</span>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Note (optional)</span>
+          <textarea class="form-textarea" id="prog-note" placeholder="How are you feeling? What's changed? Measurements..."></textarea>
+        </div>
+        <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">
+          <input type="checkbox" id="prog-private" checked style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+          <label for="prog-private" style="font-size:13px;color:var(--text);cursor:pointer;">🔒 Keep private (only Heather sees this)</label>
+        </div>
+        <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">
+          <input type="checkbox" id="prog-community" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+          <label for="prog-community" style="font-size:13px;color:var(--text);cursor:pointer;">🌐 Share with community (inspires others!)</label>
+        </div>
+        <button class="action-btn" id="progress-btn" style="margin-top:4px;">Log Progress Photo</button>
+      </div>
+      <div id="progress-list"><div style="text-align:center;padding:2rem;color:var(--sub);font-size:14px;">Loading...</div></div>
+    </div>
     <!-- CHECK-IN TAB -->
     <div id="tab-checkin" class="portal-tab" style="display:none;">
       <p class="section-title">📋 Weekly Check-in</p>
@@ -344,9 +384,17 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
           <span class="form-label">Any questions for Heather?</span>
           <textarea class="form-textarea" id="ci-q" placeholder="Ask anything about your workouts, form, nutrition..."></textarea>
         </div>
+        <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">
+          <input type="checkbox" id="ci-private" checked style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+          <label for="ci-private" style="font-size:13px;color:var(--text);cursor:pointer;">🔒 Keep private (only Heather sees this)</label>
+        </div>
+                <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">
+          <input type="checkbox" id="ci-private" checked style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+          <label for="ci-private" style="font-size:13px;color:var(--text);cursor:pointer;">🔒 Keep private (only Heather sees this)</label>
+        </div>
         <button class="action-btn" id="checkin-btn">Submit Check-in</button>
       </div>
-      <div style="font-size:13px;color:var(--sub);text-align:center;padding:1rem 0;">Check-ins are private — only you and Heather can see them.</div>
+      <div style="font-size:13px;color:var(--sub);text-align:center;padding:1rem 0;">Private check-ins are only visible to you and Heather.</div>
     </div>
 
     <!-- MESSAGES TAB -->
@@ -617,6 +665,7 @@ function switchPortalTab(name,btn){
   if(name==="done") renderCompleted();
   if(name==="comm") loadCommunity();
   if(name==="msg") loadMessages();
+  if(name==="progress") loadProgress();
   if(name==="checkin") {}
 }
 
@@ -1329,6 +1378,61 @@ function postToComm(){
 
 
 
+
+// PROGRESS PHOTOS
+function logProgress(){
+  var img=document.getElementById("prog-img").value.trim();
+  var note=document.getElementById("prog-note").value.trim();
+  var isPrivate=document.getElementById("prog-private").checked;
+  var shareComm=document.getElementById("prog-community").checked;
+  if(!img){ alert("Please paste an image link first."); return; }
+  if(!DB) return;
+  var d=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+  DB.ref("progress/"+sk(currentUser)).push({
+    name:currentUser, img:img, note:note,
+    private:isPrivate, community:shareComm,
+    date:d, ts:Date.now()
+  }, function(e){
+    if(!e){
+      document.getElementById("prog-img").value="";
+      document.getElementById("prog-note").value="";
+      showOk("ok-progress","Photo logged!");
+      loadProgress();
+      // If sharing to community, also post there
+      if(shareComm){
+        DB.ref("community").push({
+          name:currentUser,
+          text:"📸 Progress photo"+(note?" — "+note:""),
+          cat:"win", img:img, ts:Date.now(), likes:{}
+        });
+      }
+    }
+  });
+}
+
+function loadProgress(){
+  if(!DB||!currentUser) return;
+  DB.ref("progress/"+sk(currentUser)).on("value",function(snap){
+    var el=document.getElementById("progress-list");
+    if(!snap.exists()){ el.innerHTML="<div class='empty-state'><p style='font-size:32px;margin-bottom:10px;'>📸</p><p>No progress photos yet — add your first one above!</p></div>"; return; }
+    var items=[];
+    snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    var h="<div class='progress-grid'>";
+    items.forEach(function(p){
+      h+="<div class='progress-card'>";
+      h+="<img class='progress-img' src='"+ex(p.img)+"' onerror=\"this.style.display='none'\" />";
+      h+="<div class='progress-info'>";
+      h+="<div class='progress-date'>"+ex(p.date)+"</div>";
+      if(p.note) h+="<div class='progress-note'>"+ex(p.note)+"</div>";
+      h+="<div class='progress-private'>"+(p.private?"🔒 Private":(p.community?"🌐 Shared with community":""))+"</div>";
+      h+="</div></div>";
+    });
+    h+="</div>";
+    el.innerHTML=h;
+  });
+}
+
 // CHECK-INS
 function submitCheckin(){
   var feeling=document.querySelector('input[name="ci-feeling"]:checked');
@@ -1338,10 +1442,11 @@ function submitCheckin(){
   if(!feeling){ alert("Please select how you are feeling!"); return; }
   if(!good){ alert("Please fill in what went well."); return; }
   if(!DB){ alert("Database not connected."); return; }
+  var isPrivate=document.getElementById("ci-private").checked;
   DB.ref("checkins").push({
     name:currentUser, feeling:feeling.value,
     good:good, hard:hard, q:q,
-    ts:Date.now(), read:false
+    ts:Date.now(), read:false, private:isPrivate
   }, function(e){
     if(!e){
       document.getElementById("ci-good").value="";
@@ -1376,6 +1481,7 @@ function loadAdminCheckins(){
       if(ci.hard) h+="<p style='margin-top:4px;'><strong style='color:var(--accent);'>💪 Challenging:</strong> "+ex(ci.hard)+"</p>";
       if(ci.q) h+="<p style='margin-top:4px;'><strong style='color:var(--accent);'>❓ Question:</strong> "+ex(ci.q)+"</p>";
       h+="</div>";
+      h+="<div style='font-size:11px;color:var(--sub);margin-top:4px;'>"+(ci.private!==false?"🔒 Private":"🌐 Shared")+"</div>";
       if(!ci.read){ h+="<button class='action-btn sec' style='font-size:11px;padding:4px 10px;margin-top:8px;' onclick='markCiRead(\""+ci._k+"\")'>Mark as read</button>"; }
       h+="</div>";
     });
@@ -1523,6 +1629,7 @@ document.getElementById("edit-modal").onclick=function(e){ if(e.target===this) c
 document.getElementById("admin-comm-post-btn").onclick=postAdminToComm;
 document.getElementById("checkin-btn").onclick=submitCheckin;
 document.getElementById("msg-send-btn").onclick=sendMessage;
+document.getElementById("progress-btn").onclick=logProgress;
 document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); };
