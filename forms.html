@@ -451,11 +451,11 @@ nav{background:#fff;border-bottom:1px solid #e8ddd2;padding:0.9rem 2rem;display:
 <script>
 // ── EmailJS Setup ─────────────────────────────────────────────────────
 // REPLACE THESE WITH YOUR EMAILJS VALUES AFTER SETUP:
-var EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
-var EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
-var EMAILJS_TEMPLATE_INTAKE = "YOUR_INTAKE_TEMPLATE_ID";
-var EMAILJS_TEMPLATE_AGREEMENT = "YOUR_AGREEMENT_TEMPLATE_ID";
-var EMAILJS_TEMPLATE_WAIVER = "YOUR_WAIVER_TEMPLATE_ID";
+var EMAILJS_PUBLIC_KEY = "Df_RHTxaHGQXv0-yY";
+var EMAILJS_SERVICE_ID = "service_svquk8m";
+var EMAILJS_TEMPLATE_ID = "template_yfxtkhj";
+
+
 
 emailjs.init(EMAILJS_PUBLIC_KEY);
 
@@ -489,23 +489,27 @@ function submitIntake(){
   var btn=document.getElementById("btn-intake");
   btn.disabled=true; btn.textContent="Sending...";
 
+  var body = "NEW CLIENT INTAKE FORM\n\n"+
+    "Name: "+(fname+" "+lname)+"\n"+
+    "Email: "+email+"\n"+
+    "Phone: "+phone+"\n"+
+    "Date of Birth: "+dob+"\n"+
+    "Program Interest: "+program+"\n"+
+    "Fitness Level: "+level+"\n"+
+    "Goals: "+goals+"\n"+
+    "Injuries/Limitations: "+(val("i-injuries")||"None")+"\n"+
+    "Equipment: "+(val("i-equipment")||"Not specified")+"\n"+
+    "How they heard about us: "+(val("i-referral")||"Not specified")+"\n"+
+    "Additional Notes: "+(val("i-notes")||"None");
   var params={
     to_email:"Everydaystrongteam@gmail.com",
-    form_type:"NEW CLIENT INTAKE FORM",
+    subject:"New Client Intake Form - "+(fname+" "+lname),
+    message:body,
     client_name:fname+" "+lname,
-    client_email:email,
-    client_phone:phone,
-    dob:dob,
-    program:program,
-    fitness_level:level,
-    goals:goals,
-    injuries:val("i-injuries")||"None",
-    equipment:val("i-equipment")||"Not specified",
-    referral:val("i-referral")||"Not specified",
-    notes:val("i-notes")||"None"
+    client_email:email
   };
 
-  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_INTAKE, params)
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
     .then(function(){
       document.getElementById("ok-intake").style.display="block";
       btn.style.display="none";
@@ -524,15 +528,20 @@ function submitAgreement(){
   var btn=document.getElementById("btn-agreement");
   btn.disabled=true; btn.textContent="Sending...";
 
+  var body = "CLIENT AGREEMENT SIGNED\n\n"+
+    "Name: "+name+"\n"+
+    "Date Signed: "+date+"\n"+
+    "Electronic Signature: "+sig+"\n\n"+
+    "Client has read and agreed to all Everyday Strong policies.";
   var params={
     to_email:"Everydaystrongteam@gmail.com",
-    form_type:"CLIENT AGREEMENT",
+    subject:"Client Agreement Signed - "+name,
+    message:body,
     client_name:name,
-    date_signed:date,
-    signature:sig
+    client_email:""
   };
 
-  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_AGREEMENT, params)
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
     .then(function(){
       document.getElementById("ok-agreement").style.display="block";
       btn.style.display="none";
@@ -556,20 +565,35 @@ function submitWaiver(){
   var btn=document.getElementById("btn-waiver");
   btn.disabled=true; btn.textContent="Submitting...";
 
+  var body = "RELEASE OF LIABILITY WAIVER\n\n"+
+    "Name: "+name+"\n"+
+    "Date of Birth: "+dob+"\n"+
+    "Address: "+address+"\n"+
+    "Phone: "+phone+"\n"+
+    "Emergency Contact: "+ecName+" / "+ecPhone+"\n"+
+    "Electronic Signature: "+sig+"\n"+
+    "Parent/Guardian: "+(val("w-guardian")||"N/A")+"\n\n"+
+    "Section Initials:\n"+
+    "1. Assumption of Risk: "+initials[0]+"\n"+
+    "2. Physical Health: "+initials[1]+"\n"+
+    "3. Follow Instructions: "+initials[2]+"\n"+
+    "4. Virtual Training: "+initials[3]+"\n"+
+    "5. Equipment: "+initials[4]+"\n"+
+    "6. Release of Liability: "+initials[5]+"\n"+
+    "7. Indemnification: "+initials[6]+"\n"+
+    "8. Results Disclaimer: "+initials[7]+"\n"+
+    "9. Governing Law: "+initials[8]+"\n"+
+    "10. Severability: "+initials[9]+"\n"+
+    "11. Acknowledgment: "+initials[10];
   var params={
     to_email:"Everydaystrongteam@gmail.com",
-    form_type:"RELEASE OF LIABILITY WAIVER",
+    subject:"Waiver Signed - "+name,
+    message:body,
     client_name:name,
-    dob:dob,
-    address:address,
-    phone:phone,
-    emergency_contact:ecName+" / "+ecPhone,
-    signature:sig,
-    guardian:val("w-guardian")||"N/A",
-    initials:initials.join(", ")
+    client_email:""
   };
 
-  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_WAIVER, params)
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
     .then(function(){
       document.getElementById("ok-waiver").style.display="block";
       btn.style.display="none";
