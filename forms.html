@@ -120,7 +120,7 @@ nav{background:#fff;border-bottom:1px solid #e8ddd2;padding:0.9rem 2rem;display:
   <h1>New Client Forms</h1>
   <p>Please complete all three forms before your first class. This keeps everyone safe and gets you set up properly.</p>
   <button class="trial-cta-btn" onclick="startTrial()">🎉 Start Your 7 Day Trial</button>
-  <p class="trial-hint">Just trying us out? Tap above, fill in your info below, and choose your trial program in the "Program Interest" field.</p>
+  <p class="trial-hint">Just trying us out? Tap above, fill in your info below, pick the program you're interested in, and check the trial box.</p>
   <div class="steps-row">
     <div class="step-pill" id="pill-1">1. Intake Form</div>
     <div class="step-pill" id="pill-2">2. Client Agreement</div>
@@ -197,6 +197,10 @@ nav{background:#fff;border-bottom:1px solid #e8ddd2;padding:0.9rem 2rem;display:
         <select class="field-select" id="i-program">
           <option value="">Loading programs...</option>
         </select>
+        <label id="trial-toggle-label" style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:#fff7f0;border:1.5px solid #e8c0a0;border-radius:9px;cursor:pointer;font-family:Arial,sans-serif;font-size:13px;color:#3a2a1a;">
+          <input type="checkbox" id="i-trial-request" style="width:18px;height:18px;accent-color:#a0522d;cursor:pointer;flex-shrink:0;" />
+          <span>🎉 I'd like to start with a <strong>7 day trial</strong> of this program</span>
+        </label>
       </div>
     </div>
 
@@ -513,6 +517,8 @@ emailjs.init(EMAILJS_PUBLIC_KEY);
 function startTrial(){
   // Make sure we're on the intake step, then scroll to the start of it
   switchFormByName('intake');
+  var trialBox = document.getElementById("i-trial-request");
+  if(trialBox) trialBox.checked = true;
   setTimeout(function(){
     var card = document.querySelector('#fs-intake .form-card');
     if(card) card.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -548,7 +554,7 @@ function loadPrograms(){
 }
 
 function loadFallbackPrograms(){
-  buildProgramSelect(["7 Day Trial","Virtual Semi Private Classes","Private Coaching Virtual"]);
+  buildProgramSelect(["Virtual Semi Private Classes","Private Coaching Virtual"]);
 }
 
 function buildProgramSelect(cats){
@@ -583,6 +589,7 @@ function val(id){ return (document.getElementById(id)||{}).value||""; }
 
 function submitIntake(){
   var fname=val("i-fname"),lname=val("i-lname"),email=val("i-email"),phone=val("i-phone"),dob=val("i-dob"),program=val("i-program"),level=val("i-level"),goals=val("i-goals");
+  var trialRequested = document.getElementById("i-trial-request").checked;
   var err=document.getElementById("err-intake");
   if(!fname||!lname||!email||!phone||!dob||!program||!level||!goals){
     err.style.display="block"; return;
@@ -597,6 +604,7 @@ function submitIntake(){
     "Phone: "+phone+"\n"+
     "Date of Birth: "+dob+"\n"+
     "Program Interest: "+program+"\n"+
+    "7 Day Trial Requested: "+(trialRequested ? "YES" : "No")+"\n"+
     "Fitness Level: "+level+"\n"+
     "Goals: "+goals+"\n"+
     "Injuries/Limitations: "+(val("i-injuries")||"None")+"\n"+
@@ -628,7 +636,7 @@ function submitIntake(){
         var cname = (fname+" "+lname).toLowerCase().replace(/[^a-z0-9]/g,"_");
         fbForms.ref("client_forms/"+cname).push({
           formType:"Intake Form", ts:Date.now(),
-          data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None"}
+          data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,TrialRequested:(trialRequested?"Yes":"No"),Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None"}
         });
       } catch(e){}
       document.getElementById("ok-intake").style.display="block";
