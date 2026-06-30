@@ -691,7 +691,7 @@ try {
   });
 
   // Load testimonials
-  landingDB.ref("testimonials").on("value", function(snap){
+  landingDB.ref("testimonials").once("value", function(snap){
     var grid = document.getElementById("testimonials-grid");
     if(!snap.exists()){
       grid.innerHTML="<p style='text-align:center;color:#9a8a7a;font-size:14px;grid-column:1/-1;'>Testimonials coming soon!</p>";
@@ -703,7 +703,7 @@ try {
     items.forEach(function(t){
       var stars="★".repeat(t.stars||5);
       var card=document.createElement("div");
-      card.style.cssText="background:#faf6f2;border-radius:14px;padding:2rem;border:0.5px solid #e8ddd2;";
+      card.style.cssText="background:#faf6f2;border-radius:16px;padding:1.8rem;border:0.5px solid #e8ddd2;box-shadow:0 4px 24px rgba(60,30,10,0.08);width:88vw;max-width:480px;flex-shrink:0;scroll-snap-align:start;word-wrap:break-word;overflow-wrap:break-word;";
       var starsEl=document.createElement("div");
       starsEl.style.cssText="font-size:22px;color:#a0522d;margin-bottom:0.8rem;";
       starsEl.textContent=stars;
