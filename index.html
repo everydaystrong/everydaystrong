@@ -134,7 +134,44 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
 }
 
 #testimonials-grid::-webkit-scrollbar{ display:none; }
-#testimonials-grid{ -ms-overflow-style:none; scrollbar-width:none; }
+#testimonials-grid{ -ms-overflow-style:none; scrollbar-width:none; scroll-behavior:smooth; }
+
+#testimonials-carousel{ position:relative; }
+#testimonials-carousel::before,
+#testimonials-carousel::after{
+  content:""; position:absolute; top:0; bottom:10px; width:36px; pointer-events:none; z-index:2;
+}
+#testimonials-carousel::before{ left:0; background:linear-gradient(90deg,#faf6f2,rgba(250,246,242,0)); }
+#testimonials-carousel::after{ right:0; background:linear-gradient(270deg,#faf6f2,rgba(250,246,242,0)); }
+
+.test-nav-btn{
+  position:absolute; top:40%; transform:translateY(-50%); z-index:3;
+  width:42px; height:42px; border-radius:50%; border:0.5px solid #e8ddd2;
+  background:#fff; color:#a0522d; font-size:18px; cursor:pointer;
+  box-shadow:0 4px 14px rgba(60,30,10,0.15); display:flex; align-items:center; justify-content:center;
+  transition:opacity 0.2s, transform 0.15s;
+}
+.test-nav-btn:hover{ transform:translateY(-50%) scale(1.06); }
+.test-nav-btn:active{ transform:translateY(-50%) scale(0.96); }
+.test-nav-btn.prev{ left:-6px; }
+.test-nav-btn.next{ right:-6px; }
+.test-nav-btn[disabled]{ opacity:0.25; cursor:default; }
+.test-nav-btn[disabled]:hover{ transform:translateY(-50%); }
+
+#testimonials-dots{ display:flex; justify-content:center; gap:7px; margin-top:1.1rem; }
+#testimonials-dots .dot{
+  width:7px; height:7px; border-radius:50%; background:#d8cfc6; border:none; padding:0; cursor:pointer;
+  transition:background 0.2s, width 0.2s;
+}
+#testimonials-dots .dot.active{ background:#a0522d; width:18px; border-radius:4px; }
+
+@media(max-width:640px){
+  .test-nav-btn{ display:none; }
+  #testimonials-carousel::before,#testimonials-carousel::after{ width:18px; }
+}
+@media(min-width:641px){
+  #test-swipe-hint{ display:none; }
+}
 
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -203,7 +240,15 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
     </div>
     <p style="font-family:Arial,sans-serif;font-size:14px;color:rgba(255,255,255,0.7);margin-bottom:2rem;">6 years of consistency 💪</p>
     <div style="display:flex;justify-content:center;">
-      <blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/reel/DYuiz8FS2ya/" data-instgrm-version="14" style="max-width:400px;width:100%;border-radius:14px;overflow:hidden;"></blockquote>
+      <video
+        controls
+        playsinline
+        preload="metadata"
+        poster="media/transformation-reel-poster.jpg"
+        style="max-width:400px;width:100%;aspect-ratio:9/16;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.35);display:block;background:#000;outline:none;">
+        <source src="media/transformation-reel.mp4" type="video/mp4">
+        Your browser doesn't support embedded video. <a href="media/transformation-reel.mp4">Download the video</a> instead.
+      </video>
     </div>
   </div>
 </section>
@@ -214,15 +259,20 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
     <div class="section-label">What Members Are Saying</div>
     <h2 class="section-title" style="font-size:clamp(32px,5vw,52px);">Don't just take my word for it</h2>
     <p class="section-sub" style="margin-bottom:3rem;font-size:17px;">Real people, real results, real life.</p>
-    <div id="testimonials-grid" style="display:flex;gap:1.5rem;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:1rem;scroll-snap-type:x mandatory;align-items:flex-start;">
-      <!-- Testimonials load from Firebase, fallback shown below -->
-      <div id="test-placeholder-1" style="background:#fff;border-radius:16px;padding:1.8rem;border:0.5px solid #e8ddd2;box-shadow:0 4px 24px rgba(60,30,10,0.08);width:88vw;max-width:480px;flex-shrink:0;scroll-snap-align:start;word-wrap:break-word;overflow-wrap:break-word;height:auto;">
-        <div style="font-size:28px;color:#a0522d;margin-bottom:1rem;letter-spacing:3px;">★★★★★</div>
-        <p style="font-family:Arial,sans-serif;font-size:14.5px;color:#3a2a1a;line-height:1.75;font-style:normal;margin-bottom:1.2rem;word-wrap:break-word;overflow-wrap:break-word;text-align:left;">&ldquo;Working with Heather has been such an amazing experience. She is incredibly patient, encouraging, and always knows how to make me feel like I am doing a great job, even when I am struggling. She is truly my personal cheerleader. Every workout is fast-paced, engaging, and different, so I never get bored. As a busy mother of three, it is hard to stay focused on fitness, but her workouts kept my attention and made me actually look forward to exercising. She has given me so much confidence and motivation to keep going. One of the biggest differences has been her attention to proper form. Her clear explanations helped me realize my neck pain was being caused by incorrect technique, and once I made those adjustments, I noticed a huge improvement. If you are looking for a trainer who is knowledgeable, supportive, motivating, and genuinely invested in your success, I cannot recommend Heather enough!&rdquo;</p>
-        <p style="font-family:Arial,sans-serif;font-size:15px;font-weight:700;color:#a0522d;margin-top:1rem;">— Holly H.</p>
+    <div id="testimonials-carousel">
+      <button class="test-nav-btn prev" id="test-prev" onclick="scrollTestimonials(-1)" aria-label="Previous testimonial" disabled>‹</button>
+      <div id="testimonials-grid" style="display:flex;gap:1.5rem;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:1rem;scroll-snap-type:x mandatory;align-items:flex-start;">
+        <!-- Testimonials load from Firebase, fallback shown below -->
+        <div id="test-placeholder-1" style="background:#fff;border-radius:16px;padding:1.8rem;border:0.5px solid #e8ddd2;box-shadow:0 4px 24px rgba(60,30,10,0.08);width:88vw;max-width:480px;flex-shrink:0;scroll-snap-align:start;word-wrap:break-word;overflow-wrap:break-word;height:auto;">
+          <div style="font-size:28px;color:#a0522d;margin-bottom:1rem;letter-spacing:3px;">★★★★★</div>
+          <p style="font-family:Arial,sans-serif;font-size:14.5px;color:#3a2a1a;line-height:1.75;font-style:normal;margin-bottom:1.2rem;word-wrap:break-word;overflow-wrap:break-word;text-align:left;">&ldquo;Working with Heather has been such an amazing experience. She is incredibly patient, encouraging, and always knows how to make me feel like I am doing a great job, even when I am struggling. She is truly my personal cheerleader. Every workout is fast-paced, engaging, and different, so I never get bored. As a busy mother of three, it is hard to stay focused on fitness, but her workouts kept my attention and made me actually look forward to exercising. She has given me so much confidence and motivation to keep going. One of the biggest differences has been her attention to proper form. Her clear explanations helped me realize my neck pain was being caused by incorrect technique, and once I made those adjustments, I noticed a huge improvement. If you are looking for a trainer who is knowledgeable, supportive, motivating, and genuinely invested in your success, I cannot recommend Heather enough!&rdquo;</p>
+          <p style="font-family:Arial,sans-serif;font-size:15px;font-weight:700;color:#a0522d;margin-top:1rem;">— Holly H.</p>
+        </div>
       </div>
+      <button class="test-nav-btn next" id="test-next" onclick="scrollTestimonials(1)" aria-label="Next testimonial">›</button>
     </div>
-    <p style="font-family:Arial,sans-serif;font-size:12px;color:#9a8a7a;text-align:center;margin-top:0.5rem;">← Swipe to see more →</p>
+    <div id="testimonials-dots"></div>
+    <p id="test-swipe-hint" style="font-family:Arial,sans-serif;font-size:12px;color:#9a8a7a;text-align:center;margin-top:0.5rem;">← Swipe to see more →</p>
     <p style="font-family:Arial,sans-serif;font-size:13px;color:#9a8a7a;text-align:center;margin-top:1rem;">Ready to write your own story? <a href="forms.html" style="color:#a0522d;font-weight:700;">Start your 7 day trial →</a></p>
 
     <!-- SUBMIT TESTIMONIAL -->
@@ -529,15 +579,6 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
       <p style="font-family:Georgia,serif;font-size:18px;line-height:1.6;font-style:italic;">"Fitness should be a safe, supportive place where people feel understood, not judged. You can show up as you are."</p>
       <p style="font-family:Arial,sans-serif;font-size:13px;margin-top:0.8rem;opacity:0.8;">— Heather, Everyday Strong</p>
     </div>
-
-    <div style="margin-top:2.5rem;">
-      <div class="section-label">A Little Extra</div>
-      <h3 style="font-family:Georgia,serif;font-size:20px;color:#3a2a1a;margin-bottom:0.5rem;">I made a fitness song for my boys 🎵</h3>
-      <p style="font-family:Arial,sans-serif;font-size:14px;color:#6a5a48;margin-bottom:1.2rem;">Because fitness should be fun for the whole family!</p>
-      <div style="display:flex;justify-content:flex-start;">
-        <blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/reel/DZAfLwUSBxv/" data-instgrm-version="14" style="max-width:380px;width:100%;border-radius:14px;overflow:hidden;"></blockquote>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -695,6 +736,7 @@ try {
     var grid = document.getElementById("testimonials-grid");
     if(!snap.exists()){
       grid.innerHTML="<p style='text-align:center;color:#9a8a7a;font-size:14px;grid-column:1/-1;'>Testimonials coming soon!</p>";
+      initTestimonialCarousel();
       return;
     }
     var items=[]; snap.forEach(function(c){ items.push(c.val()); });
@@ -718,6 +760,7 @@ try {
       card.appendChild(nameEl);
       grid.appendChild(card);
     });
+    initTestimonialCarousel();
   });
 
   // Load featured photos
@@ -747,7 +790,61 @@ try {
     });
   });
 
-} catch(e){ console.log("Firebase not available"); }
+} catch(e){ console.log("Firebase not available"); initTestimonialCarousel(); }
+
+function scrollTestimonials(dir){
+  var grid = document.getElementById("testimonials-grid");
+  var card = grid.querySelector(":scope > div");
+  if(!card) return;
+  var amount = card.getBoundingClientRect().width + 24; // card width + gap
+  grid.scrollBy({ left: dir * amount, behavior: "smooth" });
+}
+
+function initTestimonialCarousel(){
+  var grid = document.getElementById("testimonials-grid");
+  var dotsWrap = document.getElementById("testimonials-dots");
+  var prevBtn = document.getElementById("test-prev");
+  var nextBtn = document.getElementById("test-next");
+  if(!grid || !dotsWrap) return;
+  var cards = grid.querySelectorAll(":scope > div");
+
+  dotsWrap.innerHTML = "";
+  if(cards.length > 1){
+    cards.forEach(function(card, i){
+      var dot = document.createElement("button");
+      dot.className = "dot" + (i === 0 ? " active" : "");
+      dot.setAttribute("aria-label", "Go to testimonial " + (i+1));
+      dot.addEventListener("click", function(){
+        card.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+      });
+      dotsWrap.appendChild(dot);
+    });
+  }
+
+  function updateActive(){
+    var dots = dotsWrap.querySelectorAll(".dot");
+    if(!dots.length) return;
+    var gridRect = grid.getBoundingClientRect();
+    var closestIdx = 0, closestDist = Infinity;
+    cards.forEach(function(card, i){
+      var dist = Math.abs(card.getBoundingClientRect().left - gridRect.left);
+      if(dist < closestDist){ closestDist = dist; closestIdx = i; }
+    });
+    dots.forEach(function(d, i){ d.classList.toggle("active", i === closestIdx); });
+    if(prevBtn) prevBtn.disabled = grid.scrollLeft <= 4;
+    if(nextBtn) nextBtn.disabled = grid.scrollLeft >= (grid.scrollWidth - grid.clientWidth - 4);
+  }
+
+  grid.removeEventListener("scroll", grid._testScrollHandler || function(){});
+  var handler = function(){ window.requestAnimationFrame(updateActive); };
+  grid._testScrollHandler = handler;
+  grid.addEventListener("scroll", handler, { passive: true });
+  window.addEventListener("resize", updateActive);
+  updateActive();
+}
+document.addEventListener("DOMContentLoaded", function(){
+  if(!document.getElementById("testimonials-dots").childElementCount){ initTestimonialCarousel(); }
+});
 
 function submitPublicTestimonial(){
   var name = document.getElementById("pub-test-name").value.trim();
@@ -790,6 +887,5 @@ document.addEventListener("click",function(e){
   }
 });
 </script>
-<script async src="//www.instagram.com/embed.js"></script>
 </body>
 </html>
