@@ -667,12 +667,7 @@ try {
     }
     var items=[]; snap.forEach(function(c){ items.push(c.val()); });
     items.sort(function(a,b){ return b.ts-a.ts; });
-    // Only replace placeholder if we have approved testimonials
-    if(items.length > 0){
-      var placeholder=document.getElementById("test-placeholder-1");
-      if(placeholder) placeholder.remove();
-      grid.innerHTML="";
-    }
+    // Append Firebase testimonials after Holly's - don't remove her
     items.forEach(function(t){
       var stars="★".repeat(t.stars||5);
       var card=document.createElement("div");
