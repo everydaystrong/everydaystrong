@@ -463,21 +463,11 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
     <h2 class="section-title">Real people. Real results.</h2>
     <p class="section-sub" style="margin-bottom:3rem;">Hear from the Everyday Strong community.</p>
     <div id="testimonials-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem;">
-      <!-- Testimonials load from Firebase -->
-      <div style="background:#faf6f2;border-radius:14px;padding:2rem;border:0.5px solid #e8ddd2;">
-        <div style="font-size:24px;color:#a0522d;margin-bottom:0.8rem;">★★★★★</div>
-        <p style="font-family:Arial,sans-serif;font-size:15px;color:#5a4a38;line-height:1.7;font-style:italic;margin-bottom:1rem;">"Everyday Strong has completely changed how I approach fitness. I make every class feel achievable no matter your level!"</p>
-        <p style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:#a0522d;">— Sarah M.</p>
-      </div>
-      <div style="background:#faf6f2;border-radius:14px;padding:2rem;border:0.5px solid #e8ddd2;">
-        <div style="font-size:24px;color:#a0522d;margin-bottom:0.8rem;">★★★★★</div>
-        <p style="font-family:Arial,sans-serif;font-size:15px;color:#5a4a38;line-height:1.7;font-style:italic;margin-bottom:1rem;">"I love that I can work out from home and still feel like I have a trainer right there with me. The community is so supportive!"</p>
-        <p style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:#a0522d;">— Member</p>
-      </div>
-      <div style="background:#faf6f2;border-radius:14px;padding:2rem;border:0.5px solid #e8ddd2;">
-        <div style="font-size:24px;color:#a0522d;margin-bottom:0.8rem;">★★★★★</div>
-        <p style="font-family:Arial,sans-serif;font-size:15px;color:#5a4a38;line-height:1.7;font-style:italic;margin-bottom:1rem;">"I have tried so many programs and nothing has stuck until Everyday Strong. The consistency and structure is exactly what I needed."</p>
-        <p style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:#a0522d;">— Member</p>
+      <!-- Testimonials load from Firebase, fallback shown below -->
+      <div style="background:#faf6f2;border-radius:14px;padding:2rem;border:0.5px solid #e8ddd2;" id="test-placeholder-1">
+        <div style="font-size:22px;color:#a0522d;margin-bottom:0.8rem;">★★★★★</div>
+        <p style="font-family:Arial,sans-serif;font-size:15px;color:#5a4a38;line-height:1.7;font-style:italic;margin-bottom:1rem;">&ldquo;Working with Heather has been such an amazing experience. She is incredibly patient, encouraging, and always knows how to make me feel like I am doing a great job, even when I am struggling. She is truly my personal cheerleader. Every workout is fast-paced, engaging, and different, so I never get bored. As a busy mother of three, it is hard to stay focused on fitness, but her workouts kept my attention and made me actually look forward to exercising. She has given me so much confidence and motivation to keep going. One of the biggest differences has been her attention to proper form. Her clear explanations helped me realize my neck pain was being caused by incorrect technique, and once I made those adjustments, I noticed a huge improvement. If you are looking for a trainer who is knowledgeable, supportive, motivating, and genuinely invested in your success, I cannot recommend Heather enough!&rdquo;</p>
+        <p style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:#a0522d;">— Everyday Strong Member</p>
       </div>
     </div>
     <p style="font-family:Arial,sans-serif;font-size:13px;color:#9a8a7a;text-align:center;margin-top:2rem;">Ready to write your own story? <a href="forms.html" style="color:#a0522d;font-weight:700;">Start your 7 day trial →</a></p>
@@ -639,6 +629,9 @@ try {
     }
     var items=[]; snap.forEach(function(c){ items.push(c.val()); });
     items.sort(function(a,b){ return b.ts-a.ts; });
+    // Remove placeholder when real testimonials load
+    var placeholder=document.getElementById("test-placeholder");
+    if(placeholder) placeholder.remove();
     grid.innerHTML="";
     items.forEach(function(t){
       var stars="★".repeat(t.stars||5);
