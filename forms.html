@@ -544,10 +544,10 @@ try {
 
 function loadPrograms(){
   fbDB.ref("programs").once("value", function(snap){
-    var opts=["7 Day Trial"];
+    var opts=[];
     if(snap.exists()) snap.forEach(function(c){
       var p=c.val();
-      if(p.showForms && p.name && p.name!=="7 Day Trial") opts.push(p.name+(p.price?" ("+p.price+")":""));
+      if(p.showForms && p.name && p.name.trim().toLowerCase()!=="7 day trial") opts.push(p.name+(p.price?" ("+p.price+")":""));
     });
     buildProgramSelect(opts);
   });
