@@ -923,7 +923,12 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         <button class="action-btn" id="add-test-btn">Add to Website</button>
       </div>
       <div class="admin-card">
-        <h3>Live Testimonials on Website</h3>
+        <h3>⏳ Pending Approval <span id="pending-badge" style="display:none;background:#c05040;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:6px;">NEW</span></h3>
+        <p style="font-size:12px;color:var(--sub);margin-bottom:1rem;">Submitted by members — approve or decline.</p>
+        <div id="test-pending"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+      <div class="admin-card">
+        <h3>✅ Live Testimonials on Website</h3>
         <p style="font-size:12px;color:var(--sub);margin-bottom:1rem;">These show on everydaystrongfit.com automatically.</p>
         <div id="test-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
       </div>
@@ -1362,7 +1367,7 @@ function loadAnnouncements(){
 function doAdmin(){
   var p=prompt("Instructor password:");
   if(p===null) return;
-  if(p===adminPass){ loadDashboard(); loadAdmVideos(); populateProgramDatalist(); loadAdmCodes(); loadAdmAnn(); loadAdminPrograms(); sp("pg-admin"); }
+  if(p===adminPass){ loadDashboard(); loadAdmVideos(); populateProgramDatalist(); loadAdmCodes(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); sp("pg-admin"); }
   else alert("Incorrect password. Please try again.");
 }
 
@@ -1374,7 +1379,7 @@ document.getElementById("atab-announce").onclick=function(){ setAdmTab("announce
 document.getElementById("atab-settings").onclick=function(){ setAdmTab("settings",this); };
 document.getElementById("atab-community").onclick=function(){ setAdmTab("community",this); loadAdminCommList(); };
 document.getElementById("atab-programs").onclick=function(){ setAdmTab("programs",this); loadAdminPrograms(); };
-document.getElementById("atab-testimonials").onclick=function(){ setAdmTab("testimonials",this); loadTestimonialsAdmin(); };
+document.getElementById("atab-testimonials").onclick=function(){ setAdmTab("testimonials",this); loadTestimonialsAdmin(); loadPendingTestimonials(); };
 document.getElementById("add-prog-btn").onclick=saveProgram;
 document.getElementById("atab-featured").onclick=function(){ setAdmTab("featured",this); loadFeaturedAdmin(); };
 document.getElementById("add-test-btn").onclick=addTestimonial;
@@ -2843,6 +2848,79 @@ function loadTestimonialsAdmin(){
       el.appendChild(row);
     });
   });
+}
+
+function loadPendingTestimonials(){
+  if(!DB) return;
+  DB.ref("testimonials_pending").on("value",function(snap){
+    var el=document.getElementById("test-pending");
+    var badge=document.getElementById("pending-badge");
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No pending testimonials.</p>"; badge.style.display="none"; return; }
+    var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    badge.style.display="inline";
+    badge.textContent=items.length+" NEW";
+    el.innerHTML="";
+    items.forEach(function(t){
+      var stars="★".repeat(t.stars||5);
+      var card=document.createElement("div");
+      card.style.cssText="padding:14px;background:var(--inp);border-radius:10px;margin-bottom:10px;";
+
+      var hdr=document.createElement("div");
+      hdr.style.cssText="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px;";
+
+      var nameDiv=document.createElement("div");
+      nameDiv.innerHTML="<span style='color:#e8a020;font-size:14px;'>"+stars+"</span> <strong style='font-size:13px;'>"+ex(t.name)+"</strong>";
+
+      var btns=document.createElement("div");
+      btns.style.cssText="display:flex;gap:6px;flex-shrink:0;";
+
+      var appBtn=document.createElement("button");
+      appBtn.className="action-btn";
+      appBtn.style.cssText="font-size:12px;padding:5px 12px;background:#4a7c5c;";
+      appBtn.textContent="✅ Approve";
+      appBtn.setAttribute("data-k",t._k);
+      appBtn.setAttribute("data-n",t.name);
+      appBtn.setAttribute("data-q",t.quote);
+      appBtn.setAttribute("data-s",t.stars||5);
+      appBtn.onclick=function(){
+        approveTestimonial(this.getAttribute("data-k"),{name:this.getAttribute("data-n"),quote:this.getAttribute("data-q"),stars:parseInt(this.getAttribute("data-s"))});
+      };
+
+      var delBtn=document.createElement("button");
+      delBtn.className="del-btn";
+      delBtn.textContent="✕";
+      delBtn.setAttribute("data-k",t._k);
+      delBtn.onclick=function(){ declineTestimonial(this.getAttribute("data-k")); };
+
+      btns.appendChild(appBtn);
+      btns.appendChild(delBtn);
+      hdr.appendChild(nameDiv);
+      hdr.appendChild(btns);
+
+      var quote=document.createElement("p");
+      quote.style.cssText="font-size:13px;color:var(--sub);font-style:italic;line-height:1.6;";
+      quote.textContent='"'+(t.quote||"").substring(0,150)+((t.quote||"").length>150?"...":"")+'"';
+
+      card.appendChild(hdr);
+      card.appendChild(quote);
+      el.appendChild(card);
+    });
+  });
+}
+
+function approveTestimonial(key, t){
+  if(!DB) return;
+  DB.ref("testimonials").push({
+    name:t.name, quote:t.quote, stars:t.stars, ts:Date.now()
+  }, function(e){
+    if(!e) DB.ref("testimonials_pending/"+key).remove();
+  });
+}
+
+function declineTestimonial(key){
+  if(!confirm("Decline and delete this testimonial?")) return;
+  DB.ref("testimonials_pending/"+key).remove();
 }
 
 function delTestimonial(key){

@@ -195,6 +195,38 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
       </div>
     </div>
     <p style="font-family:Arial,sans-serif;font-size:13px;color:#9a8a7a;text-align:center;margin-top:2rem;">Ready to write your own story? <a href="forms.html" style="color:#a0522d;font-weight:700;">Start your 7 day trial →</a></p>
+
+    <!-- SUBMIT TESTIMONIAL -->
+    <div style="max-width:780px;margin:2.5rem auto 0;background:#fff;border-radius:16px;padding:2rem;border:0.5px solid #e8ddd2;box-shadow:0 4px 24px rgba(60,30,10,0.06);">
+      <h3 style="font-family:Georgia,serif;font-size:20px;color:#3a2a1a;margin-bottom:0.4rem;">Are you an Everyday Strong member?</h3>
+      <p style="font-family:Arial,sans-serif;font-size:14px;color:#6a5a48;margin-bottom:1.2rem;">We would love to hear about your experience! Share your story below.</p>
+      <div id="test-submit-ok" style="display:none;background:#eaf6f0;border-radius:10px;padding:1rem;text-align:center;margin-bottom:1rem;">
+        <p style="font-family:Arial,sans-serif;font-size:15px;color:#1a7a4a;font-weight:700;">Thank you! 🎉</p>
+        <p style="font-family:Arial,sans-serif;font-size:13px;color:#3a6a4a;">Your testimonial has been submitted and will appear once approved.</p>
+      </div>
+      <div id="test-submit-form">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+          <div>
+            <label style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#7a6a5a;display:block;margin-bottom:5px;">Your Name</label>
+            <input type="text" id="pub-test-name" placeholder="e.g. Holly H." style="width:100%;padding:10px 14px;border:1.5px solid #d8cfc6;border-radius:9px;font-size:14px;background:#f9f6f2;color:#3a2a1a;outline:none;font-family:Arial,sans-serif;" />
+          </div>
+          <div>
+            <label style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#7a6a5a;display:block;margin-bottom:5px;">Star Rating</label>
+            <select id="pub-test-stars" style="width:100%;padding:10px 14px;border:1.5px solid #d8cfc6;border-radius:9px;font-size:14px;background:#f9f6f2;color:#3a2a1a;outline:none;font-family:Arial,sans-serif;">
+              <option value="5">★★★★★</option>
+              <option value="4">★★★★</option>
+              <option value="3">★★★</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:1rem;">
+          <label style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#7a6a5a;display:block;margin-bottom:5px;">Your Experience</label>
+          <textarea id="pub-test-quote" placeholder="Share what your experience with Everyday Strong has been like..." style="width:100%;padding:10px 14px;border:1.5px solid #d8cfc6;border-radius:9px;font-size:14px;background:#f9f6f2;color:#3a2a1a;outline:none;resize:vertical;min-height:100px;font-family:Arial,sans-serif;"></textarea>
+        </div>
+        <button onclick="submitPublicTestimonial()" style="width:100%;padding:13px;background:#a0522d;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:Georgia,serif;">Submit My Testimonial</button>
+        <p style="font-family:Arial,sans-serif;font-size:11px;color:#9a8a7a;text-align:center;margin-top:8px;">Testimonials are reviewed before being published.</p>
+      </div>
+    </div>
   </div>
 </section>
 <!-- ABOUT -->
@@ -682,6 +714,28 @@ try {
   });
 
 } catch(e){ console.log("Firebase not available"); }
+
+function submitPublicTestimonial(){
+  var name = document.getElementById("pub-test-name").value.trim();
+  var quote = document.getElementById("pub-test-quote").value.trim();
+  var stars = document.getElementById("pub-test-stars").value;
+  if(!name){ alert("Please enter your name."); return; }
+  if(!quote || quote.length < 20){ alert("Please share a little more about your experience!"); return; }
+  try {
+    landingDB.ref("testimonials_pending").push({
+      name:name, quote:quote, stars:parseInt(stars), ts:Date.now(), approved:false
+    }, function(e){
+      if(!e){
+        document.getElementById("test-submit-form").style.display="none";
+        document.getElementById("test-submit-ok").style.display="block";
+      } else {
+        alert("Something went wrong. Please try again or email us at Everydaystrongteam@gmail.com");
+      }
+    });
+  } catch(e){
+    alert("Something went wrong. Please email us at Everydaystrongteam@gmail.com");
+  }
+}
 
 function toggleMenu(){
   var m=document.getElementById("mobile-menu");
