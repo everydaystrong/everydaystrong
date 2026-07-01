@@ -614,6 +614,17 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         <button class="action-btn" id="add-video-btn">Save Video</button>
       </div>
       <div class="admin-card">
+        <h3>📦 Bulk Add Videos</h3>
+        <p class="tip" style="margin-bottom:10px;">Paste multiple videos at once, one per line, in this format:<br><b>Title | YouTube Link | Category | Focus tags (comma separated, optional)</b></p>
+        <p class="tip" style="margin-bottom:10px;">Example:<br><span style="font-family:monospace;font-size:11px;">Week 1 Lower Body | https://youtu.be/abc123 | Monday Classes | Lower Body<br>Full Body Core | https://youtu.be/def456 | Wednesday Classes | Full Body, Core</span></p>
+        <textarea class="form-input" id="bulk-video-input" rows="10" placeholder="Paste your list here, one video per line..." style="text-transform:none;font-family:monospace;font-size:12px;width:100%;resize:vertical;"></textarea>
+        <div id="bulk-preview" style="margin-top:10px;"></div>
+        <div class="ok-msg" id="ok-bulk">Videos added!</div>
+        <div class="err" id="err-bulk" style="display:none;">Check the highlighted lines above — each needs a title, a link, and a category.</div>
+        <button class="action-btn" id="bulk-preview-btn" style="width:100%;margin-top:8px;">Preview</button>
+        <button class="action-btn" id="bulk-add-btn" style="width:100%;margin-top:8px;display:none;">Add All to Dashboard</button>
+      </div>
+      <div class="admin-card">
         <h3>Reorder Videos</h3>
         <select class="form-select" id="reorder-cat" onchange="loadReorderList()" style="margin-bottom:10px;">
           <option value="">-- Select a program --</option>
@@ -1667,6 +1678,87 @@ function addVideo(){
 }
 
 function delVideo(key){ if(!confirm("Remove this video?")) return; DB.ref("videos/"+key).remove(); }
+
+// BULK ADD VIDEOS
+var bulkParsedVideos = [];
+
+function parseBulkVideoLines(){
+  var raw = document.getElementById("bulk-video-input").value;
+  var lines = raw.split("\n").map(function(l){ return l.trim(); }).filter(function(l){ return l.length; });
+  var results = [];
+  lines.forEach(function(line){
+    var parts = line.split("|").map(function(p){ return p.trim(); });
+    var title = parts[0]||"";
+    var url = parts[1]||"";
+    var tag = parts[2]||"";
+    var focusRaw = parts[3]||"";
+    var focus = focusRaw ? focusRaw.split(",").map(function(f){ return f.trim(); }).filter(Boolean) : [];
+    var valid = !!(title && url && tag);
+    results.push({raw:line, title:title, url:url, tag:tag, focus:focus, valid:valid});
+  });
+  return results;
+}
+
+function previewBulkVideos(){
+  bulkParsedVideos = parseBulkVideoLines();
+  var box = document.getElementById("bulk-preview");
+  var errBox = document.getElementById("err-bulk");
+  var addBtn = document.getElementById("bulk-add-btn");
+  if(!bulkParsedVideos.length){
+    box.innerHTML = "<p class='tip'>Nothing to preview yet — paste some lines above first.</p>";
+    addBtn.style.display = "none";
+    return;
+  }
+  var hasInvalid = bulkParsedVideos.some(function(v){ return !v.valid; });
+  var h = "<div style='max-height:280px;overflow-y:auto;border:0.5px solid var(--border);border-radius:8px;'>";
+  bulkParsedVideos.forEach(function(v,i){
+    var bg = v.valid ? "transparent" : "rgba(200,50,50,0.12)";
+    h += "<div style='padding:8px 10px;border-bottom:0.5px solid var(--border);background:"+bg+";font-size:12px;'>";
+    if(v.valid){
+      h += "<strong>"+ex(v.title)+"</strong><br><span style='color:var(--sub);'>"+ex(v.tag)+(v.focus.length?" · "+ex(v.focus.join(", ")):"")+"</span>";
+    } else {
+      h += "<strong style='color:#b03020;'>⚠ Couldn't parse line "+(i+1)+":</strong><br><span style='color:var(--sub);'>"+ex(v.raw)+"</span>";
+    }
+    h += "</div>";
+  });
+  h += "</div>";
+  h += "<p class='tip' style='margin-top:8px;'>"+bulkParsedVideos.filter(function(v){return v.valid;}).length+" of "+bulkParsedVideos.length+" lines look good.</p>";
+  box.innerHTML = h;
+  errBox.style.display = hasInvalid ? "block" : "none";
+  addBtn.style.display = bulkParsedVideos.some(function(v){return v.valid;}) ? "block" : "none";
+}
+
+function submitBulkVideos(){
+  if(!DB){ alert("Database not connected."); return; }
+  var valid = bulkParsedVideos.filter(function(v){ return v.valid; });
+  if(!valid.length){ return; }
+  var btn = document.getElementById("bulk-add-btn");
+  btn.disabled = true; btn.textContent = "Adding...";
+  var baseTs = Date.now();
+  var remaining = valid.length;
+  var failed = 0;
+  valid.forEach(function(v, i){
+    DB.ref("videos").push({
+      title: v.title, url: v.url, tag: v.tag,
+      focus: v.focus.length ? v.focus : null,
+      order: baseTs + i, releaseDate: null, ts: baseTs + i
+    }, function(e){
+      if(e) failed++;
+      remaining--;
+      if(remaining === 0){
+        btn.disabled = false; btn.textContent = "Add All to Dashboard";
+        showOk("ok-bulk", failed ? (valid.length-failed)+" added, "+failed+" failed." : valid.length+" videos added!");
+        document.getElementById("bulk-video-input").value = "";
+        document.getElementById("bulk-preview").innerHTML = "";
+        btn.style.display = "none";
+        bulkParsedVideos = [];
+        populateProgramDatalist();
+        loadAdmVideos();
+      }
+    });
+  });
+}
+
 
 function loadReorderList(){
   var cat=document.getElementById("reorder-cat").value;
@@ -3211,6 +3303,8 @@ document.getElementById("admin-link").onclick=doAdmin;
 document.getElementById("signout-btn").onclick=function(){ sp("pg-login"); document.getElementById("code-in").value=""; document.getElementById("login-err").style.display="none"; };
 document.getElementById("exit-btn").onclick=function(){ sp("pg-login"); };
 document.getElementById("add-video-btn").onclick=addVideo;
+document.getElementById("bulk-preview-btn").onclick=previewBulkVideos;
+document.getElementById("bulk-add-btn").onclick=submitBulkVideos;
 document.getElementById("gen-btn").onclick=genCode;
 document.getElementById("add-code-btn").onclick=addCode;
 document.getElementById("add-ann-btn").onclick=addAnn;
