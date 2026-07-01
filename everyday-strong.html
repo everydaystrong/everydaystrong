@@ -1184,6 +1184,7 @@ function renderCategories(){
   var cats={};
   allVideos.forEach(function(v){
     var tag=v.tag||"Uncategorized";
+    if(!canAccess(tag)) return;
     if(!cats[tag]) cats[tag]={videos:[],img:v.catImg||null};
     cats[tag].videos.push(v);
     if(v.catImg) cats[tag].img=v.catImg;
@@ -1191,21 +1192,53 @@ function renderCategories(){
   var keys=Object.keys(cats);
   if(!keys.length){ grid.innerHTML="<div class='empty-state'><p style='font-size:32px;margin-bottom:10px;'>🏋️</p><p>No workouts yet — check back soon!</p></div>"; return; }
   var h="";
-  keys.forEach(function(cat){
-    var data=cats[cat];
-    var count=data.videos.length;
-    // Calculate progress
+  if(keys.length>1){
+    // Client has access to more than one category (e.g. Monday + Wednesday) —
+    // show one unified tile instead of fragmenting by day. Focus filters inside
+    // still let them narrow by body part.
+    var allVids=[];
+    keys.forEach(function(k){ allVids=allVids.concat(cats[k].videos); });
+    var count=allVids.length;
     var completedCount=0;
-    data.videos.forEach(function(v){ if(getUserData("completed",v._k)) completedCount++; });
+    allVids.forEach(function(v){ if(getUserData("completed",v._k)) completedCount++; });
     var pct=count>0?Math.round(completedCount/count*100):0;
-    h+="<div class='cat-card' onclick='openCategory(\""+ex(cat)+"\")'>";
-    if(data.img){ h+="<img class='cat-img' src='"+ex(data.img)+"' onerror='this.style.display=\"none\"' />"; }
-    else{ h+="<div class='cat-img-placeholder'>"+getCatIcon(cat)+"</div>"; }
-    h+="<div class='cat-info'><div class='cat-name'>"+ex(cat)+"</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
+    var img=null;
+    keys.forEach(function(k){ if(!img && cats[k].img) img=cats[k].img; });
+    h+="<div class='cat-card' onclick='openMergedCategories()'>";
+    if(img){ h+="<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />"; }
+    else{ h+="<div class='cat-img-placeholder'>🏋️</div>"; }
+    h+="<div class='cat-info'><div class='cat-name'>Live Classes</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
     if(pct>0) h+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
     h+="</div></div>";
-  });
+  } else {
+    keys.forEach(function(cat){
+      var data=cats[cat];
+      var count=data.videos.length;
+      var completedCount=0;
+      data.videos.forEach(function(v){ if(getUserData("completed",v._k)) completedCount++; });
+      var pct=count>0?Math.round(completedCount/count*100):0;
+      h+="<div class='cat-card' onclick='openCategory(\""+ex(cat)+"\")'>";
+      if(data.img){ h+="<img class='cat-img' src='"+ex(data.img)+"' onerror='this.style.display=\"none\"' />"; }
+      else{ h+="<div class='cat-img-placeholder'>"+getCatIcon(cat)+"</div>"; }
+      h+="<div class='cat-info'><div class='cat-name'>"+ex(cat)+"</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
+      if(pct>0) h+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
+      h+="</div></div>";
+    });
+  }
   grid.innerHTML=h;
+}
+
+function openMergedCategories(){
+  currentCat="__ALL__";
+  currentFocusFilter=null;
+  document.getElementById("cat-view").style.display="none";
+  document.getElementById("vid-view").style.display="block";
+  document.getElementById("vid-title").textContent="Live Classes";
+  currentCatVids=allVideos.filter(function(v){ return canAccess(v.tag||"Uncategorized"); });
+  currentCatVids.sort(function(a,b){ return (a.order||0)-(b.order||0); });
+  renderFocusFilters();
+  renderFilteredVideos();
+  window.scrollTo(0,0);
 }
 
 // USER DATA (favorites, completed, notes stored in localStorage per user)
@@ -1224,6 +1257,7 @@ var currentCatVids = [];
 var currentFocusFilter = null;
 
 function openCategory(cat){
+  if(!canAccess(cat)) return;
   currentCat=cat;
   currentFocusFilter=null;
   document.getElementById("cat-view").style.display="none";
