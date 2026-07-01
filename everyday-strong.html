@@ -105,6 +105,8 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
 /* COMMUNITY */
 .comm-cat-btn{padding:5px 12px;border:1px solid var(--border);border-radius:14px;font-size:12px;cursor:pointer;background:var(--card);color:var(--sub);font-weight:600;}
 .comm-cat-btn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+.focus-chip{padding:6px 14px;border:1px solid var(--border);border-radius:16px;font-size:12px;cursor:pointer;background:var(--card);color:var(--sub);font-weight:600;}
+.focus-chip.on{background:var(--accent);color:#fff;border-color:var(--accent);}
 .comm-post{background:var(--card);border-radius:11px;border:0.5px solid var(--border);margin-bottom:10px;overflow:hidden;}
 .comm-post-hdr{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border);}
 .comm-post-name{font-size:13px;font-weight:700;color:var(--accent);}
@@ -235,6 +237,13 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
     <div class="form-row"><span class="form-label">Title</span><input class="form-input" id="edit-title" style="text-transform:none;" /></div>
     <div class="form-row"><span class="form-label">YouTube Link</span><input class="form-input" id="edit-url" style="text-transform:none;" /></div>
     <div class="form-row"><span class="form-label">Program / Category</span><input class="form-input" id="edit-tag" style="text-transform:none;" /></div>
+    <div class="form-row"><span class="form-label">Focus / Body Part (optional — tap all that apply)</span>
+      <div id="edit-focus-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input class="form-input" id="edit-focus-new" placeholder="Add a new focus tag…" style="text-transform:none;flex:1;" />
+        <button type="button" class="action-btn" style="padding:0 16px;white-space:nowrap;" onclick="addNewFocusTag('edit')">+ Add</button>
+      </div>
+    </div>
     <div class="form-row"><span class="form-label">Release Date (optional)</span><input type="date" class="form-input" id="edit-release" /><span style="font-size:11px;color:var(--sub);margin-top:3px;">Leave blank to show immediately. Set a future date to schedule.</span></div>
     <div class="form-row"><span class="form-label">Category Image URL (optional)</span><input class="form-input" id="edit-catimg" placeholder="https://... image for this category card" style="text-transform:none;" /></div>
     <button class="action-btn" onclick="saveEdit()" style="width:100%;margin-top:4px;">Save Changes</button>
@@ -299,6 +308,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         <button class="back-btn" id="back-btn">← Back to Programs</button>
         <p class="section-title" id="vid-title">Videos</p>
         <p class="section-sub" id="vid-sub"></p>
+        <div id="focus-filters" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
         <div class="video-grid" id="video-grid"></div>
       </div>
     </div>
@@ -591,6 +601,14 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
           </select>
           <input class="form-input" id="v-tag" placeholder="Type new category name" style="text-transform:none;display:none;" />
           <p class="tip">Pick an existing program/category from the list, or choose "+ Add a new category" to create one.</p>
+        </div>
+        <div class="form-row"><span class="form-label">Focus / Body Part (optional — tap all that apply)</span>
+          <div id="v-focus-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;"></div>
+          <div style="display:flex;gap:8px;">
+            <input class="form-input" id="v-focus-new" placeholder="Add a new focus tag…" style="text-transform:none;flex:1;" />
+            <button type="button" class="action-btn" style="padding:0 16px;white-space:nowrap;" onclick="addNewFocusTag('v')">+ Add</button>
+          </div>
+          <p class="tip">A video can have multiple focus tags — e.g. both "Lower Body" and "Core."</p>
         </div>
         <div class="form-row"><span class="form-label">Release Date (optional)</span><input type="date" class="form-input" id="v-release" /><span style="font-size:11px;color:var(--sub);margin-top:3px;">Leave blank to show immediately. Set a future date to schedule.</span></div>
         <button class="action-btn" id="add-video-btn">Save Video</button>
@@ -1202,16 +1220,46 @@ function getAllUserData(type){
 }
 
 // OPEN CATEGORY
+var currentCatVids = [];
+var currentFocusFilter = null;
+
 function openCategory(cat){
   currentCat=cat;
+  currentFocusFilter=null;
   document.getElementById("cat-view").style.display="none";
   document.getElementById("vid-view").style.display="block";
   document.getElementById("vid-title").textContent=cat;
-  var vids=allVideos.filter(function(v){ return (v.tag||"Uncategorized")===cat; });
-  vids.sort(function(a,b){ return (a.order||0)-(b.order||0); });
-  document.getElementById("vid-sub").textContent=vids.length+" video"+(vids.length!==1?"s":"");
-  document.getElementById("video-grid").innerHTML=renderVideoCards(vids);
+  currentCatVids=allVideos.filter(function(v){ return (v.tag||"Uncategorized")===cat; });
+  currentCatVids.sort(function(a,b){ return (a.order||0)-(b.order||0); });
+  renderFocusFilters();
+  renderFilteredVideos();
   window.scrollTo(0,0);
+}
+
+function renderFocusFilters(){
+  var wrap = document.getElementById("focus-filters");
+  var focuses = {};
+  currentCatVids.forEach(function(v){ normalizeFocus(v.focus).forEach(function(f){ focuses[f]=true; }); });
+  var keys = Object.keys(focuses).sort();
+  if(!keys.length){ wrap.style.display="none"; wrap.innerHTML=""; return; }
+  wrap.style.display="flex";
+  var h = "<button class='focus-chip"+(currentFocusFilter===null?" on":"")+"' onclick='setFocusFilter(null)'>All</button>";
+  keys.forEach(function(f){
+    h += "<button class='focus-chip"+(currentFocusFilter===f?" on":"")+"' onclick='setFocusFilter(\""+ex(f).replace(/"/g,"&quot;")+"\")'>"+ex(f)+"</button>";
+  });
+  wrap.innerHTML = h;
+}
+
+function setFocusFilter(f){
+  currentFocusFilter = f;
+  renderFocusFilters();
+  renderFilteredVideos();
+}
+
+function renderFilteredVideos(){
+  var vids = currentFocusFilter ? currentCatVids.filter(function(v){ return normalizeFocus(v.focus).indexOf(currentFocusFilter)!==-1; }) : currentCatVids;
+  document.getElementById("vid-sub").textContent=vids.length+" video"+(vids.length!==1?"s":"")+(currentFocusFilter?" · "+currentFocusFilter:"");
+  document.getElementById("video-grid").innerHTML=renderVideoCards(vids);
 }
 
 function renderVideoCards(vids){
@@ -1429,6 +1477,9 @@ function openEdit(key){
     document.getElementById("edit-title").value=v.title||"";
     document.getElementById("edit-url").value=v.url||"";
     document.getElementById("edit-tag").value=v.tag||"";
+    editFocusSelected = normalizeFocus(v.focus);
+    editFocusSelected.forEach(function(f){ if(allFocusTags.indexOf(f)===-1) allFocusTags.push(f); });
+    renderFocusChips("edit");
     document.getElementById("edit-release").value=v.releaseDate||"";
     document.getElementById("edit-catimg").value=v.catImg||"";
     document.getElementById("edit-modal").classList.add("open");
@@ -1437,6 +1488,7 @@ function openEdit(key){
 
 function closeEdit(){
   document.getElementById("edit-modal").classList.remove("open");
+  editFocusSelected = [];
 }
 
 function saveEdit(){
@@ -1447,7 +1499,7 @@ function saveEdit(){
   var rd=document.getElementById("edit-release").value;
   var ci=document.getElementById("edit-catimg").value.trim();
   if(!t||!u){ alert("Please enter a title and link."); return; }
-  DB.ref("videos/"+key).update({title:t,url:u,tag:tg,releaseDate:rd||null,catImg:ci||null},function(e){
+  DB.ref("videos/"+key).update({title:t,url:u,tag:tg,focus:editFocusSelected.length?editFocusSelected:null,releaseDate:rd||null,catImg:ci||null},function(e){
     if(!e){ closeEdit(); showOk("ok-video","Video updated!"); }
   });
 }
@@ -1456,19 +1508,26 @@ function saveEdit(){
 function populateProgramDatalist(){
   if(!DB) return;
   DB.ref("videos").once("value", function(snap){
-    var cats = {};
-    if(snap.exists()) snap.forEach(function(c){ var t=c.val().tag; if(t) cats[t]=true; });
-    var sel = document.getElementById("v-tag-select");
-    if(!sel) return;
-    sel.innerHTML = '<option value="">-- Select a program/category --</option>';
-    Object.keys(cats).sort().forEach(function(cat){
-      var opt = document.createElement("option");
-      opt.value = cat; opt.textContent = cat;
-      sel.appendChild(opt);
+    var cats = {}, focuses = {};
+    if(snap.exists()) snap.forEach(function(c){
+      var t=c.val().tag; if(t) cats[t]=true;
+      normalizeFocus(c.val().focus).forEach(function(f){ focuses[f]=true; });
     });
-    var newOpt = document.createElement("option");
-    newOpt.value = "__new__"; newOpt.textContent = "+ Add a new category…";
-    sel.appendChild(newOpt);
+    var sel = document.getElementById("v-tag-select");
+    if(sel){
+      sel.innerHTML = '<option value="">-- Select a program/category --</option>';
+      Object.keys(cats).sort().forEach(function(cat){
+        var opt = document.createElement("option");
+        opt.value = cat; opt.textContent = cat;
+        sel.appendChild(opt);
+      });
+      var newOpt = document.createElement("option");
+      newOpt.value = "__new__"; newOpt.textContent = "+ Add a new category…";
+      sel.appendChild(newOpt);
+    }
+    allFocusTags = Object.keys(focuses).sort();
+    renderFocusChips("v");
+    renderFocusChips("edit");
   });
 }
 
@@ -1483,6 +1542,47 @@ function handleTagSelect(){
     txt.style.display = "none";
     txt.value = sel.value;
   }
+}
+
+// FOCUS TAGS (multi-select chip picker, shared pool of tags across Add and Edit forms)
+var allFocusTags = [];
+var vFocusSelected = [];
+var editFocusSelected = [];
+
+function normalizeFocus(f){
+  if(!f) return [];
+  if(Array.isArray(f)) return f.filter(Boolean);
+  return [f];
+}
+
+function renderFocusChips(which){
+  var wrap = document.getElementById(which+"-focus-chips");
+  if(!wrap) return;
+  var selected = which==="v" ? vFocusSelected : editFocusSelected;
+  if(!allFocusTags.length){ wrap.innerHTML = "<p class='tip' style='margin:0;'>No focus tags yet — add one below.</p>"; return; }
+  wrap.innerHTML = allFocusTags.map(function(f){
+    var on = selected.indexOf(f)!==-1;
+    return "<button type='button' class='focus-chip"+(on?" on":"")+"' onclick='toggleFocusTag(\""+which+"\",\""+ex(f).replace(/"/g,"&quot;")+"\")'>"+ex(f)+"</button>";
+  }).join("");
+}
+
+function toggleFocusTag(which, tag){
+  var arr = which==="v" ? vFocusSelected : editFocusSelected;
+  var idx = arr.indexOf(tag);
+  if(idx===-1) arr.push(tag); else arr.splice(idx,1);
+  renderFocusChips(which);
+}
+
+function addNewFocusTag(which){
+  var input = document.getElementById(which+"-focus-new");
+  var tag = input.value.trim();
+  if(!tag) return;
+  if(allFocusTags.indexOf(tag)===-1) allFocusTags.push(tag);
+  var arr = which==="v" ? vFocusSelected : editFocusSelected;
+  if(arr.indexOf(tag)===-1) arr.push(tag);
+  input.value = "";
+  renderFocusChips("v");
+  renderFocusChips("edit");
 }
 
 function loadAdmVideos(){
@@ -1515,13 +1615,15 @@ function addVideo(){
   DB.ref("videos").orderByChild("tag").equalTo(tg).once("value",function(snap){
     var maxOrder=0;
     if(snap.exists()) snap.forEach(function(c){ var o=c.val().order||0; if(o>maxOrder) maxOrder=o; });
-    DB.ref("videos").push({title:t,url:u,tag:tg,order:maxOrder+1,releaseDate:rd||null,ts:Date.now()},function(e){
+    DB.ref("videos").push({title:t,url:u,tag:tg,focus:vFocusSelected.length?vFocusSelected:null,order:maxOrder+1,releaseDate:rd||null,ts:Date.now()},function(e){
       if(!e){
         document.getElementById("v-title").value="";
         document.getElementById("v-url").value="";
         document.getElementById("v-tag").value="";
         document.getElementById("v-tag").style.display="none";
         document.getElementById("v-tag-select").value="";
+        vFocusSelected = [];
+        renderFocusChips("v");
         document.getElementById("v-release").value="";
         showOk("ok-video","Video saved!");
         populateProgramDatalist();
