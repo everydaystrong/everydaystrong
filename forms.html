@@ -607,7 +607,8 @@ function switchForm(name, btn){
   document.querySelectorAll(".fnav-btn").forEach(function(b){ b.classList.remove("on"); });
   document.getElementById("fs-"+name).classList.add("on");
   btn.classList.add("on");
-  window.scrollTo(0,0);
+  var nav = document.querySelector(".forms-nav");
+  if(nav) nav.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function switchFormByName(name){
@@ -617,7 +618,8 @@ function switchFormByName(name){
   document.querySelectorAll(".fnav-btn").forEach(function(b){
     if(b.textContent.toLowerCase().indexOf(name.slice(0,4))!==-1) b.classList.add("on");
   });
-  window.scrollTo(0,0);
+  var nav = document.querySelector(".forms-nav");
+  if(nav) nav.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function val(id){ return (document.getElementById(id)||{}).value||""; }
