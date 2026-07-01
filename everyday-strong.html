@@ -2366,7 +2366,7 @@ function loadClientForms(){
       h+="<span style='font-size:11px;color:var(--sub);'>"+d+"</span></div>";
       if(f.data){
         Object.keys(f.data).forEach(function(k){
-          if(f.data[k]) h+="<p style='font-size:12px;color:var(--sub);margin-bottom:3px;'><strong>"+ex(k)+":</strong> "+ex(String(f.data[k]).substring(0,80))+"</p>";
+          if(f.data[k]) h+="<p style='font-size:12px;color:var(--sub);margin-bottom:3px;white-space:pre-wrap;'><strong>"+ex(k)+":</strong> "+ex(String(f.data[k]))+"</p>";
         });
       }
       h+="</div>";
@@ -2928,8 +2928,8 @@ function loadPendingTestimonials(){
       hdr.appendChild(btns);
 
       var quote=document.createElement("p");
-      quote.style.cssText="font-size:13px;color:var(--sub);font-style:italic;line-height:1.6;";
-      quote.textContent='"'+(t.quote||"").substring(0,150)+((t.quote||"").length>150?"...":"")+'"';
+      quote.style.cssText="font-size:13px;color:var(--sub);font-style:italic;line-height:1.6;white-space:pre-wrap;";
+      quote.textContent='"'+(t.quote||"")+'"';
 
       card.appendChild(hdr);
       card.appendChild(quote);

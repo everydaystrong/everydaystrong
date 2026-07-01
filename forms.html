@@ -621,6 +621,9 @@ function switchFormByName(name){
 }
 
 function val(id){ return (document.getElementById(id)||{}).value||""; }
+// Matches the admin panel's sk() function exactly, so client keys line up
+// between forms.html submissions and the admin Clients page.
+function esKey(s){ var r="",str=String(s); for(var i=0;i<str.length;i++){ var c=str[i]; r+=(c==="."||c==="#"||c==="$"||c==="["||c==="]"||c==="/")?"_":c; } return r; }
 
 function submitIntake(){
   var fname=val("i-fname"),lname=val("i-lname"),email=val("i-email"),phone=val("i-phone"),dob=val("i-dob"),program=val("i-program"),level=val("i-level"),goals=val("i-goals");
@@ -668,7 +671,7 @@ function submitIntake(){
       // Save to Firebase client profile
       try {
         var fbForms = firebase.database(fbApp);
-        var cname = (fname+" "+lname).toLowerCase().replace(/[^a-z0-9]/g,"_");
+        var cname = esKey(fname+" "+lname);
         fbForms.ref("client_forms/"+cname).push({
           formType:"Intake Form", ts:Date.now(),
           data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,TrialRequested:(trialRequested?"Yes":"No"),Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None"}
@@ -709,7 +712,7 @@ function submitAgreement(){
       // Save to Firebase
       try {
         var fbForms3 = firebase.database(fbApp);
-        var cname3 = name.toLowerCase().replace(/[^a-z0-9]/g,"_");
+        var cname3 = esKey(name);
         fbForms3.ref("client_forms/"+cname3).push({
           formType:"Client Agreement", ts:Date.now(),
           data:{Name:name,"Date Signed":date,"Signature":sig,"Agreed":"Yes"}
@@ -766,7 +769,7 @@ function submitWaiver(){
       // Save waiver to Firebase client profile
       try {
         var fbForms2 = firebase.database(fbApp);
-        var cname2 = name.toLowerCase().replace(/[^a-z0-9]/g,"_");
+        var cname2 = esKey(name);
         fbForms2.ref("client_forms/"+cname2).push({
           formType:"Waiver", ts:Date.now(),
           data:{Name:name,DOB:dob,Email:email,Address:address,Phone:phone,"Emergency Contact":ecName+" / "+ecPhone,Signature:sig,"Parent/Guardian":val("w-guardian")||"N/A","Agreed to all 11 sections":"Yes"}
