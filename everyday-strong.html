@@ -585,9 +585,12 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         <div class="form-row"><span class="form-label">Video Title</span><input class="form-input" id="v-title" placeholder="e.g. Lower Body — Week 1" style="text-transform:none;" /></div>
         <div class="form-row"><span class="form-label">YouTube Link</span><input class="form-input" id="v-url" placeholder="https://youtube.com/watch?v=..." style="text-transform:none;" /></div>
         <div class="form-row"><span class="form-label">Program / Category</span>
-          <input class="form-input" id="v-tag" placeholder="Select or type a program..." list="program-list" style="text-transform:none;" />
-          <datalist id="program-list" id="program-datalist"></datalist>
-          <p class="tip">Choose an existing program or type a new one to create it.</p>
+          <select class="form-select" id="v-tag-select" onchange="handleTagSelect()" style="text-transform:none;margin-bottom:8px;">
+            <option value="">-- Select a program/category --</option>
+            <option value="__new__">+ Add a new category…</option>
+          </select>
+          <input class="form-input" id="v-tag" placeholder="Type new category name" style="text-transform:none;display:none;" />
+          <p class="tip">Pick an existing program/category from the list, or choose "+ Add a new category" to create one.</p>
         </div>
         <div class="form-row"><span class="form-label">Release Date (optional)</span><input type="date" class="form-input" id="v-release" /><span style="font-size:11px;color:var(--sub);margin-top:3px;">Leave blank to show immediately. Set a future date to schedule.</span></div>
         <button class="action-btn" id="add-video-btn">Save Video</button>
@@ -1455,15 +1458,31 @@ function populateProgramDatalist(){
   DB.ref("videos").once("value", function(snap){
     var cats = {};
     if(snap.exists()) snap.forEach(function(c){ var t=c.val().tag; if(t) cats[t]=true; });
-    var dl = document.getElementById("program-list");
-    if(!dl) return;
-    dl.innerHTML = "";
+    var sel = document.getElementById("v-tag-select");
+    if(!sel) return;
+    sel.innerHTML = '<option value="">-- Select a program/category --</option>';
     Object.keys(cats).sort().forEach(function(cat){
       var opt = document.createElement("option");
-      opt.value = cat;
-      dl.appendChild(opt);
+      opt.value = cat; opt.textContent = cat;
+      sel.appendChild(opt);
     });
+    var newOpt = document.createElement("option");
+    newOpt.value = "__new__"; newOpt.textContent = "+ Add a new category…";
+    sel.appendChild(newOpt);
   });
+}
+
+function handleTagSelect(){
+  var sel = document.getElementById("v-tag-select");
+  var txt = document.getElementById("v-tag");
+  if(sel.value === "__new__"){
+    txt.style.display = "block";
+    txt.value = "";
+    txt.focus();
+  } else {
+    txt.style.display = "none";
+    txt.value = sel.value;
+  }
 }
 
 function loadAdmVideos(){
@@ -1491,12 +1510,22 @@ function addVideo(){
   var tg=document.getElementById("v-tag").value.trim();
   var rd=document.getElementById("v-release").value;
   if(!t||!u){ alert("Please enter a title and video link."); return; }
+  if(!tg){ alert("Please select or enter a program/category."); return; }
   if(!DB){ alert("Database not connected."); return; }
   DB.ref("videos").orderByChild("tag").equalTo(tg).once("value",function(snap){
     var maxOrder=0;
     if(snap.exists()) snap.forEach(function(c){ var o=c.val().order||0; if(o>maxOrder) maxOrder=o; });
     DB.ref("videos").push({title:t,url:u,tag:tg,order:maxOrder+1,releaseDate:rd||null,ts:Date.now()},function(e){
-      if(!e){ document.getElementById("v-title").value=""; document.getElementById("v-url").value=""; document.getElementById("v-tag").value=""; document.getElementById("v-release").value=""; showOk("ok-video","Video saved!"); }
+      if(!e){
+        document.getElementById("v-title").value="";
+        document.getElementById("v-url").value="";
+        document.getElementById("v-tag").value="";
+        document.getElementById("v-tag").style.display="none";
+        document.getElementById("v-tag-select").value="";
+        document.getElementById("v-release").value="";
+        showOk("ok-video","Video saved!");
+        populateProgramDatalist();
+      }
     });
   });
 }
