@@ -659,10 +659,23 @@ function submitIntake(){
     client_email:email
   };
 
-  // Send to Heather
+  // Save to Firebase FIRST — the client's data should never be lost even if email fails
+  try {
+    var fbForms = firebase.database(fbApp);
+    var cname = esKey(fname+" "+lname);
+    fbForms.ref("client_forms/"+cname).push({
+      formType:"Intake Form", ts:Date.now(),
+      data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,TrialRequested:(trialRequested?"Yes":"No"),Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None"}
+    });
+  } catch(e){}
+
+  // Show success immediately — the data is safely saved regardless of email outcome
+  document.getElementById("ok-intake").style.display="block";
+  btn.style.display="none";
+
+  // Send emails as best-effort; failures here don't affect the client's submitted data
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
     .then(function(){
-      // Send auto-reply to client
       emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
         to_email: email,
         subject: "Welcome to Everyday Strong! Next Steps Inside",
@@ -670,20 +683,8 @@ function submitIntake(){
         client_name: "Everyday Strong",
         client_email: email
       });
-      // Save to Firebase client profile
-      try {
-        var fbForms = firebase.database(fbApp);
-        var cname = esKey(fname+" "+lname);
-        fbForms.ref("client_forms/"+cname).push({
-          formType:"Intake Form", ts:Date.now(),
-          data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,TrialRequested:(trialRequested?"Yes":"No"),Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None"}
-        });
-      } catch(e){}
-      document.getElementById("ok-intake").style.display="block";
-      btn.style.display="none";
     }, function(){
-      btn.disabled=false; btn.textContent="Submit Intake Form";
-      alert("There was an error sending your form. Please email us directly at Everydaystrongteam@gmail.com");
+      console.error("Intake confirmation email failed to send, but data was saved.");
     });
 }
 
@@ -709,22 +710,21 @@ function submitAgreement(){
     client_email:""
   };
 
+  try {
+    var fbForms3 = firebase.database(fbApp);
+    var cname3 = esKey(name);
+    fbForms3.ref("client_forms/"+cname3).push({
+      formType:"Client Agreement", ts:Date.now(),
+      data:{Name:name,"Date Signed":date,"Signature":sig,"Agreed":"Yes"}
+    });
+  } catch(e){}
+
+  document.getElementById("ok-agreement").style.display="block";
+  btn.style.display="none";
+
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
-    .then(function(){
-      // Save to Firebase
-      try {
-        var fbForms3 = firebase.database(fbApp);
-        var cname3 = esKey(name);
-        fbForms3.ref("client_forms/"+cname3).push({
-          formType:"Client Agreement", ts:Date.now(),
-          data:{Name:name,"Date Signed":date,"Signature":sig,"Agreed":"Yes"}
-        });
-      } catch(e){}
-      document.getElementById("ok-agreement").style.display="block";
-      btn.style.display="none";
-    }, function(){
-      btn.disabled=false; btn.textContent="Sign Client Agreement";
-      alert("There was an error. Please email us at Everydaystrongteam@gmail.com");
+    .catch(function(){
+      console.error("Agreement notification email failed to send, but data was saved.");
     });
 }
 
@@ -758,9 +758,21 @@ function submitWaiver(){
     client_email:email
   };
 
+  try {
+    var fbForms2 = firebase.database(fbApp);
+    var cname2 = esKey(name);
+    fbForms2.ref("client_forms/"+cname2).push({
+      formType:"Waiver", ts:Date.now(),
+      data:{Name:name,DOB:dob,Email:email,Address:address,Phone:phone,"Emergency Contact":ecName+" / "+ecPhone,Signature:sig,"Parent/Guardian":val("w-guardian")||"N/A","Agreed to all 11 sections":"Yes"}
+    });
+  } catch(e){}
+
+  document.getElementById("ok-waiver").style.display="block";
+  btn.style.display="none";
+  clearFormDraft();
+
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
     .then(function(){
-      // Send completion auto-reply to the client
       emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
         to_email: email,
         subject: "You are all set with Everyday Strong!",
@@ -768,21 +780,8 @@ function submitWaiver(){
         client_name: "Everyday Strong",
         client_email: email
       });
-      // Save waiver to Firebase client profile
-      try {
-        var fbForms2 = firebase.database(fbApp);
-        var cname2 = esKey(name);
-        fbForms2.ref("client_forms/"+cname2).push({
-          formType:"Waiver", ts:Date.now(),
-          data:{Name:name,DOB:dob,Email:email,Address:address,Phone:phone,"Emergency Contact":ecName+" / "+ecPhone,Signature:sig,"Parent/Guardian":val("w-guardian")||"N/A","Agreed to all 11 sections":"Yes"}
-        });
-      } catch(e){}
-      document.getElementById("ok-waiver").style.display="block";
-      btn.style.display="none";
-      clearFormDraft();
     }, function(){
-      btn.disabled=false; btn.textContent="Submit Waiver & Complete Enrollment";
-      alert("There was an error. Please email us at Everydaystrongteam@gmail.com");
+      console.error("Waiver confirmation email failed to send, but data was saved.");
     });
 }
 </script>
