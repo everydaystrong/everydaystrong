@@ -285,6 +285,16 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
   </div>
 </div>
 
+<!-- EDIT SUBMISSION -->
+<div class="modal-overlay" id="edit-submission-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeEditSubmission()">✕</button>
+    <h3>Edit Submission</h3>
+    <div id="edit-submission-fields"></div>
+    <button class="action-btn" onclick="saveSubmissionEdit()" style="width:100%;margin-top:10px;">Save Changes</button>
+  </div>
+</div>
+
 <!-- LOGIN -->
 <div class="page" id="pg-login" style="display:flex;">
   <div class="login-wrap" style="width:100%;">
@@ -2750,6 +2760,8 @@ function initSubmissionsBadge(){
         clientNode.forEach(function(entry){
           var v = entry.val();
           if(v){
+            v._clientKey = clientNode.key;
+            v._entryKey = entry.key;
             all.push(v);
             if(v.ts > lastCheck) hasNew = true;
           }
@@ -2789,8 +2801,60 @@ function renderSubmissionsList(all){
       (isNew ? "<span style='width:8px;height:8px;background:#c05040;border-radius:50%;'></span>" : "")+
       "<strong style='font-size:14px;'>"+ex(name)+"</strong>"+
       "<span style='font-size:11px;color:var(--sub);'>· "+ex(s.formType||"")+" · "+date+"</span>"+
-      "</div>"+fields+"</div>";
+      "</div>"+fields+
+      "<div style='display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;'>"+
+      "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='createCodeFromSubmission(\""+ex(name).replace(/"/g,"&quot;")+"\")'>+ Create Client Code</button>"+
+      "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='editSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\")'>✏️ Edit</button>"+
+      "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;color:#c05040;border-color:#c05040;' onclick='deleteSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\",\""+ex(name).replace(/"/g,"&quot;")+"\")'>🗑️ Delete</button>"+
+      "</div></div>";
   }).join("");
+}
+
+function deleteSubmission(clientKey, entryKey, name){
+  if(!confirm("Delete this submission from "+name+"? This can't be undone.")) return;
+  DB.ref("client_forms/"+clientKey+"/"+entryKey).remove();
+}
+
+var editingSubmission = null;
+
+function editSubmission(clientKey, entryKey){
+  DB.ref("client_forms/"+clientKey+"/"+entryKey).once("value", function(snap){
+    if(!snap.exists()) return;
+    editingSubmission = {clientKey:clientKey, entryKey:entryKey, val:snap.val()};
+    var container = document.getElementById("edit-submission-fields");
+    var data = editingSubmission.val.data || {};
+    container.innerHTML = Object.keys(data).map(function(k){
+      return "<div class='form-row'><span class='form-label'>"+ex(k)+"</span>"+
+        "<input class='form-input' data-field-key=\""+ex(k).replace(/"/g,"&quot;")+"\" value=\""+ex(String(data[k])).replace(/"/g,"&quot;")+"\" style='text-transform:none;' /></div>";
+    }).join("");
+    document.getElementById("edit-submission-modal").classList.add("open");
+  });
+}
+
+function closeEditSubmission(){
+  document.getElementById("edit-submission-modal").classList.remove("open");
+  editingSubmission = null;
+}
+
+function saveSubmissionEdit(){
+  if(!editingSubmission) return;
+  var inputs = document.querySelectorAll("#edit-submission-fields input[data-field-key]");
+  var newData = {};
+  inputs.forEach(function(inp){
+    newData[inp.getAttribute("data-field-key")] = inp.value;
+  });
+  DB.ref("client_forms/"+editingSubmission.clientKey+"/"+editingSubmission.entryKey+"/data").set(newData, function(e){
+    if(!e){ closeEditSubmission(); }
+    else{ alert("Something went wrong saving. Please try again."); }
+  });
+}
+
+function createCodeFromSubmission(name){
+  var codesBtn = document.getElementById("atab-codes");
+  setAdmTab("codes", codesBtn);
+  document.getElementById("c-name").value = name;
+  document.getElementById("c-name").scrollIntoView({behavior:"smooth", block:"center"});
+  document.getElementById("c-name").focus();
 }
 
 function loadClients(){
@@ -3518,6 +3582,7 @@ function showInstallTab(which){
 }
 document.getElementById("install-help-btn").onclick = openInstallHelp;
 document.getElementById("install-modal").onclick = function(e){ if(e.target===this) closeInstallHelp(); };
+document.getElementById("edit-submission-modal").onclick = function(e){ if(e.target===this) closeEditSubmission(); };
 document.getElementById("admin-comm-post-btn").onclick=postAdminToComm;
 document.getElementById("checkin-btn").onclick=submitCheckin;
 document.getElementById("goal-btn").onclick=saveGoal;
