@@ -318,6 +318,8 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <label for="ec-trial" style="font-size:13px;color:var(--text);cursor:pointer;">⏱️ 7-day trial — auto-deactivates after 7 days</label>
     </div>
     <button class="action-btn" onclick="saveCodeEdit()" style="width:100%;margin-top:10px;">Save Changes</button>
+    <button class="action-btn sec" id="ec-pause-btn" onclick="togglePauseEditingClient()" style="width:100%;margin-top:8px;">⏸️ Pause Access</button>
+    <button class="action-btn sec" onclick="deleteEditingClient()" style="width:100%;margin-top:8px;color:#c05040;border-color:#c05040;">🗑️ Delete Client</button>
   </div>
 </div>
 
@@ -1707,12 +1709,34 @@ function editCode(key){
         }).join("");
       }
       editingCodeKey = key;
+      editingCodeInactive = !!cd.inactive;
+      editingCodeName = cd.name||"";
+      document.getElementById("ec-pause-btn").textContent = editingCodeInactive ? "▶️ Reactivate Access" : "⏸️ Pause Access";
       document.getElementById("edit-code-modal").classList.add("open");
     });
   });
 }
 
 var editingCodeKey = null;
+var editingCodeInactive = false;
+var editingCodeName = "";
+
+function togglePauseEditingClient(){
+  if(!editingCodeKey) return;
+  var proceeded = toggleCode(editingCodeKey, editingCodeInactive);
+  if(!proceeded) return;
+  editingCodeInactive = !editingCodeInactive;
+  document.getElementById("ec-pause-btn").textContent = editingCodeInactive ? "▶️ Reactivate Access" : "⏸️ Pause Access";
+  loadClients();
+}
+
+function deleteEditingClient(){
+  if(!editingCodeKey) return;
+  var proceeded = delCode(editingCodeKey, editingCodeName);
+  if(!proceeded) return;
+  closeEditCode();
+  loadClients();
+}
 
 function closeEditCode(){
   document.getElementById("edit-code-modal").classList.remove("open");
@@ -2113,13 +2137,19 @@ function saveCommEdit(){
 }
 
 function toggleCode(key, inactive){
-  if(!DB) return;
+  if(!DB) return false;
   var msg=inactive?"Reactivate this code?":"Pause this code? The client won't be able to log in until you reactivate.";
-  if(!confirm(msg)) return;
+  if(!confirm(msg)) return false;
   DB.ref("codes/"+key).update({inactive:!inactive});
+  return true;
 }
 
-function delCode(key){ if(!confirm("Remove this code?")) return; DB.ref("codes/"+key).remove(); }
+function delCode(key, name){
+  var label = name ? ("Delete "+name+"'s access code?") : "Remove this code?";
+  if(!confirm(label+" This removes their login access permanently. Their check-ins, messages, and form submissions are NOT deleted — only their access code.")) return false;
+  DB.ref("codes/"+key).remove();
+  return true;
+}
 
 // ANNOUNCEMENTS
 function loadAdmAnn(){
