@@ -295,6 +295,32 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
   </div>
 </div>
 
+<!-- EDIT CLIENT CODE -->
+<div class="modal-overlay" id="edit-code-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeEditCode()">✕</button>
+    <h3>Edit Client Access</h3>
+    <div class="form-row"><span class="form-label">Client Name</span><input class="form-input" id="ec-name" style="text-transform:none;" /></div>
+    <div class="form-row"><span class="form-label">Access Code</span><input class="form-input" id="ec-code" style="text-transform:uppercase;" /></div>
+    <div class="form-row" style="margin-top:10px;">
+      <span class="form-label">Access Level</span>
+      <select class="form-select" id="ec-access-type">
+        <option value="ALL">Full Membership — all videos</option>
+        <option value="PROGRAMS">Specific Programs</option>
+      </select>
+    </div>
+    <div id="ec-program-picker" style="display:none;margin-bottom:12px;">
+      <span class="form-label" style="display:block;margin-bottom:6px;">Select Programs</span>
+      <div class="program-checkboxes" id="ec-program-checkboxes"></div>
+    </div>
+    <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;margin-top:4px;">
+      <input type="checkbox" id="ec-trial" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+      <label for="ec-trial" style="font-size:13px;color:var(--text);cursor:pointer;">⏱️ 7-day trial — auto-deactivates after 7 days</label>
+    </div>
+    <button class="action-btn" onclick="saveCodeEdit()" style="width:100%;margin-top:10px;">Save Changes</button>
+  </div>
+</div>
+
 <!-- LOGIN -->
 <div class="page" id="pg-login" style="display:flex;">
   <div class="login-wrap" style="width:100%;">
@@ -1596,6 +1622,72 @@ document.getElementById("c-access-type").onchange=function(){
   if(show) loadCategoryPicker();
 };
 
+document.getElementById("ec-access-type").onchange=function(){
+  document.getElementById("ec-program-picker").style.display = this.value==="PROGRAMS" ? "block" : "none";
+};
+
+function editCode(key){
+  if(!DB) return;
+  DB.ref("codes/"+key).once("value", function(snap){
+    if(!snap.exists()) return;
+    var cd = snap.val();
+    document.getElementById("ec-name").value = cd.name||"";
+    document.getElementById("ec-code").value = cd.code||"";
+    document.getElementById("ec-trial").checked = !!cd.trial;
+    var isAll = cd.access==="ALL" || !cd.access;
+    document.getElementById("ec-access-type").value = isAll ? "ALL" : "PROGRAMS";
+    document.getElementById("ec-program-picker").style.display = isAll ? "none" : "block";
+
+    var currentAccessArr = Array.isArray(cd.access) ? cd.access : (isAll ? [] : [cd.access]);
+    DB.ref("videos").once("value", function(vsnap){
+      var cats=[];
+      if(vsnap.exists()) vsnap.forEach(function(c){ var t=c.val().tag; if(t&&cats.indexOf(t)===-1) cats.push(t); });
+      var box = document.getElementById("ec-program-checkboxes");
+      if(!cats.length){ box.innerHTML="<p style='color:var(--sub);font-size:13px;'>Add videos with categories first.</p>"; }
+      else {
+        box.innerHTML = cats.map(function(c){
+          var checked = currentAccessArr.indexOf(c)!==-1 ? "checked" : "";
+          return "<label class='program-check-item'><input type='checkbox' value='"+ex(c)+"' "+checked+" /> "+ex(c)+"</label>";
+        }).join("");
+      }
+      editingCodeKey = key;
+      document.getElementById("edit-code-modal").classList.add("open");
+    });
+  });
+}
+
+var editingCodeKey = null;
+
+function closeEditCode(){
+  document.getElementById("edit-code-modal").classList.remove("open");
+  editingCodeKey = null;
+}
+
+function saveCodeEdit(){
+  if(!editingCodeKey || !DB) return;
+  var n = document.getElementById("ec-name").value.trim();
+  var c = document.getElementById("ec-code").value.trim().toUpperCase();
+  var atype = document.getElementById("ec-access-type").value;
+  var access;
+  if(atype==="ALL"){ access="ALL"; }
+  else {
+    var checked = document.querySelectorAll("#ec-program-checkboxes input:checked"), programs=[];
+    checked.forEach(function(cb){ programs.push(cb.value); });
+    if(!programs.length){ alert("Please select at least one program."); return; }
+    access = programs;
+  }
+  if(!n || !c){ alert("Please enter a name and code."); return; }
+  var isTrial = document.getElementById("ec-trial").checked;
+  DB.ref("codes/"+editingCodeKey).once("value", function(snap){
+    var existing = snap.val() || {};
+    var expiresAt = isTrial ? (existing.expiresAt || (Date.now()+7*24*60*60*1000)) : null;
+    DB.ref("codes/"+editingCodeKey).update({name:n, code:c, access:access, trial:isTrial, expiresAt:expiresAt}, function(e){
+      if(!e){ closeEditCode(); }
+      else{ alert("Something went wrong saving. Please try again."); }
+    });
+  });
+}
+
 function loadCategoryPicker(){
   if(!DB) return;
   DB.ref("videos").once("value",function(snap){
@@ -1920,7 +2012,7 @@ function loadAdmCodes(){
       var cd=c.val(); cnt++;
       var al=cd.access==="ALL"||!cd.access?"Full Access":Array.isArray(cd.access)?cd.access.join(", "):cd.access;
       var bc=cd.access==="ALL"||!cd.access?"badge badge-all":"badge";
-      h+="<div class='list-item'><div class='list-item-left'>"+ex(cd.name)+" <span class='code-display'>"+ex(cd.code)+"</span> <span class='"+bc+"'>"+ex(al)+"</span></div><button class='del-btn' onclick='delCode(\""+c.key+"\")'>✕</button></div>";
+      h+="<div class='list-item'><div class='list-item-left'>"+ex(cd.name)+" <span class='code-display'>"+ex(cd.code)+"</span> <span class='"+bc+"'>"+ex(al)+"</span></div><div style='display:flex;gap:6px;'><button class='del-btn' style='background:var(--card);color:var(--accent);border:1px solid var(--accent);' onclick='editCode(\""+c.key+"\")'>✏️</button><button class='del-btn' onclick='delCode(\""+c.key+"\")'>✕</button></div></div>";
     });
     document.getElementById("code-count").textContent=cnt;
     document.getElementById("code-list").innerHTML=h||"<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No codes yet.</p>";
@@ -3583,6 +3675,7 @@ function showInstallTab(which){
 document.getElementById("install-help-btn").onclick = openInstallHelp;
 document.getElementById("install-modal").onclick = function(e){ if(e.target===this) closeInstallHelp(); };
 document.getElementById("edit-submission-modal").onclick = function(e){ if(e.target===this) closeEditSubmission(); };
+document.getElementById("edit-code-modal").onclick = function(e){ if(e.target===this) closeEditCode(); };
 document.getElementById("admin-comm-post-btn").onclick=postAdminToComm;
 document.getElementById("checkin-btn").onclick=submitCheckin;
 document.getElementById("goal-btn").onclick=saveGoal;
