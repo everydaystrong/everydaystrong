@@ -646,6 +646,18 @@ function val(id){ return (document.getElementById(id)||{}).value||""; }
 // Matches the admin panel's sk() function exactly, so client keys line up
 // between forms.html submissions and the admin Clients page.
 function esKey(s){ var r="",str=String(s); for(var i=0;i<str.length;i++){ var c=str[i]; r+=(c==="."||c==="#"||c==="$"||c==="["||c==="]"||c==="/")?"_":c; } return r; }
+// All three form steps (Intake, Agreement, Waiver) must land under the SAME
+// client_forms key or they show up as separate entries in New Submissions.
+// Prefer the Intake name (fname+lname) since it's present in the same session
+// for all three steps — falls back to whatever name field this step has,
+// normalized (trimmed, collapsed whitespace, lowercased) so small typing
+// differences like extra spaces or capitalization don't split the entry.
+function clientFormKey(fallbackName){
+  var fn = val("i-fname"), ln = val("i-lname");
+  var base = (fn || ln) ? (fn+" "+ln) : fallbackName;
+  var normalized = String(base).trim().replace(/\s+/g," ").toLowerCase();
+  return esKey(normalized);
+}
 
 function submitIntake(){
   var fname=val("i-fname"),lname=val("i-lname"),email=val("i-email"),phone=val("i-phone"),dob=val("i-dob"),program=val("i-program"),level=val("i-level"),goals=val("i-goals");
@@ -662,7 +674,7 @@ function submitIntake(){
   // Save to Firebase FIRST — the client's data should never be lost even if email fails
   try {
     var fbForms = firebase.database(fbApp);
-    var cname = esKey(fname+" "+lname);
+    var cname = clientFormKey(fname+" "+lname);
     fbForms.ref("client_forms/"+cname).push({
       formType:"Intake Form", ts:Date.now(),
       data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,TrialRequested:(trialRequested?"Yes":"No"),FundamentalsClassRequested:(fundamentalsRequested?"Yes":"No"),Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None"}
@@ -690,7 +702,7 @@ function submitAgreement(){
 
   try {
     var fbForms3 = firebase.database(fbApp);
-    var cname3 = esKey(name);
+    var cname3 = clientFormKey(name);
     fbForms3.ref("client_forms/"+cname3).push({
       formType:"Client Agreement", ts:Date.now(),
       data:{Name:name,"Date Signed":date,"Signature":sig,"Agreed":"Yes"}
@@ -762,7 +774,7 @@ function submitWaiver(){
 
   try {
     var fbForms2 = firebase.database(fbApp);
-    var cname2 = esKey(name);
+    var cname2 = clientFormKey(name);
     fbForms2.ref("client_forms/"+cname2).push({
       formType:"Waiver", ts:Date.now(),
       data:{Name:name,DOB:dob,Email:email,Address:address,Phone:phone,"Emergency Contact":ecName+" / "+ecPhone,Signature:sig,"Parent/Guardian":val("w-guardian")||"N/A","Agreed to all 11 sections":"Yes"}
