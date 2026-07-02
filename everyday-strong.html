@@ -663,6 +663,11 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         <button class="action-btn" id="bulk-add-btn" style="width:100%;margin-top:8px;display:none;">Add All to Dashboard</button>
       </div>
       <div class="admin-card">
+        <h3>🗂️ Category Display Settings</h3>
+        <p class="tip" style="margin-bottom:10px;">By default, if a client can see more than one category, they're combined into one "Live Classes" tile — this makes sense for Monday + Wednesday classes. But standalone programs like Foundations or a Bodyweight Program shouldn't get lumped in. Check any category that should always show as its own separate tile, never combined.</p>
+        <div id="cat-settings-list"><p class="tip">Loading categories...</p></div>
+      </div>
+      <div class="admin-card">
         <h3>Reorder Videos</h3>
         <select class="form-select" id="reorder-cat" onchange="loadReorderList()" style="margin-bottom:10px;">
           <option value="">-- Select a program --</option>
@@ -1225,6 +1230,14 @@ function loadStreak(){
 }
 
 // LOAD VIDEOS
+var categorySettings = {};
+function loadCategorySettings(){
+  if(!DB) return;
+  DB.ref("category_settings").on("value", function(snap){
+    categorySettings = snap.exists() ? snap.val() : {};
+    renderCategories();
+  });
+}
 function loadVideos(){
   if(!DB) return;
   DB.ref("videos").on("value",function(snap){
@@ -1232,6 +1245,7 @@ function loadVideos(){
     if(snap.exists()) snap.forEach(function(c){ var v=c.val(); v._k=c.key; if(canAccess(v.tag)&&isReleased(v)) allVideos.push(v); });
     renderCategories();
   });
+  loadCategorySettings();
 }
 
 // CATEGORIES
@@ -1247,19 +1261,29 @@ function renderCategories(){
   });
   var keys=Object.keys(cats);
   if(!keys.length){ grid.innerHTML="<div class='empty-state'><p style='font-size:32px;margin-bottom:10px;'>🏋️</p><p>No workouts yet — check back soon!</p></div>"; return; }
+
+  // Only merge categories NOT explicitly marked "standalone" (e.g. Monday/Wednesday
+  // merge into one Live Classes tile, but Foundations/Bodyweight Program stay separate)
+  // categorySettings is keyed by a Firebase-safe key, not the raw category name
+  // (names can contain "/" etc which Firebase keys can't) — build a name-based lookup
+  var standaloneNames = {};
+  Object.keys(categorySettings||{}).forEach(function(k){
+    var entry = categorySettings[k];
+    if(entry && entry.standalone && entry.name) standaloneNames[entry.name] = true;
+  });
+  var mergeableKeys = keys.filter(function(k){ return !standaloneNames[k]; });
+  var standaloneKeys = keys.filter(function(k){ return standaloneNames[k]; });
+
   var h="";
-  if(keys.length>1){
-    // Client has access to more than one category (e.g. Monday + Wednesday) —
-    // show one unified tile instead of fragmenting by day. Focus filters inside
-    // still let them narrow by body part.
+  if(mergeableKeys.length>1){
     var allVids=[];
-    keys.forEach(function(k){ allVids=allVids.concat(cats[k].videos); });
+    mergeableKeys.forEach(function(k){ allVids=allVids.concat(cats[k].videos); });
     var count=allVids.length;
     var completedCount=0;
     allVids.forEach(function(v){ if(getUserData("completed",v._k)) completedCount++; });
     var pct=count>0?Math.round(completedCount/count*100):0;
     var img=null;
-    keys.forEach(function(k){ if(!img && cats[k].img) img=cats[k].img; });
+    mergeableKeys.forEach(function(k){ if(!img && cats[k].img) img=cats[k].img; });
     h+="<div class='cat-card' onclick='openMergedCategories()'>";
     if(img){ h+="<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />"; }
     else{ h+="<div class='cat-img-placeholder'>🏋️</div>"; }
@@ -1267,7 +1291,7 @@ function renderCategories(){
     if(pct>0) h+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
     h+="</div></div>";
   } else {
-    keys.forEach(function(cat){
+    mergeableKeys.forEach(function(cat){
       var data=cats[cat];
       var count=data.videos.length;
       var completedCount=0;
@@ -1281,6 +1305,22 @@ function renderCategories(){
       h+="</div></div>";
     });
   }
+
+  // Standalone categories always get their own tile, never merged
+  standaloneKeys.forEach(function(cat){
+    var data=cats[cat];
+    var count=data.videos.length;
+    var completedCount=0;
+    data.videos.forEach(function(v){ if(getUserData("completed",v._k)) completedCount++; });
+    var pct=count>0?Math.round(completedCount/count*100):0;
+    h+="<div class='cat-card' onclick='openCategory(\""+ex(cat)+"\")'>";
+    if(data.img){ h+="<img class='cat-img' src='"+ex(data.img)+"' onerror='this.style.display=\"none\"' />"; }
+    else{ h+="<div class='cat-img-placeholder'>"+getCatIcon(cat)+"</div>"; }
+    h+="<div class='cat-info'><div class='cat-name'>"+ex(cat)+"</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
+    if(pct>0) h+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
+    h+="</div></div>";
+  });
+
   grid.innerHTML=h;
 }
 
@@ -1619,7 +1659,26 @@ function populateProgramDatalist(){
     allFocusTags = Object.keys(focuses).sort();
     renderFocusChips("v");
     renderFocusChips("edit");
+    renderCategorySettingsList(Object.keys(cats).sort());
   });
+}
+
+function renderCategorySettingsList(categoryNames){
+  var el = document.getElementById("cat-settings-list");
+  if(!el) return;
+  if(!categoryNames.length){ el.innerHTML = "<p class='tip'>Add some videos with categories first.</p>"; return; }
+  DB.ref("category_settings").once("value", function(snap){
+    var settings = snap.exists() ? snap.val() : {};
+    el.innerHTML = categoryNames.map(function(cat){
+      var checked = settings[cat] && settings[cat].standalone ? "checked" : "";
+      return "<label class='program-check-item'><input type='checkbox' "+checked+" onchange='toggleCategoryStandalone(\""+ex(cat).replace(/"/g,"&quot;")+"\", this.checked)' /> "+ex(cat)+"</label>";
+    }).join("");
+  });
+}
+
+function toggleCategoryStandalone(catName, isStandalone){
+  if(!DB) return;
+  DB.ref("category_settings/"+sk(catName)).set(isStandalone ? {standalone:true, name:catName} : null);
 }
 
 function handleTagSelect(){
