@@ -1792,7 +1792,7 @@ function renderCategorySettingsList(categoryNames){
   DB.ref("category_settings").once("value", function(snap){
     var settings = snap.exists() ? snap.val() : {};
     el.innerHTML = categoryNames.map(function(cat){
-      var checked = settings[cat] && settings[cat].standalone ? "checked" : "";
+      var checked = settings[sk(cat)] && settings[sk(cat)].standalone ? "checked" : "";
       return "<label class='program-check-item'><input type='checkbox' "+checked+" onchange='toggleCategoryStandalone(\""+ex(cat).replace(/"/g,"&quot;")+"\", this.checked)' /> "+ex(cat)+"</label>";
     }).join("");
   });
