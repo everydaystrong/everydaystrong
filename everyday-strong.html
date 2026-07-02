@@ -347,6 +347,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
     <div class="hdr-right">
       <button class="dark-toggle" id="install-help-btn" title="Add to Home Screen">📲</button>
       <button class="dark-toggle" id="dark-btn">🌙</button>
+      <button class="logout-btn" id="back-to-admin-btn" style="display:none;">← Back to Admin</button>
       <button class="logout-btn" id="signout-btn">Sign out</button>
     </div>
   </div>
@@ -630,6 +631,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
   <div class="admin-header">
     <div class="portal-brand" style="color:#f5f0eb;">Everyday <span>Strong</span></div>
     <span style="font-size:14px;font-weight:600;color:#f5f0eb;">Instructor Panel</span>
+    <button class="logout-btn" style="color:#f5f0eb;border-color:#7a6a5a;" id="preview-client-btn">👀 Preview as Client</button>
     <button class="logout-btn" style="color:#f5f0eb;border-color:#7a6a5a;" id="exit-btn">Exit</button>
   </div>
   <div class="admin-body">
@@ -1229,6 +1231,35 @@ function showTrialBanner(found){
 }
 
 // LOGIN
+var previewingAsClient = false;
+
+function previewAsClient(){
+  if(!DB) return;
+  DB.ref("codes").orderByChild("code").equalTo("STRONG2024").once("value",function(snap){
+    if(!snap.exists()){ alert("Demo code not found — can't preview."); return; }
+    var found=null;
+    snap.forEach(function(c){ found=c.val(); });
+    previewingAsClient = true;
+    currentUser=found.name;
+    currentUserKey=sk(found.name);
+    if(!found.access||found.access==="ALL"){ currentAccess="ALL"; }
+    else if(Array.isArray(found.access)){ currentAccess=found.access; }
+    else{ currentAccess=[found.access]; }
+    document.getElementById("welcome-bar").textContent="Welcome, "+found.name+"! Ready to get strong?";
+    document.getElementById("back-to-admin-btn").style.display="inline-block";
+    showTrialBanner(found);
+    loadVideos();
+    loadAnnouncements();
+    loadStreak();
+    checkNewAnnouncements();
+    checkBirthday();
+    checkNewVideo();
+    loadGoal();
+    loadWorkoutStats();
+    sp("pg-portal");
+  });
+}
+
 function doLogin(){
   var val=document.getElementById("code-in").value.trim().toUpperCase();
   var err=document.getElementById("login-err");
@@ -1306,6 +1337,18 @@ function loadVideos(){
 }
 
 // CATEGORIES
+// Only merge categories NOT explicitly marked "standalone" (e.g. Monday/Wednesday
+// merge into one Live Classes tile, but Foundations/Bodyweight Program stay separate)
+// categorySettings is keyed by a Firebase-safe key, not the raw category name
+// (names can contain "/" etc which Firebase keys can't) — build a name-based lookup
+function getStandaloneNames(){
+  var standaloneNames = {};
+  Object.keys(categorySettings||{}).forEach(function(k){
+    var entry = categorySettings[k];
+    if(entry && entry.standalone && entry.name) standaloneNames[entry.name] = true;
+  });
+  return standaloneNames;
+}
 function renderCategories(){
   var grid=document.getElementById("cat-grid");
   var cats={};
@@ -1319,15 +1362,7 @@ function renderCategories(){
   var keys=Object.keys(cats);
   if(!keys.length){ grid.innerHTML="<div class='empty-state'><p style='font-size:32px;margin-bottom:10px;'>🏋️</p><p>No workouts yet — check back soon!</p></div>"; return; }
 
-  // Only merge categories NOT explicitly marked "standalone" (e.g. Monday/Wednesday
-  // merge into one Live Classes tile, but Foundations/Bodyweight Program stay separate)
-  // categorySettings is keyed by a Firebase-safe key, not the raw category name
-  // (names can contain "/" etc which Firebase keys can't) — build a name-based lookup
-  var standaloneNames = {};
-  Object.keys(categorySettings||{}).forEach(function(k){
-    var entry = categorySettings[k];
-    if(entry && entry.standalone && entry.name) standaloneNames[entry.name] = true;
-  });
+  var standaloneNames = getStandaloneNames();
   var mergeableKeys = keys.filter(function(k){ return !standaloneNames[k]; });
   var standaloneKeys = keys.filter(function(k){ return standaloneNames[k]; });
 
@@ -1387,7 +1422,8 @@ function openMergedCategories(){
   document.getElementById("cat-view").style.display="none";
   document.getElementById("vid-view").style.display="block";
   document.getElementById("vid-title").textContent="Live Classes";
-  currentCatVids=allVideos.filter(function(v){ return canAccess(v.tag||"Uncategorized"); });
+  var standaloneNames = getStandaloneNames();
+  currentCatVids=allVideos.filter(function(v){ var tag=v.tag||"Uncategorized"; return canAccess(tag) && !standaloneNames[tag]; });
   currentCatVids.sort(function(a,b){ return (a.order||0)-(b.order||0); });
   renderFocusFilters();
   renderFilteredVideos();
@@ -3698,7 +3734,9 @@ function delCommPost(key){ if(!confirm("Delete this post?")) return; DB.ref("com
 document.getElementById("login-btn").onclick=doLogin;
 document.getElementById("code-in").onkeydown=function(e){ if(e.key==="Enter") doLogin(); };
 document.getElementById("admin-link").onclick=doAdmin;
-document.getElementById("signout-btn").onclick=function(){ sp("pg-login"); document.getElementById("code-in").value=""; document.getElementById("login-err").style.display="none"; };
+document.getElementById("preview-client-btn").onclick=previewAsClient;
+document.getElementById("back-to-admin-btn").onclick=function(){ previewingAsClient=false; document.getElementById("back-to-admin-btn").style.display="none"; sp("pg-admin"); };
+document.getElementById("signout-btn").onclick=function(){ previewingAsClient=false; document.getElementById("back-to-admin-btn").style.display="none"; sp("pg-login"); document.getElementById("code-in").value=""; document.getElementById("login-err").style.display="none"; };
 document.getElementById("exit-btn").onclick=function(){ sp("pg-login"); };
 document.getElementById("add-video-btn").onclick=addVideo;
 document.getElementById("bulk-preview-btn").onclick=previewBulkVideos;
