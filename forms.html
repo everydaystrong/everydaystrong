@@ -220,6 +220,10 @@ nav{background:#fff;border-bottom:1px solid #e8ddd2;padding:0.9rem 2rem;display:
           <input type="checkbox" id="i-trial-request" style="width:18px;height:18px;accent-color:#a0522d;cursor:pointer;flex-shrink:0;" />
           <span>🎉 I'd like to start with a <strong>7 day trial</strong> of this program</span>
         </label>
+        <label id="fundamentals-toggle-label" style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:#f5f0ea;border:1.5px solid #d8cfc6;border-radius:9px;cursor:pointer;font-family:Arial,sans-serif;font-size:13px;color:#3a2a1a;">
+          <input type="checkbox" id="i-fundamentals-request" style="width:18px;height:18px;accent-color:#a0522d;cursor:pointer;flex-shrink:0;" />
+          <span>💡 I'd like to add the optional <strong>1-on-1 Fundamentals class ($40)</strong> to learn proper form before group classes</span>
+        </label>
       </div>
     </div>
 
@@ -646,6 +650,7 @@ function esKey(s){ var r="",str=String(s); for(var i=0;i<str.length;i++){ var c=
 function submitIntake(){
   var fname=val("i-fname"),lname=val("i-lname"),email=val("i-email"),phone=val("i-phone"),dob=val("i-dob"),program=val("i-program"),level=val("i-level"),goals=val("i-goals");
   var trialRequested = document.getElementById("i-trial-request").checked;
+  var fundamentalsRequested = document.getElementById("i-fundamentals-request").checked;
   var err=document.getElementById("err-intake");
   if(!fname||!lname||!email||!phone||!dob||!program||!level||!goals){
     err.style.display="block"; return;
@@ -660,7 +665,7 @@ function submitIntake(){
     var cname = esKey(fname+" "+lname);
     fbForms.ref("client_forms/"+cname).push({
       formType:"Intake Form", ts:Date.now(),
-      data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,TrialRequested:(trialRequested?"Yes":"No"),Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None"}
+      data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,TrialRequested:(trialRequested?"Yes":"No"),FundamentalsClassRequested:(fundamentalsRequested?"Yes":"No"),Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None"}
     });
   } catch(e){}
 
@@ -729,6 +734,7 @@ function submitWaiver(){
     body += "\n\n— INTAKE FORM —\n"+
       "Program Interest: "+(val("i-program")||"N/A")+"\n"+
       "7 Day Trial Requested: "+((document.getElementById("i-trial-request")&&document.getElementById("i-trial-request").checked)?"YES":"No")+"\n"+
+      "1-on-1 Fundamentals Class Requested ($40): "+((document.getElementById("i-fundamentals-request")&&document.getElementById("i-fundamentals-request").checked)?"YES":"No")+"\n"+
       "Fitness Level: "+(val("i-level")||"N/A")+"\n"+
       "Goals: "+(val("i-goals")||"N/A")+"\n"+
       "Injuries/Limitations: "+(val("i-injuries")||"None")+"\n"+
