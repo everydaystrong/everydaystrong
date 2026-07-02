@@ -654,27 +654,6 @@ function submitIntake(){
   var btn=document.getElementById("btn-intake");
   btn.disabled=true; btn.textContent="Sending...";
 
-  var body = "NEW CLIENT INTAKE FORM\n\n"+
-    "Name: "+(fname+" "+lname)+"\n"+
-    "Email: "+email+"\n"+
-    "Phone: "+phone+"\n"+
-    "Date of Birth: "+dob+"\n"+
-    "Program Interest: "+program+"\n"+
-    "7 Day Trial Requested: "+(trialRequested ? "YES" : "No")+"\n"+
-    "Fitness Level: "+level+"\n"+
-    "Goals: "+goals+"\n"+
-    "Injuries/Limitations: "+(val("i-injuries")||"None")+"\n"+
-    "Equipment: "+(val("i-equipment")||"Not specified")+"\n"+
-    "How they heard about us: "+(val("i-referral")||"Not specified")+"\n"+
-    "Additional Notes: "+(val("i-notes")||"None");
-  var params={
-    to_email:"Everydaystrongteam@gmail.com",
-    subject:"New Client Intake Form - "+(fname+" "+lname),
-    message:body,
-    client_name:fname+" "+lname,
-    client_email:email
-  };
-
   // Save to Firebase FIRST — the client's data should never be lost even if email fails
   try {
     var fbForms = firebase.database(fbApp);
@@ -689,20 +668,10 @@ function submitIntake(){
   document.getElementById("ok-intake").style.display="block";
   btn.style.display="none";
 
-  // Send emails as best-effort; failures here don't affect the client's submitted data
-  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
-    .then(function(){
-      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        to_email: email,
-        subject: "Welcome to Everyday Strong! Next Steps Inside",
-        message: "Hi "+fname+"!\n\nThank you for submitting your Everyday Strong intake form! We are so excited to have you.\n\nNext steps:\n1. Complete the Client Agreement (Step 2)\n2. Complete the Waiver (Step 3)\n3. Heather will be in touch shortly with payment info and your first class details!\n\nIf you have any questions in the meantime, reply to this email or reach us at Everydaystrongteam@gmail.com\n\nSee you soon!\nHeather\nEveryday Strong",
-        client_name: "Everyday Strong",
-        client_email: email
-      });
-    }, function(err){
-      console.error("Intake confirmation email failed to send, but data was saved.", err);
-      showDebugError("Intake email failed: " + JSON.stringify(err));
-    });
+  // No email at all from this step — client gets exactly one email total,
+  // sent after the waiver (final step). Heather also gets exactly one email
+  // at that point, covering all three forms. Until then, she can see this
+  // submission right away in the admin New Submissions tab.
 }
 
 function submitAgreement(){
@@ -713,19 +682,6 @@ function submitAgreement(){
   err.style.display="none";
   var btn=document.getElementById("btn-agreement");
   btn.disabled=true; btn.textContent="Sending...";
-
-  var body = "CLIENT AGREEMENT SIGNED\n\n"+
-    "Name: "+name+"\n"+
-    "Date Signed: "+date+"\n"+
-    "Electronic Signature: "+sig+"\n\n"+
-    "Client has read and agreed to all Everyday Strong policies.";
-  var params={
-    to_email:"Everydaystrongteam@gmail.com",
-    subject:"Client Agreement Signed - "+name,
-    message:body,
-    client_name:name,
-    client_email:""
-  };
 
   try {
     var fbForms3 = firebase.database(fbApp);
@@ -738,12 +694,8 @@ function submitAgreement(){
 
   document.getElementById("ok-agreement").style.display="block";
   btn.style.display="none";
-
-  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
-    .catch(function(err){
-      console.error("Agreement notification email failed to send, but data was saved.", err);
-      showDebugError("Agreement email failed: " + JSON.stringify(err));
-    });
+  // No email here — Heather now gets one combined email after the waiver
+  // (final step) covering all three forms, instead of one per step.
 }
 
 function submitWaiver(){
@@ -758,7 +710,8 @@ function submitWaiver(){
   var btn=document.getElementById("btn-waiver");
   btn.disabled=true; btn.textContent="Submitting...";
 
-  var body = "RELEASE OF LIABILITY WAIVER\n\n"+
+  var body = "NEW CLIENT — ALL 3 FORMS COMPLETE\n\n"+
+    "— WAIVER —\n"+
     "Name: "+name+"\n"+
     "Date of Birth: "+dob+"\n"+
     "Email: "+email+"\n"+
@@ -766,11 +719,36 @@ function submitWaiver(){
     "Phone: "+phone+"\n"+
     "Emergency Contact: "+ecName+" / "+ecPhone+"\n"+
     "Electronic Signature: "+sig+"\n"+
-    "Parent/Guardian: "+(val("w-guardian")||"N/A")+"\n\n"+
+    "Parent/Guardian: "+(val("w-guardian")||"N/A")+"\n"+
     "Client confirmed understanding and agreement to all 11 sections of the waiver.";
+
+  // Pull in Intake + Agreement data too, if still present on the page (same
+  // session) or restored from the saved draft — so this one email covers all
+  // three forms instead of sending a separate notification per step.
+  if(val("i-fname") || val("i-lname")){
+    body += "\n\n— INTAKE FORM —\n"+
+      "Program Interest: "+(val("i-program")||"N/A")+"\n"+
+      "7 Day Trial Requested: "+((document.getElementById("i-trial-request")&&document.getElementById("i-trial-request").checked)?"YES":"No")+"\n"+
+      "Fitness Level: "+(val("i-level")||"N/A")+"\n"+
+      "Goals: "+(val("i-goals")||"N/A")+"\n"+
+      "Injuries/Limitations: "+(val("i-injuries")||"None")+"\n"+
+      "Equipment: "+(val("i-equipment")||"Not specified")+"\n"+
+      "How they heard about us: "+(val("i-referral")||"Not specified")+"\n"+
+      "Additional Notes: "+(val("i-notes")||"None");
+  } else {
+    body += "\n\n— INTAKE FORM —\nNot available on this device — check the New Submissions tab in admin for their full intake details.";
+  }
+  if(val("a-sig")){
+    body += "\n\n— CLIENT AGREEMENT —\n"+
+      "Date Signed: "+(val("a-date")||"N/A")+"\n"+
+      "Signature: "+val("a-sig");
+  } else {
+    body += "\n\n— CLIENT AGREEMENT —\nNot available on this device — check the New Submissions tab in admin for confirmation it was signed.";
+  }
+
   var params={
     to_email:"Everydaystrongteam@gmail.com",
-    subject:"Waiver Signed - "+name,
+    subject:"New Client Enrolled - "+name,
     message:body,
     client_name:name,
     client_email:email
