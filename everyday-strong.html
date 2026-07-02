@@ -629,7 +629,6 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
     <div class="admin-tabs">
       <button class="tab-btn on" id="atab-dashboard">📊 Dashboard</button>
       <button class="tab-btn" id="atab-videos">📹 Videos</button>
-      <button class="tab-btn" id="atab-codes">🔐 Codes</button>
       <button class="tab-btn" id="atab-clients">👤 Clients</button>
       <button class="tab-btn" id="atab-submissions">📥 New Submissions<span id="sub-tab-dot" style="display:none;width:8px;height:8px;background:#c05040;border-radius:50%;margin-left:5px;vertical-align:middle;"></span></button>
       <button class="tab-btn" id="atab-announce">📢 Announcements</button>
@@ -719,8 +718,37 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
 
     <div class="tab-content" id="atc-clients">
       <div class="admin-card">
-        <h3>Client Profiles</h3>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <h3 style="margin-bottom:0;">Client Profiles</h3>
+          <button class="action-btn sec" style="width:auto;margin-bottom:0;font-size:13px;padding:8px 14px;" onclick="toggleNewClientForm()">+ New Client</button>
+        </div>
+        <div id="new-client-form" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+          <h3>Create Access Code</h3>
+          <div class="ok-msg" id="ok-code"></div>
+          <div class="form-row"><span class="form-label">Client Name</span><input class="form-input" id="c-name" placeholder="e.g. Sarah M." style="text-transform:none;" /></div>
+          <div class="inline-row">
+            <div class="form-row"><span class="form-label">Access Code</span><input class="form-input" id="c-code" placeholder="e.g. SARAH2024" /></div>
+            <button class="action-btn sec" id="gen-btn" style="white-space:nowrap;font-size:13px;margin-bottom:0;">Generate</button>
+          </div>
+          <div class="form-row" style="margin-top:10px;">
+            <span class="form-label">Access Level</span>
+            <select class="form-select" id="c-access-type">
+              <option value="ALL">Full Membership — all videos</option>
+              <option value="PROGRAMS">Specific Programs</option>
+            </select>
+          </div>
+          <div id="program-picker" style="display:none;margin-bottom:12px;">
+            <span class="form-label" style="display:block;margin-bottom:6px;">Select Programs</span>
+            <div class="program-checkboxes" id="program-checkboxes"></div>
+          </div>
+          <p class="tip" style="margin-top:8px;">Full Membership sees everything. Specific Programs lets you pick multiple programs.</p>
+          <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;margin-top:4px;">
+            <input type="checkbox" id="c-trial" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+            <label for="c-trial" style="font-size:13px;color:var(--text);cursor:pointer;">⏱️ 7-day trial — auto-deactivates after 7 days</label>
+          </div>
+          <button class="action-btn" id="add-code-btn" style="margin-top:10px;">Create Code</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;margin-top:1rem;">
           <button class="comm-cat-btn on" data-filter="all" onclick="filterClients('all',this)">All</button>
           <button class="comm-cat-btn" data-filter="active" onclick="filterClients('active',this)">✅ Active</button>
           <button class="comm-cat-btn" data-filter="trial" onclick="filterClients('trial',this)">⏱️ Trial</button>
@@ -732,7 +760,10 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <div class="admin-card" id="client-profile-card" style="display:none;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
           <h3 id="client-profile-name">Client</h3>
-          <button onclick="document.getElementById('client-profile-card').style.display='none';" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--sub);">✕</button>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button class="action-btn sec" style="width:auto;margin-bottom:0;font-size:13px;padding:7px 12px;" onclick="editCurrentClientAccess()">✏️ Edit Access</button>
+            <button onclick="document.getElementById('client-profile-card').style.display='none';" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--sub);">✕</button>
+          </div>
         </div>
         <div class="admin-tabs" style="margin-bottom:1rem;">
           <button class="tab-btn on" id="cp-tab-checkins" onclick="cpTab('checkins',this)">📋 Check ins</button>
@@ -753,39 +784,6 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         <div id="submissions-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
       </div>
     </div>
-    <div class="tab-content" id="atc-codes">
-      <div class="admin-card">
-        <h3>Create Access Code</h3>
-        <div class="ok-msg" id="ok-code"></div>
-        <div class="form-row"><span class="form-label">Client Name</span><input class="form-input" id="c-name" placeholder="e.g. Sarah M." style="text-transform:none;" /></div>
-        <div class="inline-row">
-          <div class="form-row"><span class="form-label">Access Code</span><input class="form-input" id="c-code" placeholder="e.g. SARAH2024" /></div>
-          <button class="action-btn sec" id="gen-btn" style="white-space:nowrap;font-size:13px;margin-bottom:0;">Generate</button>
-        </div>
-        <div class="form-row" style="margin-top:10px;">
-          <span class="form-label">Access Level</span>
-          <select class="form-select" id="c-access-type">
-            <option value="ALL">Full Membership — all videos</option>
-            <option value="PROGRAMS">Specific Programs</option>
-          </select>
-        </div>
-        <div id="program-picker" style="display:none;margin-bottom:12px;">
-          <span class="form-label" style="display:block;margin-bottom:6px;">Select Programs</span>
-          <div class="program-checkboxes" id="program-checkboxes"></div>
-        </div>
-        <p class="tip" style="margin-top:8px;">Full Membership sees everything. Specific Programs lets you pick multiple programs.</p>
-        <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;margin-top:4px;">
-          <input type="checkbox" id="c-trial" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
-          <label for="c-trial" style="font-size:13px;color:var(--text);cursor:pointer;">⏱️ 7-day trial — auto-deactivates after 7 days</label>
-        </div>
-        <button class="action-btn" id="add-code-btn" style="margin-top:10px;">Create Code</button>
-      </div>
-      <div class="admin-card">
-        <h3>Active Codes (<span id="code-count">0</span>)</h3>
-        <div id="code-list"></div>
-      </div>
-    </div>
-
     <div class="tab-content" id="atc-announce">
       <div class="admin-card">
         <h3>Post an Announcement</h3>
@@ -1584,13 +1582,12 @@ function loadAnnouncements(){
 function doAdmin(){
   var p=prompt("Instructor password:");
   if(p===null) return;
-  if(p===adminPass){ loadDashboard(); loadAdmVideos(); populateProgramDatalist(); loadAdmCodes(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); sp("pg-admin"); }
+  if(p===adminPass){ loadDashboard(); loadAdmVideos(); populateProgramDatalist(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); sp("pg-admin"); }
   else alert("Incorrect password. Please try again.");
 }
 
 document.getElementById("atab-dashboard").onclick=function(){ setAdmTab("dashboard",this); loadDashboard(); };
 document.getElementById("atab-videos").onclick=function(){ setAdmTab("videos",this); loadAdmVideos(); populateProgramDatalist(); };
-document.getElementById("atab-codes").onclick=function(){ setAdmTab("codes",this); loadAdmCodes(); };
 document.getElementById("atab-clients").onclick=function(){ setAdmTab("clients",this); loadClients(); };
 document.getElementById("atab-submissions").onclick=function(){ setAdmTab("submissions",this); clearSubmissionsBadge(); };
 document.getElementById("atab-announce").onclick=function(){ setAdmTab("announce",this); };
@@ -2004,21 +2001,6 @@ function moveVideo(idx,dir){
 }
 
 // CODES
-function loadAdmCodes(){
-  if(!DB) return;
-  DB.ref("codes").on("value",function(snap){
-    var cnt=0,h="";
-    if(snap.exists()) snap.forEach(function(c){
-      var cd=c.val(); cnt++;
-      var al=cd.access==="ALL"||!cd.access?"Full Access":Array.isArray(cd.access)?cd.access.join(", "):cd.access;
-      var bc=cd.access==="ALL"||!cd.access?"badge badge-all":"badge";
-      h+="<div class='list-item'><div class='list-item-left'>"+ex(cd.name)+" <span class='code-display'>"+ex(cd.code)+"</span> <span class='"+bc+"'>"+ex(al)+"</span></div><div style='display:flex;gap:6px;'><button class='del-btn' style='background:var(--card);color:var(--accent);border:1px solid var(--accent);' onclick='editCode(\""+c.key+"\")'>✏️</button><button class='del-btn' onclick='delCode(\""+c.key+"\")'>✕</button></div></div>";
-    });
-    document.getElementById("code-count").textContent=cnt;
-    document.getElementById("code-list").innerHTML=h||"<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No codes yet.</p>";
-  });
-}
-
 function genCode(){ var c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",o=""; for(var i=0;i<8;i++) o+=c[Math.floor(Math.random()*c.length)]; document.getElementById("c-code").value=o; }
 
 function addCode(){
@@ -2941,11 +2923,30 @@ function saveSubmissionEdit(){
   });
 }
 
+function editCurrentClientAccess(){
+  if(!DB || !currentClientKey) return;
+  DB.ref("codes").once("value", function(snap){
+    var foundKey = null;
+    snap.forEach(function(c){
+      if(sk(c.val().name) === currentClientKey) foundKey = c.key;
+    });
+    if(foundKey) editCode(foundKey);
+    else alert("Couldn't find an access code for this client.");
+  });
+}
+
+function toggleNewClientForm(){
+  var form = document.getElementById("new-client-form");
+  form.style.display = form.style.display==="none" ? "block" : "none";
+}
+
 function createCodeFromSubmission(name){
-  var codesBtn = document.getElementById("atab-codes");
-  setAdmTab("codes", codesBtn);
+  var clientsBtn = document.getElementById("atab-clients");
+  setAdmTab("clients", clientsBtn);
+  loadClients();
+  document.getElementById("new-client-form").style.display = "block";
   document.getElementById("c-name").value = name;
-  document.getElementById("c-name").scrollIntoView({behavior:"smooth", block:"center"});
+  document.getElementById("new-client-form").scrollIntoView({behavior:"smooth", block:"start"});
   document.getElementById("c-name").focus();
 }
 
