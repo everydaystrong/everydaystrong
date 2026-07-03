@@ -497,22 +497,6 @@ var EMAILJS_TEMPLATE_ID = "template_yfxtkhj";
 
 emailjs.init(EMAILJS_PUBLIC_KEY);
 
-// TEMPORARY DIAGNOSTIC — shows any JS error on screen so it can be screenshotted.
-// Safe to remove once the email issue is resolved.
-function showDebugError(msg){
-  var box = document.getElementById("debug-error-box");
-  if(!box){
-    box = document.createElement("div");
-    box.id = "debug-error-box";
-    box.style.cssText = "position:fixed;top:0;left:0;right:0;background:#c0392b;color:#fff;padding:14px;font-family:monospace;font-size:12px;z-index:99999;white-space:pre-wrap;word-break:break-word;";
-    document.body.prepend(box);
-  }
-  box.textContent = "DEBUG ERROR:\n" + msg;
-}
-window.addEventListener("error", function(e){
-  showDebugError(e.message + "\nFile: " + e.filename + "\nLine: " + e.lineno);
-});
-
 // ── Form draft autosave ───────────────────────────────────────────────
 // Saves every field across all 3 steps to localStorage as the person types,
 // so a refresh, dropped connection, or closed tab doesn't wipe their progress.
@@ -796,7 +780,6 @@ function submitWaiver(){
       });
     }, function(err){
       console.error("Waiver confirmation email failed to send, but data was saved.", err);
-      showDebugError("Waiver email failed: " + JSON.stringify(err));
     });
 }
 </script>

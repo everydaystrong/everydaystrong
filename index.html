@@ -366,7 +366,7 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
     <div class="section-label">Programs & Pricing</div>
     <h2 class="section-title">Find the right fit for you</h2>
     <p class="section-sub">All programs include access to the Everyday Strong member portal with workout videos, community, and progress tracking.</p>
-    <div class="programs-grid">
+    <div class="programs-grid" id="programs-grid">
       <div class="prog-card">
         <div class="prog-icon">🎥</div>
         <h3 class="prog-title">Virtual Semi Private Classes</h3>
@@ -733,19 +733,31 @@ try {
   }, "landing");
   var landingDB = firebase.database(landingApp);
 
-  // Load programs
+  // Load programs — only replace the static pricing cards if programs have
+  // actually been published from admin (showWeb:true). Otherwise leave the
+  // hardcoded pricing above exactly as-is so the page is never left blank.
+  var newClientCardHtml = '<div class="prog-card" style="cursor:pointer;" onclick="window.location=\'forms.html\'">'+
+    '<h3 class="prog-title">New Client Info</h3>'+
+    '<div class="prog-price" style="color:#4a7c5c;">Start Here →</div>'+
+    '<p class="prog-desc">Everything you need to know before your first class.</p>'+
+    '<div class="prog-details">'+
+      '<div class="prog-detail">7 day trial available</div>'+
+      '<div class="prog-detail">Waiver required before first class</div>'+
+      '<div class="prog-detail">Intake form required</div>'+
+      '<div class="prog-detail">Optional 1 on 1 Fundamentals class $40</div>'+
+      '<div class="prog-detail">Contact: Everydaystrongteam@gmail.com</div>'+
+    '</div>'+
+    '<p style="font-family:Arial,sans-serif;font-size:12px;color:#9a8a7a;line-height:1.6;margin-top:0.8rem;padding-top:0.8rem;border-top:0.5px solid #e8ddd2;">💡 The Fundamentals class is a private one-on-one session where we go through proper form and technique together before you jump into group classes — a great option if you\'re brand new to strength training or just want extra confidence heading in. You can request it on the intake form.</p>'+
+    '<div style="margin-top:1.2rem;">'+
+      '<a href="forms.html" class="btn-primary" style="display:block;text-align:center;font-size:14px;padding:11px;">Complete New Client Forms →</a>'+
+    '</div>'+
+  '</div>';
   landingDB.ref("programs").on("value", function(snap){
     var grid = document.getElementById("programs-grid");
-    if(!snap.exists()){
-      grid.innerHTML="<p style='text-align:center;color:#9a8a7a;font-size:14px;grid-column:1/-1;'>Programs coming soon!</p>";
-      return;
-    }
-    var items=[]; snap.forEach(function(c){ var a=c.val(); if(a.showWeb) items.push(a); });
+    var items=[];
+    if(snap.exists()) snap.forEach(function(c){ var a=c.val(); if(a.showWeb) items.push(a); });
+    if(!items.length) return; // keep the static pricing already in the HTML
     items.sort(function(a,b){ return a.ts-b.ts; });
-    if(!items.length){
-      grid.innerHTML="<p style='text-align:center;color:#9a8a7a;font-size:14px;grid-column:1/-1;'>Programs coming soon!</p>";
-      return;
-    }
     grid.innerHTML="";
     var icons=["🎥","💪","⭐","🏋️","🔥","🧘"];
     items.forEach(function(p,idx){
@@ -764,6 +776,7 @@ try {
         (detailsHtml?"<div class='prog-details'>"+detailsHtml+"</div>":"");
       grid.appendChild(card);
     });
+    grid.insertAdjacentHTML("beforeend", newClientCardHtml);
   });
 
   // Load site announcements

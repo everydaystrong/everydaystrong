@@ -319,7 +319,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
     </div>
     <button class="action-btn" onclick="saveCodeEdit()" style="width:100%;margin-top:10px;">Save Changes</button>
     <button class="action-btn sec" id="ec-pause-btn" onclick="togglePauseEditingClient()" style="width:100%;margin-top:8px;">⏸️ Pause Access</button>
-    <button class="action-btn sec" onclick="deleteEditingClient()" style="width:100%;margin-top:8px;color:#c05040;border-color:#c05040;">🗑️ Delete Client</button>
+    <button class="action-btn sec" onclick="deleteEditingClient()" style="width:100%;margin-top:8px;color:#c05040;border-color:#c05040;">🗄️ Archive Client</button>
   </div>
 </div>
 
@@ -769,6 +769,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
           <button class="comm-cat-btn" data-filter="trial" onclick="filterClients('trial',this)">⏱️ Trial</button>
           <button class="comm-cat-btn" data-filter="paused" onclick="filterClients('paused',this)">⏸️ Paused</button>
           <button class="comm-cat-btn" data-filter="expired" onclick="filterClients('expired',this)">❌ Expired</button>
+          <button class="comm-cat-btn" data-filter="archived" onclick="filterClients('archived',this)">🗄️ Archived</button>
         </div>
         <div id="clients-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
       </div>
@@ -995,7 +996,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <div class="admin-card">
         <h3>📧 Message All Clients</h3>
         <p style="font-size:13px;color:var(--sub);margin-bottom:1rem;">Send a message that appears in every active client's Messages tab at once.</p>
-        <div class="ok-msg" id="ok-bulk">Message sent to all clients!</div>
+        <div class="ok-msg" id="ok-bulk-msg">Message sent to all clients!</div>
         <div class="form-row">
           <span class="form-label">Send To</span>
           <select class="form-select" id="bulk-audience">
@@ -1164,7 +1165,7 @@ function sp(id){
 function ex(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function showOk(id,msg){ var e=document.getElementById(id); if(msg) e.textContent=msg; e.style.display="block"; setTimeout(function(){ e.style.display="none"; },3000); }
 function getYTId(u){ var m=String(u).match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/); return m?m[1]:null; }
-function sk(s){ var r="",str=String(s); for(var i=0;i<str.length;i++){ var c=str[i]; r+=(c==="."||c==="#"||c==="$"||c==="["||c==="]"||c==="/")?"_":c; } return r; }
+function sk(s){ var r="",str=String(s).trim().replace(/\s+/g," ").toLowerCase(); for(var i=0;i<str.length;i++){ var c=str[i]; r+=(c==="."||c==="#"||c==="$"||c==="["||c==="]"||c==="/")?"_":c; } return r; }
 function isNew(ts){ return ts && (Date.now()-ts) < 7*24*60*60*1000; }
 
 function canAccess(tag){
@@ -2146,8 +2147,15 @@ function toggleCode(key, inactive){
 
 function delCode(key, name){
   var label = name ? ("Delete "+name+"'s access code?") : "Remove this code?";
-  if(!confirm(label+" This removes their login access permanently. Their check-ins, messages, and form submissions are NOT deleted — only their access code.")) return false;
-  DB.ref("codes/"+key).remove();
+  if(!confirm(label+" This removes their login access. Their check-ins, messages, and form submissions are NOT deleted, and you can restore them anytime from the Archived tab.")) return false;
+  DB.ref("codes/"+key).once("value",function(snap){
+    if(!snap.exists()) return;
+    var cd = snap.val();
+    cd.archivedAt = Date.now();
+    DB.ref("archived_codes/"+key).set(cd,function(e){
+      if(!e) DB.ref("codes/"+key).remove();
+    });
+  });
   return true;
 }
 
@@ -2397,14 +2405,15 @@ function logFood(){
   var desc=document.getElementById("food-desc").value.trim();
   var feeling=document.getElementById("food-feeling").value.trim();
   var img=document.getElementById("food-img").value.trim();
-  var isPrivate=document.getElementById("food-private").checked;
+  var visEl=document.querySelector('input[name="food-visibility"]:checked');
+  var visibility=visEl?visEl.value:"self";
   if(!desc){ alert("Please describe what you ate."); return; }
   if(!DB) return;
   var d=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
   DB.ref("food/"+sk(currentUser)).push({
     name:currentUser, meal:meal, desc:desc,
     feeling:feeling, img:img||null,
-    private:isPrivate, date:d, ts:Date.now()
+    visibility:visibility, date:d, ts:Date.now()
   }, function(e){
     if(!e){
       document.getElementById("food-desc").value="";
@@ -2885,6 +2894,8 @@ function renderClientList(){
     var inactive = cd.inactive||false;
     var expired = cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt;
     var isTrial = cd.trial&&!expired;
+    if(clientFilter==="archived") return cd._archived;
+    if(cd._archived) return false;
     if(clientFilter==="all") return true;
     if(clientFilter==="active") return !inactive&&!expired&&!isTrial;
     if(clientFilter==="trial") return isTrial;
@@ -2897,16 +2908,32 @@ function renderClientList(){
     var inactive=cd.inactive||false;
     var expired=cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt;
     var crow=document.createElement("div");
-    crow.style.cssText="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;";
+    crow.style.cssText="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);"+(cd._archived?"":"cursor:pointer;");
     crow.setAttribute("data-cname", cd.name);
-    crow.onclick=function(){ openClientProfile(this.getAttribute("data-cname")); };
+    if(!cd._archived) crow.onclick=function(){ openClientProfile(this.getAttribute("data-cname")); };
     var badges="";
+    if(cd._archived) badges+=" <span style='background:#555;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>ARCHIVED</span>";
     if(inactive) badges+=" <span style='background:#888;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>PAUSED</span>";
     if(cd.trial&&!expired) badges+=" <span style='background:#e8a020;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>TRIAL</span>";
     if(expired) badges+=" <span style='background:#c05040;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>EXPIRED</span>";
-    if(!inactive&&!expired&&!cd.trial) badges+=" <span style='background:#4a7c5c;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>ACTIVE</span>";
-    crow.innerHTML="<div><strong style='font-size:14px;color:var(--text);'>"+ex(cd.name)+"</strong>"+badges+"<br/><span style='font-family:monospace;font-size:12px;color:var(--sub);'>"+ex(cd.code)+"</span></div><span style='color:var(--accent);font-size:13px;'>View →</span>";
+    if(!inactive&&!expired&&!cd.trial&&!cd._archived) badges+=" <span style='background:#4a7c5c;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>ACTIVE</span>";
+    var rightSide = cd._archived
+      ? "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;' onclick='event.stopPropagation();restoreClient(\""+cd._key+"\")'>↩️ Restore</button>"
+      : "<span style='color:var(--accent);font-size:13px;'>View →</span>";
+    crow.innerHTML="<div><strong style='font-size:14px;color:var(--text);'>"+ex(cd.name)+"</strong>"+badges+"<br/><span style='font-family:monospace;font-size:12px;color:var(--sub);'>"+ex(cd.code)+"</span></div>"+rightSide;
     el.appendChild(crow);
+  });
+}
+
+function restoreClient(archivedKey){
+  if(!DB) return;
+  DB.ref("archived_codes/"+archivedKey).once("value",function(snap){
+    if(!snap.exists()) return;
+    var cd = snap.val();
+    delete cd._key; delete cd._archived; delete cd.archivedAt;
+    DB.ref("codes/"+archivedKey).set(cd,function(e){
+      if(!e){ DB.ref("archived_codes/"+archivedKey).remove(); loadClients(); }
+    });
   });
 }
 
@@ -3071,25 +3098,22 @@ function createCodeFromSubmission(name){
 function loadClients(){
   if(!DB) return;
   DB.ref("codes").on("value",function(snap){
-    var el=document.getElementById("clients-list");
-    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No clients yet.</p>"; return; }
     allClientsData=[];
-    el.innerHTML="";
     snap.forEach(function(c){
       var cd=c.val();
-      var inactive=cd.inactive||false;
-      var expired=cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt;
-      var crow=document.createElement("div");
-      crow.style.cssText="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;";
-      crow.setAttribute("data-cname", cd.name);
-      crow.onclick=function(){ openClientProfile(this.getAttribute("data-cname")); };
-      var badges="";
-      if(inactive) badges+=" <span style='background:#888;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>PAUSED</span>";
-      if(cd.trial&&!expired) badges+=" <span style='background:#e8a020;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>TRIAL</span>";
-      if(expired) badges+=" <span style='background:#c05040;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>EXPIRED</span>";
+      cd._key=c.key;
+      cd._archived=false;
       allClientsData.push(cd);
     });
-    renderClientList();
+    DB.ref("archived_codes").once("value",function(asnap){
+      asnap.forEach(function(c){
+        var cd=c.val();
+        cd._key=c.key;
+        cd._archived=true;
+        allClientsData.push(cd);
+      });
+      renderClientList();
+    });
   });
 }
 
@@ -3410,7 +3434,7 @@ function sendBulkMessage(){
       count++;
     });
     document.getElementById("bulk-text").value="";
-    showOk("ok-bulk","Message sent to "+count+" clients!");
+    showOk("ok-bulk-msg","Message sent to "+count+" clients!");
   });
 }
 
