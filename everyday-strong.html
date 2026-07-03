@@ -285,6 +285,16 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
   </div>
 </div>
 
+<!-- VIDEO PLAYER -->
+<div class="modal-overlay" id="video-modal">
+  <div class="modal" style="max-width:720px;width:100%;padding:12px;">
+    <button class="modal-close" onclick="closeVideoModal()">✕</button>
+    <div style="position:relative;width:100%;padding-top:56.25%;background:#000;border-radius:8px;overflow:hidden;">
+      <iframe id="video-modal-frame" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT SUBMISSION -->
 <div class="modal-overlay" id="edit-submission-modal">
   <div class="modal">
@@ -1237,30 +1247,24 @@ function showTrialBanner(found){
 var previewingAsClient = false;
 
 function previewAsClient(){
-  if(!DB) return;
-  DB.ref("codes").orderByChild("code").equalTo("STRONG2024").once("value",function(snap){
-    if(!snap.exists()){ alert("Demo code not found — can't preview."); return; }
-    var found=null;
-    snap.forEach(function(c){ found=c.val(); });
-    previewingAsClient = true;
-    currentUser=found.name;
-    currentUserKey=sk(found.name);
-    if(!found.access||found.access==="ALL"){ currentAccess="ALL"; }
-    else if(Array.isArray(found.access)){ currentAccess=found.access; }
-    else{ currentAccess=[found.access]; }
-    document.getElementById("welcome-bar").textContent="Welcome, "+found.name+"! Ready to get strong?";
-    document.getElementById("back-to-admin-btn").style.display="inline-block";
-    showTrialBanner(found);
-    loadVideos();
-    loadAnnouncements();
-    loadStreak();
-    checkNewAnnouncements();
-    checkBirthday();
-    checkNewVideo();
-    loadGoal();
-    loadWorkoutStats();
-    sp("pg-portal");
-  });
+  // Self-contained — doesn't depend on any real code existing in Firebase,
+  // so it can never break if a demo client gets deleted, archived, or renamed.
+  previewingAsClient = true;
+  currentUser="Preview Client";
+  currentUserKey=sk(currentUser);
+  currentAccess="ALL";
+  document.getElementById("welcome-bar").textContent="👀 Preview Mode — this is what clients see. Nothing here is a real client account.";
+  document.getElementById("back-to-admin-btn").style.display="inline-block";
+  document.getElementById("trial-bar").style.display="none";
+  loadVideos();
+  loadAnnouncements();
+  loadStreak();
+  checkNewAnnouncements();
+  checkBirthday();
+  checkNewVideo();
+  loadGoal();
+  loadWorkoutStats();
+  sp("pg-portal");
 }
 
 function doLogin(){
@@ -1523,7 +1527,16 @@ function buildVideoCard(v){
   return h;
 }
 
-function openVideo(url){ var ytId=getYTId(url); window.open(ytId?"https://www.youtube.com/watch?v="+ytId:url,"_blank"); }
+function openVideo(url){
+  var ytId=getYTId(url);
+  var embedUrl = ytId ? ("https://www.youtube.com/embed/"+ytId+"?autoplay=1&rel=0") : url;
+  document.getElementById("video-modal-frame").src = embedUrl;
+  document.getElementById("video-modal").classList.add("open");
+}
+function closeVideoModal(){
+  document.getElementById("video-modal-frame").src = ""; // stop playback
+  document.getElementById("video-modal").classList.remove("open");
+}
 
 function toggleFav(key){
   var cur=getUserData("fav",key);
@@ -1921,20 +1934,52 @@ function addNewFocusTag(which){
 function loadAdmVideos(){
   if(!DB) return;
   DB.ref("videos").on("value",function(snap){
-    var cnt=0,h="",cats=[];
+    var cnt=0,cats=[],grouped={};
     if(snap.exists()) snap.forEach(function(c){
       var v=c.val(); cnt++;
-      var rd=v.releaseDate?(" <span style='font-size:11px;color:var(--sub);'>📅 "+v.releaseDate+"</span>"):"";
-      h+="<div class='list-item'><div class='list-item-left'>"+ex(v.title)+(v.tag?" <span class='badge'>"+ex(v.tag)+"</span>":"")+rd+"</div><div style='display:flex;gap:6px;'><button class='edit-btn' onclick='openEdit(\""+c.key+"\")'>✏️</button><button class='del-btn' onclick='delVideo(\""+c.key+"\")'>✕</button></div></div>";
-      if(v.tag&&cats.indexOf(v.tag)===-1) cats.push(v.tag);
+      var tag=v.tag||"Uncategorized";
+      if(!grouped[tag]){ grouped[tag]=[]; cats.push(tag); }
+      grouped[tag].push({key:c.key,v:v});
     });
+    // Sort each group by its order field so it matches client-side ordering
+    cats.forEach(function(tag){
+      grouped[tag].sort(function(a,b){ return (a.v.order||0)-(b.v.order||0); });
+    });
+    cats.sort();
+    var h="";
+    if(!cnt){
+      h="<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No videos yet.</p>";
+    } else {
+      cats.forEach(function(tag){
+        var items=grouped[tag];
+        h+="<div class='admin-vid-group' style='margin-bottom:10px;'>";
+        h+="<div class='admin-vid-group-header' onclick='toggleAdmVidGroup(this)' style='cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--inp);border-radius:8px;font-weight:600;font-size:13px;color:var(--text);'>";
+        h+="<span>"+ex(tag)+" <span style='font-weight:400;color:var(--sub);'>("+items.length+")</span></span>";
+        h+="<span class='admin-vid-group-arrow' style='transition:transform 0.15s;'>▸</span>";
+        h+="</div>";
+        h+="<div class='admin-vid-group-body' style='display:none;padding-top:4px;'>";
+        items.forEach(function(item){
+          var v=item.v, key=item.key;
+          var rd=v.releaseDate?(" <span style='font-size:11px;color:var(--sub);'>📅 "+v.releaseDate+"</span>"):"";
+          h+="<div class='list-item'><div class='list-item-left'>"+ex(v.title)+rd+"</div><div style='display:flex;gap:6px;'><button class='edit-btn' onclick='openEdit(\""+key+"\")'>✏️</button><button class='del-btn' onclick='delVideo(\""+key+"\")'>✕</button></div></div>";
+        });
+        h+="</div></div>";
+      });
+    }
     document.getElementById("video-count").textContent=cnt;
-    document.getElementById("video-list").innerHTML=h||"<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No videos yet.</p>";
+    document.getElementById("video-list").innerHTML=h;
     var sel=document.getElementById("reorder-cat"),prev=sel.value;
     sel.innerHTML="<option value=''>-- Select a program --</option>";
     cats.forEach(function(c){ sel.innerHTML+="<option value='"+ex(c)+"'>"+ex(c)+"</option>"; });
     if(prev) sel.value=prev;
   });
+}
+function toggleAdmVidGroup(headerEl){
+  var body = headerEl.nextElementSibling;
+  var arrow = headerEl.querySelector(".admin-vid-group-arrow");
+  var open = body.style.display !== "none";
+  body.style.display = open ? "none" : "block";
+  arrow.style.transform = open ? "rotate(0deg)" : "rotate(90deg)";
 }
 
 function addVideo(){
@@ -3821,6 +3866,7 @@ document.getElementById("install-help-btn").onclick = openInstallHelp;
 document.getElementById("install-modal").onclick = function(e){ if(e.target===this) closeInstallHelp(); };
 document.getElementById("edit-submission-modal").onclick = function(e){ if(e.target===this) closeEditSubmission(); };
 document.getElementById("edit-code-modal").onclick = function(e){ if(e.target===this) closeEditCode(); };
+document.getElementById("video-modal").onclick = function(e){ if(e.target===this) closeVideoModal(); };
 document.getElementById("admin-comm-post-btn").onclick=postAdminToComm;
 document.getElementById("checkin-btn").onclick=submitCheckin;
 document.getElementById("goal-btn").onclick=saveGoal;
