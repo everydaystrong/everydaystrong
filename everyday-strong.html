@@ -807,6 +807,11 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <div class="admin-card">
         <h3>New Submissions</h3>
         <p class="tip" style="margin-bottom:1rem;">Every intake, agreement, and waiver submitted through your forms page — including from brand new leads who don't have a client code yet.</p>
+        <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
+          <button class="comm-cat-btn on" data-subfilter="new" onclick="filterSubmissions('new',this)">🆕 New</button>
+          <button class="comm-cat-btn" data-subfilter="old" onclick="filterSubmissions('old',this)">📋 Old</button>
+          <button class="comm-cat-btn" data-subfilter="deleted" onclick="filterSubmissions('deleted',this)">🗑️ Deleted</button>
+        </div>
         <div id="submissions-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
       </div>
     </div>
@@ -3013,29 +3018,69 @@ var currentClientKey = null;
 // NEW SUBMISSIONS FEED (every client_forms entry, across all keys, regardless of code status)
 var SUB_LAST_CHECK_KEY = "es_admin_lastSubCheck";
 
+var cachedAllSubmissions = [];
+var cachedCanonicalByNorm = {};
+var cachedMergeGroups = {};
+var submissionFilter = "new";
+
 function initSubmissionsBadge(){
   if(!DB) return;
   DB.ref("client_forms").on("value", function(snap){
     var lastCheck = parseInt(localStorage.getItem(SUB_LAST_CHECK_KEY)||"0");
     var hasNew = false;
     var all = [];
+    // Group entries by normalized name (not just storage key) so we can catch
+    // cases where old data (or an edge case) split one person across multiple
+    // keys — e.g. "TONI Detwiler" vs "TONI DETWILER" typed differently between
+    // steps before this matching was fixed. Whichever key the Intake form used
+    // is the "correct" one; anything else needs merging into it.
+    var groups = {};
     if(snap.exists()){
       snap.forEach(function(clientNode){
+        var key = clientNode.key;
         clientNode.forEach(function(entry){
           var v = entry.val();
           if(v){
-            v._clientKey = clientNode.key;
+            v._clientKey = key;
             v._entryKey = entry.key;
             all.push(v);
-            if(v.ts > lastCheck) hasNew = true;
+            if(!v.deleted && v.ts > lastCheck) hasNew = true;
+            var rawName = v.data && v.data.Name;
+            if(rawName){
+              var norm = sk(rawName);
+              if(!groups[norm]) groups[norm] = {keys:{}, bestName:null, bestPriority:-1};
+              groups[norm].keys[key] = true;
+              var priority = v.formType==="Intake Form" ? 3 : v.formType==="Client Agreement" ? 2 : 1;
+              if(priority > groups[norm].bestPriority){ groups[norm].bestPriority = priority; groups[norm].bestName = rawName; }
+            }
           }
         });
       });
     }
+    var canonicalByNorm = {}, mergeGroups = {};
+    Object.keys(groups).forEach(function(norm){
+      var g = groups[norm];
+      canonicalByNorm[norm] = g.bestName;
+      var targetKey = sk(g.bestName);
+      var keyList = Object.keys(g.keys);
+      if(keyList.length>1 || keyList[0]!==targetKey){
+        mergeGroups[norm] = {targetKey:targetKey, sourceKeys:keyList, bestName:g.bestName};
+      }
+    });
+    cachedAllSubmissions = all;
+    cachedCanonicalByNorm = canonicalByNorm;
+    cachedMergeGroups = mergeGroups;
     var dot = document.getElementById("sub-tab-dot");
     if(dot) dot.style.display = hasNew ? "inline-block" : "none";
-    renderSubmissionsList(all);
+    renderSubmissionsList();
   });
+}
+
+function filterSubmissions(filter, btn){
+  submissionFilter = filter;
+  document.querySelectorAll("[data-subfilter]").forEach(function(b){ b.classList.remove("on"); });
+  btn.classList.add("on");
+  renderSubmissionsList();
 }
 
 function clearSubmissionsBadge(){
@@ -3044,15 +3089,26 @@ function clearSubmissionsBadge(){
   if(dot) dot.style.display = "none";
 }
 
-function renderSubmissionsList(all){
+function renderSubmissionsList(){
   var el = document.getElementById("submissions-list");
   if(!el) return;
-  if(!all.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No submissions yet.</p>"; return; }
-  all.sort(function(a,b){ return b.ts-a.ts; });
   var lastCheck = parseInt(localStorage.getItem(SUB_LAST_CHECK_KEY)||"0");
-  el.innerHTML = all.map(function(s){
-    var isNew = s.ts > lastCheck;
-    var name = (s.data && s.data.Name) || "Unknown";
+  var items = cachedAllSubmissions.filter(function(s){
+    if(submissionFilter==="deleted") return !!s.deleted;
+    if(s.deleted) return false;
+    if(submissionFilter==="new") return s.ts > lastCheck;
+    return s.ts <= lastCheck;
+  });
+  if(!items.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Nothing here.</p>"; return; }
+  items.sort(function(a,b){ return b.ts-a.ts; });
+  el.innerHTML = items.map(function(s){
+    var isNew = !s.deleted && s.ts > lastCheck;
+    var rawName = (s.data && s.data.Name) || "Unknown";
+    var norm = sk(rawName);
+    // Use the canonical (Intake-based) name so "+ Create Client Code" always
+    // produces a code that matches where these forms are actually stored —
+    // not whichever name this particular entry happened to save.
+    var name = cachedCanonicalByNorm[norm] || rawName;
     var date = new Date(s.ts).toLocaleString();
     var fields = "";
     if(s.data){
@@ -3060,23 +3116,62 @@ function renderSubmissionsList(all){
         if(s.data[k]) fields += "<p style='font-size:12px;color:var(--sub);margin-bottom:3px;white-space:pre-wrap;'><strong>"+ex(k)+":</strong> "+ex(String(s.data[k]))+"</p>";
       });
     }
+    var mergeBtn = cachedMergeGroups[norm]
+      ? "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;color:#8b6f10;border-color:#c9a227;' onclick='mergeSubmissionGroup(\""+norm+"\")'>🔀 Merge into one record</button>"
+      : "";
+    var actionBtns;
+    if(submissionFilter==="deleted"){
+      actionBtns = "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='restoreSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\")'>↩️ Restore</button>"+
+        "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;color:#c05040;border-color:#c05040;' onclick='permanentlyDeleteSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\",\""+ex(name).replace(/"/g,"&quot;")+"\")'>🗑️ Delete Forever</button>";
+    } else {
+      actionBtns = "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='createCodeFromSubmission(\""+ex(name).replace(/"/g,"&quot;")+"\")'>+ Create Client Code</button>"+
+        "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='editSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\")'>✏️ Edit</button>"+
+        "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;color:#c05040;border-color:#c05040;' onclick='deleteSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\",\""+ex(name).replace(/"/g,"&quot;")+"\")'>🗑️ Delete</button>";
+    }
     return "<div style='padding:14px;background:var(--inp);border-radius:10px;margin-bottom:10px;'>"+
-      "<div style='display:flex;align-items:center;gap:8px;margin-bottom:6px;'>"+
+      "<div style='display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;'>"+
       (isNew ? "<span style='width:8px;height:8px;background:#c05040;border-radius:50%;'></span>" : "")+
       "<strong style='font-size:14px;'>"+ex(name)+"</strong>"+
       "<span style='font-size:11px;color:var(--sub);'>· "+ex(s.formType||"")+" · "+date+"</span>"+
       "</div>"+fields+
-      "<div style='display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;'>"+
-      "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='createCodeFromSubmission(\""+ex(name).replace(/"/g,"&quot;")+"\")'>+ Create Client Code</button>"+
-      "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='editSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\")'>✏️ Edit</button>"+
-      "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;color:#c05040;border-color:#c05040;' onclick='deleteSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\",\""+ex(name).replace(/"/g,"&quot;")+"\")'>🗑️ Delete</button>"+
+      "<div style='display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;'>"+actionBtns+mergeBtn+
       "</div></div>";
   }).join("");
 }
 
 function deleteSubmission(clientKey, entryKey, name){
-  if(!confirm("Delete this submission from "+name+"? This can't be undone.")) return;
+  if(!confirm("Move this submission from "+name+" to Deleted? You can restore it later from the Deleted tab.")) return;
+  DB.ref("client_forms/"+clientKey+"/"+entryKey).update({deleted:true});
+}
+
+function restoreSubmission(clientKey, entryKey){
+  DB.ref("client_forms/"+clientKey+"/"+entryKey).update({deleted:false});
+}
+
+function permanentlyDeleteSubmission(clientKey, entryKey, name){
+  if(!confirm("Permanently delete this submission from "+name+"? This can't be undone.")) return;
   DB.ref("client_forms/"+clientKey+"/"+entryKey).remove();
+}
+
+function mergeSubmissionGroup(norm){
+  var g = cachedMergeGroups[norm];
+  if(!g){ alert("Nothing to merge."); return; }
+  if(!confirm('Combine all submissions for "'+g.bestName+'" into one client record?')) return;
+  var targetKey = g.targetKey;
+  var sourceKeys = g.sourceKeys.filter(function(k){ return k!==targetKey; });
+  if(!sourceKeys.length){ alert("Already combined."); return; }
+  var remaining = sourceKeys.length;
+  sourceKeys.forEach(function(srcKey){
+    DB.ref("client_forms/"+srcKey).once("value", function(snap){
+      if(snap.exists()){
+        snap.forEach(function(entry){ DB.ref("client_forms/"+targetKey).push(entry.val()); });
+      }
+      DB.ref("client_forms/"+srcKey).remove(function(){
+        remaining--;
+        if(remaining===0) alert("Combined! Everything now lives under one record.");
+      });
+    });
+  });
 }
 
 var editingSubmission = null;
