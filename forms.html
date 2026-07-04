@@ -656,14 +656,14 @@ function submitIntake(){
   btn.disabled=true; btn.textContent="Sending...";
 
   // Save to Firebase FIRST — the client's data should never be lost even if email fails
-  try {
-    var fbForms = firebase.database(fbApp);
-    var cname = clientFormKey(fname+" "+lname);
-    fbForms.ref("client_forms/"+cname).push({
-      formType:"Intake Form", ts:Date.now(),
-      data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,TrialRequested:(trialRequested?"Yes":"No"),FundamentalsClassRequested:(fundamentalsRequested?"Yes":"No"),Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None"}
-    });
-  } catch(e){}
+  var fbForms = firebase.database(fbApp);
+  var cname = clientFormKey(fname+" "+lname);
+  fbForms.ref("client_forms/"+cname).push({
+    formType:"Intake Form", ts:Date.now(),
+    data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,TrialRequested:(trialRequested?"Yes":"No"),FundamentalsClassRequested:(fundamentalsRequested?"Yes":"No"),Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None"}
+  }, function(error){
+    if(error) console.error("Intake form failed to save to Firebase:", error);
+  });
 
   // Show success immediately — the data is safely saved regardless of email outcome
   document.getElementById("ok-intake").style.display="block";
@@ -684,14 +684,14 @@ function submitAgreement(){
   var btn=document.getElementById("btn-agreement");
   btn.disabled=true; btn.textContent="Sending...";
 
-  try {
-    var fbForms3 = firebase.database(fbApp);
-    var cname3 = clientFormKey(name);
-    fbForms3.ref("client_forms/"+cname3).push({
-      formType:"Client Agreement", ts:Date.now(),
-      data:{Name:name,"Date Signed":date,"Signature":sig,"Agreed":"Yes"}
-    });
-  } catch(e){}
+  var fbForms3 = firebase.database(fbApp);
+  var cname3 = clientFormKey(name);
+  fbForms3.ref("client_forms/"+cname3).push({
+    formType:"Client Agreement", ts:Date.now(),
+    data:{Name:name,"Date Signed":date,"Signature":sig,"Agreed":"Yes"}
+  }, function(error){
+    if(error) console.error("Agreement failed to save to Firebase:", error);
+  });
 
   document.getElementById("ok-agreement").style.display="block";
   btn.style.display="none";
@@ -756,14 +756,14 @@ function submitWaiver(){
     client_email:email
   };
 
-  try {
-    var fbForms2 = firebase.database(fbApp);
-    var cname2 = clientFormKey(name);
-    fbForms2.ref("client_forms/"+cname2).push({
-      formType:"Waiver", ts:Date.now(),
-      data:{Name:name,DOB:dob,Email:email,Address:address,Phone:phone,"Emergency Contact":ecName+" / "+ecPhone,Signature:sig,"Parent/Guardian":val("w-guardian")||"N/A","Agreed to all 11 sections":"Yes"}
-    });
-  } catch(e){}
+  var fbForms2 = firebase.database(fbApp);
+  var cname2 = clientFormKey(name);
+  fbForms2.ref("client_forms/"+cname2).push({
+    formType:"Waiver", ts:Date.now(),
+    data:{Name:name,DOB:dob,Email:email,Address:address,Phone:phone,"Emergency Contact":ecName+" / "+ecPhone,Signature:sig,"Parent/Guardian":val("w-guardian")||"N/A","Agreed to all 11 sections":"Yes"}
+  }, function(error){
+    if(error) console.error("Waiver failed to save to Firebase:", error);
+  });
 
   document.getElementById("ok-waiver").style.display="block";
   btn.style.display="none";
