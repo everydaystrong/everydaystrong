@@ -789,6 +789,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
           <button class="comm-cat-btn" data-filter="trial" onclick="filterClients('trial',this)">⏱️ Trial</button>
           <button class="comm-cat-btn" data-filter="paused" onclick="filterClients('paused',this)">⏸️ Paused</button>
           <button class="comm-cat-btn" data-filter="expired" onclick="filterClients('expired',this)">❌ Expired</button>
+          <button class="comm-cat-btn" data-filter="unpaid" onclick="filterClients('unpaid',this)">💰 Unpaid</button>
           <button class="comm-cat-btn" data-filter="archived" onclick="filterClients('archived',this)">🗄️ Archived</button>
         </div>
         <div id="clients-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
@@ -806,11 +807,13 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
           <button class="tab-btn" id="cp-tab-msgs" onclick="cpTab('msgs',this)">💌 Messages</button>
           <button class="tab-btn" id="cp-tab-progress" onclick="cpTab('progress',this)">📸 Progress</button>
           <button class="tab-btn" id="cp-tab-forms" onclick="cpTab('forms',this)">📄 Forms</button>
+          <button class="tab-btn" id="cp-tab-payments" onclick="cpTab('payments',this)">💰 Payments</button>
         </div>
         <div id="cp-checkins"><p style="color:var(--sub);font-size:13px;">Select a client above.</p></div>
         <div id="cp-msgs" style="display:none;"><p style="color:var(--sub);font-size:13px;">Select a client above.</p></div>
         <div id="cp-progress" style="display:none;"><p style="color:var(--sub);font-size:13px;">Select a client above.</p></div>
         <div id="cp-forms" style="display:none;"><p style="color:var(--sub);font-size:13px;">Select a client above.</p></div>
+        <div id="cp-payments" style="display:none;"><p style="color:var(--sub);font-size:13px;">Select a client above.</p></div>
       </div>
     </div>
     <div class="tab-content" id="atc-submissions">
@@ -3009,6 +3012,7 @@ function renderClientList(){
     var customExpired = cd.customExpiresAt&&Date.now()>cd.customExpiresAt;
     var expired = trialExpired||customExpired;
     var isTrial = cd.trial&&!expired;
+    var isUnpaid = (cd.paymentStatus||"unpaid")==="unpaid";
     if(clientFilter==="archived") return cd._archived;
     if(cd._archived) return false;
     if(clientFilter==="all") return true;
@@ -3016,6 +3020,7 @@ function renderClientList(){
     if(clientFilter==="trial") return isTrial;
     if(clientFilter==="paused") return inactive;
     if(clientFilter==="expired") return expired;
+    if(clientFilter==="unpaid") return isUnpaid;
     return true;
   });
   if(!items.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No clients in this category.</p>"; return; }
@@ -3024,6 +3029,7 @@ function renderClientList(){
     var trialExpired=cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt;
     var customExpired=cd.customExpiresAt&&Date.now()>cd.customExpiresAt;
     var expired=trialExpired||customExpired;
+    var isUnpaid=(cd.paymentStatus||"unpaid")==="unpaid";
     var crow=document.createElement("div");
     crow.style.cssText="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);"+(cd._archived?"":"cursor:pointer;");
     crow.setAttribute("data-cname", cd.name);
@@ -3034,6 +3040,7 @@ function renderClientList(){
     if(cd.trial&&!expired) badges+=" <span style='background:#e8a020;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>TRIAL</span>";
     if(expired) badges+=" <span style='background:#c05040;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>EXPIRED</span>";
     if(cd.customExpiresAt&&!customExpired) badges+=" <span style='background:#4a6a9c;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>Expires "+new Date(cd.customExpiresAt).toLocaleDateString()+"</span>";
+    if(!cd._archived&&isUnpaid) badges+=" <span style='background:#c9a227;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>💰 UNPAID</span>";
     if(!inactive&&!expired&&!cd.trial&&!cd._archived) badges+=" <span style='background:#4a7c5c;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>ACTIVE</span>";
     var rightSide = cd._archived
       ? "<div style='display:flex;gap:6px;'><button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;' onclick='event.stopPropagation();restoreClient(\""+cd._key+"\")'>↩️ Restore</button>"+
@@ -3085,6 +3092,81 @@ function loadClientForms(){
       h+="</div>";
     });
     el.innerHTML=h||"<p style='color:var(--sub);font-size:13px;'>No forms yet.</p>";
+  });
+}
+
+function loadClientPayments(){
+  if(!DB||!currentClientKey) return;
+  var el=document.getElementById("cp-payments");
+  el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Loading...</p>";
+  DB.ref("codes/"+currentClientKey).once("value",function(codeSnap){
+    var cd = codeSnap.val() || {};
+    var status = cd.paymentStatus || "unpaid";
+    var isPaid = status === "paid";
+    DB.ref("payments/"+currentClientKey).once("value",function(paySnap){
+      var history = [];
+      if(paySnap.exists()) paySnap.forEach(function(c){ var v=c.val(); v._key=c.key; history.push(v); });
+      history.sort(function(a,b){ return b.ts-a.ts; });
+      var h = "<div style='display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap;'>";
+      h += "<span style='padding:4px 12px;border-radius:12px;font-size:13px;font-weight:600;color:#fff;background:"+(isPaid?"#4a7c5c":"#c05040")+";'>"+(isPaid?"✅ Paid":"❌ Unpaid")+"</span>";
+      h += "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:13px;padding:7px 12px;' onclick='markPaymentStatus(\""+(isPaid?"unpaid":"paid")+"\")'>Mark as "+(isPaid?"Unpaid":"Paid")+"</button>";
+      h += "</div>";
+      h += "<div class='admin-card' style='background:var(--inp);margin-bottom:1rem;'>";
+      h += "<p style='font-size:13px;font-weight:600;margin-bottom:8px;'>+ Log a Payment</p>";
+      h += "<div class='form-row'><span class='form-label'>Amount</span><input class='form-input' id='pay-amount' type='text' placeholder='e.g. 50 or $50' /></div>";
+      h += "<div class='form-row'><span class='form-label'>Date</span><input class='form-input' id='pay-date' type='date' /></div>";
+      h += "<div class='form-row'><span class='form-label'>Note (optional)</span><input class='form-input' id='pay-note' type='text' placeholder='e.g. July - 4 weeks' /></div>";
+      h += "<button class='action-btn' style='margin-top:8px;' onclick='logPayment()'>Log Payment</button>";
+      h += "</div>";
+      h += "<p style='font-size:13px;font-weight:600;margin-bottom:8px;'>Payment History</p>";
+      if(!history.length){
+        h += "<p style='color:var(--sub);font-size:13px;'>No payments logged yet.</p>";
+      } else {
+        history.forEach(function(p){
+          var d = p.date || new Date(p.ts).toLocaleDateString();
+          h += "<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border);'>";
+          h += "<div><strong style='font-size:14px;color:var(--text);'>"+ex(p.amount||"")+"</strong> <span style='font-size:12px;color:var(--sub);'>· "+ex(d)+"</span>"+(p.note?"<br/><span style='font-size:12px;color:var(--sub);'>"+ex(p.note)+"</span>":"")+"</div>";
+          h += "<button class='del-btn' onclick='deletePaymentEntry(\""+p._key+"\")'>✕</button>";
+          h += "</div>";
+        });
+      }
+      el.innerHTML = h;
+      var dateInput = document.getElementById("pay-date");
+      if(dateInput) dateInput.value = new Date().toISOString().slice(0,10);
+    });
+  });
+}
+
+function markPaymentStatus(status){
+  if(!DB||!currentClientKey) return;
+  DB.ref("codes/"+currentClientKey).update({paymentStatus:status}, function(e){
+    if(!e) loadClientPayments();
+  });
+}
+
+function logPayment(){
+  if(!DB||!currentClientKey) return;
+  var amount = document.getElementById("pay-amount").value.trim();
+  var date = document.getElementById("pay-date").value;
+  var note = document.getElementById("pay-note").value.trim();
+  if(!amount){ alert("Please enter an amount."); return; }
+  DB.ref("payments/"+currentClientKey).push({
+    amount: amount, date: date, note: note, ts: Date.now()
+  }, function(e){
+    if(!e){
+      // Logging a payment marks the client as paid — the common case
+      DB.ref("codes/"+currentClientKey).update({paymentStatus:"paid"}, function(){
+        loadClientPayments();
+      });
+    }
+  });
+}
+
+function deletePaymentEntry(entryKey){
+  if(!DB||!currentClientKey) return;
+  if(!confirm("Delete this payment record? This can't be undone.")) return;
+  DB.ref("payments/"+currentClientKey+"/"+entryKey).remove(function(e){
+    if(!e) loadClientPayments();
   });
 }
 
@@ -3342,7 +3424,7 @@ function openClientProfile(name){
 }
 
 function cpTab(name, btn){
-  ["checkins","msgs","progress","forms"].forEach(function(t){ document.getElementById("cp-"+t).style.display="none"; });
+  ["checkins","msgs","progress","forms","payments"].forEach(function(t){ document.getElementById("cp-"+t).style.display="none"; });
   document.querySelectorAll("[id^='cp-tab']").forEach(function(b){ b.classList.remove("on"); });
   document.getElementById("cp-"+name).style.display="block";
   btn.classList.add("on");
@@ -3350,6 +3432,7 @@ function cpTab(name, btn){
   if(name==="msgs") loadClientMsgs();
   if(name==="progress") loadClientProgress();
   if(name==="forms") loadClientForms();
+  if(name==="payments") loadClientPayments();
 }
 
 function loadClientCheckins(){
