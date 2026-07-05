@@ -573,6 +573,24 @@ try {
   loadPrograms();
 } catch(e){ loadFallbackPrograms(); }
 
+// Submitting all 3 forms back-to-back can fire 3 database writes in rapid
+// succession, and the last one has occasionally failed to save silently.
+// This retries a failed write automatically before giving up, and reuses
+// one shared database connection instead of opening a fresh one per form.
+function saveFormWithRetry(key, payload, attemptsLeft, label){
+  if(attemptsLeft === undefined) attemptsLeft = 3;
+  fbDB.ref("client_forms/"+key).push(payload, function(error){
+    if(error){
+      console.error(label+" save failed (attempt "+(4-attemptsLeft)+"):", error);
+      if(attemptsLeft > 1){
+        setTimeout(function(){ saveFormWithRetry(key, payload, attemptsLeft-1, label); }, 1200);
+      } else {
+        console.error(label+" save FAILED after 3 attempts. Data was NOT saved to Firebase:", payload);
+      }
+    }
+  });
+}
+
 function loadPrograms(){
   fbDB.ref("programs").once("value", function(snap){
     var opts=[];
@@ -656,14 +674,11 @@ function submitIntake(){
   btn.disabled=true; btn.textContent="Sending...";
 
   // Save to Firebase FIRST — the client's data should never be lost even if email fails
-  var fbForms = firebase.database(fbApp);
   var cname = clientFormKey(fname+" "+lname);
-  fbForms.ref("client_forms/"+cname).push({
+  saveFormWithRetry(cname, {
     formType:"Intake Form", ts:Date.now(),
     data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,TrialRequested:(trialRequested?"Yes":"No"),FundamentalsClassRequested:(fundamentalsRequested?"Yes":"No"),Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None"}
-  }, function(error){
-    if(error) console.error("Intake form failed to save to Firebase:", error);
-  });
+  }, 3, "Intake Form");
 
   // Show success immediately — the data is safely saved regardless of email outcome
   document.getElementById("ok-intake").style.display="block";
@@ -684,14 +699,11 @@ function submitAgreement(){
   var btn=document.getElementById("btn-agreement");
   btn.disabled=true; btn.textContent="Sending...";
 
-  var fbForms3 = firebase.database(fbApp);
   var cname3 = clientFormKey(name);
-  fbForms3.ref("client_forms/"+cname3).push({
+  saveFormWithRetry(cname3, {
     formType:"Client Agreement", ts:Date.now(),
     data:{Name:name,"Date Signed":date,"Signature":sig,"Agreed":"Yes"}
-  }, function(error){
-    if(error) console.error("Agreement failed to save to Firebase:", error);
-  });
+  }, 3, "Client Agreement");
 
   document.getElementById("ok-agreement").style.display="block";
   btn.style.display="none";
@@ -756,14 +768,11 @@ function submitWaiver(){
     client_email:email
   };
 
-  var fbForms2 = firebase.database(fbApp);
   var cname2 = clientFormKey(name);
-  fbForms2.ref("client_forms/"+cname2).push({
+  saveFormWithRetry(cname2, {
     formType:"Waiver", ts:Date.now(),
     data:{Name:name,DOB:dob,Email:email,Address:address,Phone:phone,"Emergency Contact":ecName+" / "+ecPhone,Signature:sig,"Parent/Guardian":val("w-guardian")||"N/A","Agreed to all 11 sections":"Yes"}
-  }, function(error){
-    if(error) console.error("Waiver failed to save to Firebase:", error);
-  });
+  }, 3, "Waiver");
 
   document.getElementById("ok-waiver").style.display="block";
   btn.style.display="none";
