@@ -859,6 +859,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
           <label for="a-website" style="font-size:13px;color:var(--text);cursor:pointer;">🌐 Show on website (everydaystrongfit.com)</label>
         </div>
         <button class="action-btn" id="add-ann-btn">Post Announcement</button>
+        <button class="action-btn sec" id="cancel-ann-edit-btn" style="display:none;margin-top:8px;" onclick="cancelAnnEdit()">Cancel Edit</button>
       </div>
       <div class="admin-card">
         <h3>Announcements (<span id="ann-count">0</span>)</h3>
@@ -2280,10 +2281,44 @@ function loadAdmAnn(){
   if(!DB) return;
   DB.ref("announcements").on("value",function(snap){
     var cnt=0,h="";
-    if(snap.exists()){ var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.unshift(a); cnt++; }); items.forEach(function(a){ h+="<div class='list-item'><div class='list-item-left'><strong>"+ex(a.title)+"</strong><br/><span style='font-size:11px;color:var(--sub);'>"+ex(a.date)+"</span></div><button class='del-btn' onclick='delAnn(\""+a._k+"\")'>✕</button></div>"; }); }
+    if(snap.exists()){ var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.unshift(a); cnt++; }); items.forEach(function(a){ h+="<div class='list-item'><div class='list-item-left'><strong>"+ex(a.title)+"</strong><br/><span style='font-size:11px;color:var(--sub);'>"+ex(a.date)+"</span></div><div style='display:flex;gap:6px;'><button class='edit-btn' onclick='editAnn(\""+a._k+"\")'>✏️</button><button class='del-btn' onclick='delAnn(\""+a._k+"\")'>✕</button></div></div>"; }); }
     document.getElementById("ann-count").textContent=cnt;
     document.getElementById("ann-list").innerHTML=h||"<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No announcements.</p>";
   });
+}
+
+var editingAnnKey = null;
+
+function editAnn(key){
+  if(!DB) return;
+  DB.ref("announcements/"+key).once("value", function(snap){
+    var a = snap.val();
+    if(!a) return;
+    editingAnnKey = key;
+    document.getElementById("a-type").value = a.type || "general";
+    document.getElementById("a-title").value = a.title || "";
+    document.getElementById("a-body").value = a.body || "";
+    document.getElementById("a-audience").value = (a.audience==="FULL") ? "FULL" : "ALL";
+    document.getElementById("a-program").value = a.program || "";
+    document.getElementById("a-pin").checked = !!a.pinned;
+    document.getElementById("a-website").checked = !!a.showOnWeb;
+    document.getElementById("add-ann-btn").textContent = "Save Changes";
+    document.getElementById("cancel-ann-edit-btn").style.display = "block";
+    document.getElementById("a-title").scrollIntoView({behavior:"smooth", block:"start"});
+  });
+}
+
+function cancelAnnEdit(){
+  editingAnnKey = null;
+  document.getElementById("a-title").value="";
+  document.getElementById("a-body").value="";
+  document.getElementById("a-program").value="";
+  document.getElementById("a-audience").value="ALL";
+  document.getElementById("a-pin").checked=false;
+  document.getElementById("a-website").checked=false;
+  document.getElementById("a-type").value="zoom";
+  document.getElementById("add-ann-btn").textContent = "Post Announcement";
+  document.getElementById("cancel-ann-edit-btn").style.display = "none";
 }
 
 function addAnn(){
@@ -2295,8 +2330,25 @@ function addAnn(){
   var pinned=document.getElementById("a-pin").checked;
   if(!t||!b){ alert("Please enter a title and message."); return; }
   if(!DB) return;
-  var d=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
   var showOnWeb=document.getElementById("a-website").checked;
+
+  if(editingAnnKey){
+    DB.ref("announcements/"+editingAnnKey).update({
+      type:tp, title:t, body:b,
+      audience: prog ? "PROGRAM" : aud,
+      program: prog || null,
+      pinned: pinned || false,
+      showOnWeb: showOnWeb || false
+    }, function(e){
+      if(!e){
+        showOk("ok-ann","Announcement updated!");
+        cancelAnnEdit();
+      }
+    });
+    return;
+  }
+
+  var d=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
   DB.ref("announcements").push({
     type:tp, title:t, body:b, date:d, ts:Date.now(),
     audience: prog ? "PROGRAM" : aud,
