@@ -1191,6 +1191,18 @@ function ex(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").repl
 function showOk(id,msg){ var e=document.getElementById(id); if(msg) e.textContent=msg; e.style.display="block"; setTimeout(function(){ e.style.display="none"; },3000); }
 function getYTId(u){ var m=String(u).match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/); return m?m[1]:null; }
 function sk(s){ var r="",str=String(s).trim().replace(/\s+/g," ").toLowerCase(); for(var i=0;i<str.length;i++){ var c=str[i]; r+=(c==="."||c==="#"||c==="$"||c==="["||c==="]"||c==="/")?"_":c; } return r; }
+// Single source of truth for "can this client currently log in / should they
+// count as active / should they receive messages, etc." Covers: paused,
+// expired trial, and expired custom date. Anything that needs to know if a
+// client's access is currently blocked should use this instead of
+// re-deriving the same boolean logic separately (which drifted out of sync
+// before — e.g. bulk messaging didn't know about custom expiration dates).
+function isClientBlocked(cd){
+  if(cd.inactive) return true;
+  if(cd.trial && cd.expiresAt && Date.now()>cd.expiresAt) return true;
+  if(cd.customExpiresAt && Date.now()>cd.customExpiresAt) return true;
+  return false;
+}
 function isNew(ts){ return ts && (Date.now()-ts) < 7*24*60*60*1000; }
 
 function canAccess(tag){
@@ -1899,16 +1911,33 @@ function renderCategorySettingsList(categoryNames){
   if(!categoryNames.length){ el.innerHTML = "<p class='tip'>Add some videos with categories first.</p>"; return; }
   DB.ref("category_settings").once("value", function(snap){
     var settings = snap.exists() ? snap.val() : {};
+    // Match by name across ALL saved entries (not just the current key format)
+    // so this can't show stale/wrong state if a category was set standalone
+    // before a key-format change — the checkbox always reflects reality.
     el.innerHTML = categoryNames.map(function(cat){
-      var checked = settings[sk(cat)] && settings[sk(cat)].standalone ? "checked" : "";
-      return "<label class='program-check-item'><input type='checkbox' "+checked+" onchange='toggleCategoryStandalone(\""+ex(cat).replace(/"/g,"&quot;")+"\", this.checked)' /> "+ex(cat)+"</label>";
+      var isChecked = Object.keys(settings).some(function(k){
+        return settings[k] && settings[k].standalone && settings[k].name===cat;
+      });
+      return "<label class='program-check-item'><input type='checkbox' "+(isChecked?"checked":"")+" onchange='toggleCategoryStandalone(\""+ex(cat).replace(/"/g,"&quot;")+"\", this.checked)' /> "+ex(cat)+"</label>";
     }).join("");
   });
 }
 
 function toggleCategoryStandalone(catName, isStandalone){
   if(!DB) return;
-  DB.ref("category_settings/"+sk(catName)).set(isStandalone ? {standalone:true, name:catName} : null);
+  // Clean up ANY existing entries for this name (regardless of what key
+  // format they were saved under previously) before writing the new one,
+  // so toggling off always fully takes effect and toggling on never leaves
+  // duplicate stale entries behind.
+  DB.ref("category_settings").once("value", function(snap){
+    var settings = snap.exists() ? snap.val() : {};
+    var updates = {};
+    Object.keys(settings).forEach(function(k){
+      if(settings[k] && settings[k].name===catName) updates[k] = null;
+    });
+    updates[sk(catName)] = isStandalone ? {standalone:true, name:catName} : null;
+    DB.ref("category_settings").update(updates);
+  });
 }
 
 function handleTagSelect(){
@@ -2879,7 +2908,7 @@ function loadDashboard(){
     var total=0, active=0, trial=0;
     if(snap.exists()) snap.forEach(function(c){
       var cd=c.val(); total++;
-      if(!cd.inactive && !(cd.trial && cd.expiresAt && Date.now()>cd.expiresAt)) active++;
+      if(!isClientBlocked(cd)) active++;
       if(cd.trial && cd.expiresAt && Date.now()<=cd.expiresAt) trial++;
     });
     // Count videos
@@ -3554,7 +3583,7 @@ function loadAttendanceClients(){
     if(!snap.exists()) return;
     snap.forEach(function(c){
       var cd=c.val();
-      if(cd.inactive||(cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt)) return;
+      if(isClientBlocked(cd)) return;
       var row=document.createElement("label");
       row.style.cssText="display:flex;align-items:center;gap:8px;padding:8px;background:var(--inp);border-radius:8px;cursor:pointer;font-size:14px;color:var(--text);";
       var cb=document.createElement("input");
@@ -3611,8 +3640,7 @@ function sendBulkMessage(){
     var count=0;
     snap.forEach(function(c){
       var cd=c.val();
-      var expired=cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt;
-      if(cd.inactive||expired) return;
+      if(isClientBlocked(cd)) return;
       if(aud==="trial"&&!cd.trial) return;
       if(aud==="full"&&cd.trial) return;
       DB.ref("messages/"+sk(cd.name)).push({
