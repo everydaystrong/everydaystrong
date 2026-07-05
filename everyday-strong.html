@@ -3134,12 +3134,27 @@ function renderClientList(){
     if(cd.customExpiresAt&&!customExpired) badges+=" <span style='background:#4a6a9c;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>Expires "+new Date(cd.customExpiresAt).toLocaleDateString()+"</span>";
     if(!cd._archived&&isUnpaid) badges+=" <span style='background:#c9a227;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>💰 UNPAID</span>";
     if(!inactive&&!expired&&!cd.trial&&!cd._archived) badges+=" <span style='background:#4a7c5c;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>ACTIVE</span>";
-    var rightSide = cd._archived
-      ? "<div style='display:flex;gap:6px;'><button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;' onclick='event.stopPropagation();restoreClient(\""+cd._key+"\")'>↩️ Restore</button>"+
-        "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;color:#c05040;border-color:#c05040;' onclick='event.stopPropagation();deleteArchivedClientForever(\""+cd._key+"\",\""+ex(cd.name).replace(/"/g,"&quot;")+"\")'>🗑️ Delete</button></div>"
-      : "<span style='color:var(--accent);font-size:13px;'>View →</span>";
+    var isBroken = !cd.name || cd.name==="undefined";
+    if(isBroken && !cd._archived) crow.onclick=null;
+    var rightSide;
+    if(cd._archived){
+      rightSide = "<div style='display:flex;gap:6px;'><button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;' onclick='event.stopPropagation();restoreClient(\""+cd._key+"\")'>↩️ Restore</button>"+
+        "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;color:#c05040;border-color:#c05040;' onclick='event.stopPropagation();deleteArchivedClientForever(\""+cd._key+"\",\""+ex(cd.name).replace(/"/g,"&quot;")+"\")'>🗑️ Delete</button></div>";
+    } else if(isBroken){
+      rightSide = "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;color:#c05040;border-color:#c05040;' onclick='event.stopPropagation();quickDeleteClient(\""+cd._key+"\")'>🗑️ Remove broken entry</button>";
+    } else {
+      rightSide = "<span style='color:var(--accent);font-size:13px;'>View →</span>";
+    }
     crow.innerHTML="<div><strong style='font-size:14px;color:var(--text);'>"+ex(cd.name)+"</strong>"+badges+"<br/><span style='font-family:monospace;font-size:12px;color:var(--sub);'>"+ex(cd.code)+"</span></div>"+rightSide;
     el.appendChild(crow);
+  });
+}
+
+function quickDeleteClient(key){
+  if(!DB || !key) return;
+  if(!confirm("Permanently remove this broken client entry? This can't be undone.")) return;
+  DB.ref("codes/"+key).remove(function(e){
+    if(!e) loadClients();
   });
 }
 
@@ -4236,6 +4251,6 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-dashboard-unpaid</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-quick-delete-broken</p>
 </body>
 </html>
