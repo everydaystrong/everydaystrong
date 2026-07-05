@@ -3007,7 +3007,8 @@ function renderClientList(){
     if(cd.customExpiresAt&&!customExpired) badges+=" <span style='background:#4a6a9c;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>Expires "+new Date(cd.customExpiresAt).toLocaleDateString()+"</span>";
     if(!inactive&&!expired&&!cd.trial&&!cd._archived) badges+=" <span style='background:#4a7c5c;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>ACTIVE</span>";
     var rightSide = cd._archived
-      ? "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;' onclick='event.stopPropagation();restoreClient(\""+cd._key+"\")'>↩️ Restore</button>"
+      ? "<div style='display:flex;gap:6px;'><button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;' onclick='event.stopPropagation();restoreClient(\""+cd._key+"\")'>↩️ Restore</button>"+
+        "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;color:#c05040;border-color:#c05040;' onclick='event.stopPropagation();deleteArchivedClientForever(\""+cd._key+"\",\""+ex(cd.name).replace(/"/g,"&quot;")+"\")'>🗑️ Delete</button></div>"
       : "<span style='color:var(--accent);font-size:13px;'>View →</span>";
     crow.innerHTML="<div><strong style='font-size:14px;color:var(--text);'>"+ex(cd.name)+"</strong>"+badges+"<br/><span style='font-family:monospace;font-size:12px;color:var(--sub);'>"+ex(cd.code)+"</span></div>"+rightSide;
     el.appendChild(crow);
@@ -3023,6 +3024,13 @@ function restoreClient(archivedKey){
     DB.ref("codes/"+archivedKey).set(cd,function(e){
       if(!e){ DB.ref("archived_codes/"+archivedKey).remove(); loadClients(); }
     });
+  });
+}
+
+function deleteArchivedClientForever(archivedKey, name){
+  if(!confirm("Permanently delete "+name+"? This removes their archived access code for good. Their check-ins, messages, and form submissions are NOT affected — only this archived code entry.")) return;
+  DB.ref("archived_codes/"+archivedKey).remove(function(e){
+    if(!e) loadClients();
   });
 }
 

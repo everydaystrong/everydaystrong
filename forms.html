@@ -574,21 +574,32 @@ try {
 } catch(e){ loadFallbackPrograms(); }
 
 // Submitting all 3 forms back-to-back can fire 3 database writes in rapid
-// succession, and the last one has occasionally failed to save silently.
-// This retries a failed write automatically before giving up, and reuses
-// one shared database connection instead of opening a fresh one per form.
+// succession. This retries a failed write automatically before giving up.
+// IMPORTANT: creates its own fresh database() reference on every call/retry
+// (rather than reusing one shared instance) and wraps it in try/catch — so if
+// anything is transiently wrong with the connection, it can't throw and halt
+// the calling form's success flow; it just logs and retries instead.
 function saveFormWithRetry(key, payload, attemptsLeft, label){
   if(attemptsLeft === undefined) attemptsLeft = 3;
-  fbDB.ref("client_forms/"+key).push(payload, function(error){
-    if(error){
-      console.error(label+" save failed (attempt "+(4-attemptsLeft)+"):", error);
-      if(attemptsLeft > 1){
-        setTimeout(function(){ saveFormWithRetry(key, payload, attemptsLeft-1, label); }, 1200);
-      } else {
-        console.error(label+" save FAILED after 3 attempts. Data was NOT saved to Firebase:", payload);
+  try {
+    firebase.database(fbApp).ref("client_forms/"+key).push(payload, function(error){
+      if(error){
+        console.error(label+" save failed (attempt "+(4-attemptsLeft)+"):", error);
+        if(attemptsLeft > 1){
+          setTimeout(function(){ saveFormWithRetry(key, payload, attemptsLeft-1, label); }, 1200);
+        } else {
+          console.error(label+" save FAILED after 3 attempts. Data was NOT saved to Firebase:", payload);
+        }
       }
+    });
+  } catch(e){
+    console.error(label+" threw a synchronous error while saving:", e);
+    if(attemptsLeft > 1){
+      setTimeout(function(){ saveFormWithRetry(key, payload, attemptsLeft-1, label); }, 1200);
+    } else {
+      console.error(label+" save FAILED after 3 attempts. Data was NOT saved to Firebase:", payload);
     }
-  });
+  }
 }
 
 function loadPrograms(){
