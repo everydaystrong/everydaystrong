@@ -327,6 +327,11 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <input type="checkbox" id="ec-trial" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
       <label for="ec-trial" style="font-size:13px;color:var(--text);cursor:pointer;">⏱️ 7-day trial — auto-deactivates after 7 days</label>
     </div>
+    <div class="form-row" style="margin-top:10px;">
+      <span class="form-label">Expiration Date (optional)</span>
+      <input type="date" class="form-input" id="ec-expdate" />
+      <p class="tip" style="margin-top:4px;">Access is blocked the day after this date. Clear it or push it forward anytime to extend.</p>
+    </div>
     <button class="action-btn" onclick="saveCodeEdit()" style="width:100%;margin-top:10px;">Save Changes</button>
     <button class="action-btn sec" id="ec-pause-btn" onclick="togglePauseEditingClient()" style="width:100%;margin-top:8px;">⏸️ Pause Access</button>
     <button class="action-btn sec" onclick="deleteEditingClient()" style="width:100%;margin-top:8px;color:#c05040;border-color:#c05040;">🗄️ Archive Client</button>
@@ -770,6 +775,11 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
           <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;margin-top:4px;">
             <input type="checkbox" id="c-trial" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
             <label for="c-trial" style="font-size:13px;color:var(--text);cursor:pointer;">⏱️ 7-day trial — auto-deactivates after 7 days</label>
+          </div>
+          <div class="form-row" style="margin-top:10px;">
+            <span class="form-label">Expiration Date (optional)</span>
+            <input type="date" class="form-input" id="c-expdate" />
+            <p class="tip" style="margin-top:4px;">For anything with a set end date — e.g. a 4-week community center program. Access is blocked the day after this date until you update or clear it.</p>
           </div>
           <button class="action-btn" id="add-code-btn" style="margin-top:10px;">Create Code</button>
         </div>
@@ -1281,6 +1291,22 @@ function doLogin(){
     if(snap.exists()){
       var found=null; var fkey=null;
       snap.forEach(function(c){ found=c.val(); fkey=c.key; });
+      if(found.inactive){
+        err.style.display="block"; err.textContent="Your access has been paused. Please contact your instructor.";
+        document.getElementById("code-in").select();
+        return;
+      }
+      if(found.trial && found.expiresAt && Date.now()>found.expiresAt){
+        err.style.display="block"; err.textContent="Your free trial has ended. Please contact your instructor to continue.";
+        document.getElementById("code-in").select();
+        return;
+      }
+      if(found.customExpiresAt && Date.now()>found.customExpiresAt){
+        var expDate = new Date(found.customExpiresAt).toLocaleDateString();
+        err.style.display="block"; err.textContent="Your access expired on "+expDate+". Please contact your instructor to renew.";
+        document.getElementById("code-in").select();
+        return;
+      }
       currentUser=found.name;
       currentUserKey=sk(found.name);
       if(!found.access||found.access==="ALL"){ currentAccess="ALL"; }
@@ -1711,6 +1737,7 @@ function editCode(key){
     document.getElementById("ec-name").value = cd.name||"";
     document.getElementById("ec-code").value = cd.code||"";
     document.getElementById("ec-trial").checked = !!cd.trial;
+    document.getElementById("ec-expdate").value = cd.customExpiresAt ? new Date(cd.customExpiresAt).toISOString().slice(0,10) : "";
     var isAll = cd.access==="ALL" || !cd.access;
     document.getElementById("ec-access-type").value = isAll ? "ALL" : "PROGRAMS";
     document.getElementById("ec-program-picker").style.display = isAll ? "none" : "block";
@@ -1777,10 +1804,12 @@ function saveCodeEdit(){
   }
   if(!n || !c){ alert("Please enter a name and code."); return; }
   var isTrial = document.getElementById("ec-trial").checked;
+  var expDateVal = document.getElementById("ec-expdate").value;
+  var customExpiresAt = expDateVal ? new Date(expDateVal+"T23:59:59").getTime() : null;
   DB.ref("codes/"+editingCodeKey).once("value", function(snap){
     var existing = snap.val() || {};
     var expiresAt = isTrial ? (existing.expiresAt || (Date.now()+7*24*60*60*1000)) : null;
-    DB.ref("codes/"+editingCodeKey).update({name:n, code:c, access:access, trial:isTrial, expiresAt:expiresAt}, function(e){
+    DB.ref("codes/"+editingCodeKey).update({name:n, code:c, access:access, trial:isTrial, expiresAt:expiresAt, customExpiresAt:customExpiresAt}, function(e){
       if(!e){ closeEditCode(); }
       else{ alert("Something went wrong saving. Please try again."); }
     });
@@ -2153,9 +2182,13 @@ function addCode(){
   if(!DB){ alert("Database not connected."); return; }
   var isTrial=document.getElementById("c-trial").checked;
   var expiresAt=isTrial?(Date.now()+7*24*60*60*1000):null;
+  var expDateVal=document.getElementById("c-expdate").value;
+  // End of the selected day, in the admin's local time, so "expires" doesn't
+  // cut someone off partway through their last valid day.
+  var customExpiresAt = expDateVal ? new Date(expDateVal+"T23:59:59").getTime() : null;
   DB.ref("codes").orderByChild("code").equalTo(c).once("value",function(snap){
     if(snap.exists()){ alert("That code already exists."); return; }
-    DB.ref("codes").push({name:n,code:c,access:access,trial:isTrial||false,expiresAt:expiresAt,inactive:false},function(e){
+    DB.ref("codes").push({name:n,code:c,access:access,trial:isTrial||false,expiresAt:expiresAt,customExpiresAt:customExpiresAt,inactive:false},function(e){
       if(!e){
         var label=isTrial?" (7-day trial)":"";
         showOk("ok-code","Code for "+n+": "+c+label);
@@ -2163,6 +2196,7 @@ function addCode(){
         document.getElementById("c-code").value="";
         document.getElementById("c-access-type").value="ALL";
         document.getElementById("c-trial").checked=false;
+        document.getElementById("c-expdate").value="";
         document.getElementById("program-picker").style.display="none";
       }
     });
@@ -2942,7 +2976,9 @@ function renderClientList(){
   el.innerHTML = "";
   var items = allClientsData.filter(function(cd){
     var inactive = cd.inactive||false;
-    var expired = cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt;
+    var trialExpired = cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt;
+    var customExpired = cd.customExpiresAt&&Date.now()>cd.customExpiresAt;
+    var expired = trialExpired||customExpired;
     var isTrial = cd.trial&&!expired;
     if(clientFilter==="archived") return cd._archived;
     if(cd._archived) return false;
@@ -2956,7 +2992,9 @@ function renderClientList(){
   if(!items.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No clients in this category.</p>"; return; }
   items.forEach(function(cd){
     var inactive=cd.inactive||false;
-    var expired=cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt;
+    var trialExpired=cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt;
+    var customExpired=cd.customExpiresAt&&Date.now()>cd.customExpiresAt;
+    var expired=trialExpired||customExpired;
     var crow=document.createElement("div");
     crow.style.cssText="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);"+(cd._archived?"":"cursor:pointer;");
     crow.setAttribute("data-cname", cd.name);
@@ -2966,6 +3004,7 @@ function renderClientList(){
     if(inactive) badges+=" <span style='background:#888;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>PAUSED</span>";
     if(cd.trial&&!expired) badges+=" <span style='background:#e8a020;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>TRIAL</span>";
     if(expired) badges+=" <span style='background:#c05040;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>EXPIRED</span>";
+    if(cd.customExpiresAt&&!customExpired) badges+=" <span style='background:#4a6a9c;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>Expires "+new Date(cd.customExpiresAt).toLocaleDateString()+"</span>";
     if(!inactive&&!expired&&!cd.trial&&!cd._archived) badges+=" <span style='background:#4a7c5c;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>ACTIVE</span>";
     var rightSide = cd._archived
       ? "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;' onclick='event.stopPropagation();restoreClient(\""+cd._key+"\")'>↩️ Restore</button>"
