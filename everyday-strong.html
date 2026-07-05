@@ -3202,64 +3202,84 @@ function loadClientForms(){
   });
 }
 
+// codes/ entries use random Firebase push IDs as their key — NOT sk(name) —
+// so any codes/ read or write must first look up the real key by matching
+// name, same pattern editCurrentClientAccess() already uses.
+function resolveClientCodeKey(callback){
+  if(!DB || !currentClientKey || currentClientKey==="undefined"){ callback(null); return; }
+  DB.ref("codes").once("value", function(snap){
+    var foundKey = null;
+    snap.forEach(function(c){
+      if(sk(c.val().name) === currentClientKey) foundKey = c.key;
+    });
+    callback(foundKey);
+  });
+}
+
 function loadClientPayments(){
   if(!DB||!currentClientKey) return;
   var el=document.getElementById("cp-payments");
   el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Loading...</p>";
-  DB.ref("codes/"+currentClientKey).once("value",function(codeSnap){
-    var cd = codeSnap.val() || {};
-    var status = cd.paymentStatus || "unpaid";
-    var isPaid = status === "paid";
-    var isExempt = status === "exempt";
-    DB.ref("payments/"+currentClientKey).once("value",function(paySnap){
-      var history = [];
-      if(paySnap.exists()) paySnap.forEach(function(c){ var v=c.val(); v._key=c.key; history.push(v); });
-      history.sort(function(a,b){ return b.ts-a.ts; });
-      var pillColor = isExempt ? "#7a6a9c" : (isPaid ? "#4a7c5c" : "#c05040");
-      var pillText = isExempt ? "🎁 No Charge" : (isPaid ? "✅ Paid" : "❌ Unpaid");
-      var h = "<div style='display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap;'>";
-      h += "<span style='padding:4px 12px;border-radius:12px;font-size:13px;font-weight:600;color:#fff;background:"+pillColor+";'>"+pillText+"</span>";
-      if(!isExempt){
-        h += "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:13px;padding:7px 12px;' onclick='markPaymentStatus(\""+(isPaid?"unpaid":"paid")+"\")'>Mark as "+(isPaid?"Unpaid":"Paid")+"</button>";
-        h += "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:13px;padding:7px 12px;' onclick='markPaymentStatus(\"exempt\")'>🎁 No Charge</button>";
-      } else {
-        h += "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:13px;padding:7px 12px;' onclick='markPaymentStatus(\"unpaid\")'>Undo — Track Payments Normally</button>";
-      }
-      h += "</div>";
-      if(isExempt){
-        h += "<p class='tip' style='margin-bottom:1rem;'>This client is marked No Charge — they won't show up under the Unpaid filter or badge, and won't be affected by any future payment reminders.</p>";
-      }
-      h += "<div class='admin-card' style='background:var(--inp);margin-bottom:1rem;'>";
-      h += "<p style='font-size:13px;font-weight:600;margin-bottom:8px;'>+ Log a Payment</p>";
-      h += "<div class='form-row'><span class='form-label'>Amount</span><input class='form-input' id='pay-amount' type='text' placeholder='e.g. 50, $50, or 0 for free/promo' /></div>";
-      h += "<div class='form-row'><span class='form-label'>Date</span><input class='form-input' id='pay-date' type='date' /></div>";
-      h += "<div class='form-row'><span class='form-label'>Promo Code (optional)</span><input class='form-input' id='pay-promo' type='text' placeholder='e.g. SUMMER2026' /></div>";
-      h += "<div class='form-row'><span class='form-label'>Note (optional)</span><input class='form-input' id='pay-note' type='text' placeholder='e.g. July - 4 weeks, or first month free' /></div>";
-      h += "<button class='action-btn' style='margin-top:8px;' onclick='logPayment()'>Log Payment</button>";
-      h += "</div>";
-      h += "<p style='font-size:13px;font-weight:600;margin-bottom:8px;'>Payment History</p>";
-      if(!history.length){
-        h += "<p style='color:var(--sub);font-size:13px;'>No payments logged yet.</p>";
-      } else {
-        history.forEach(function(p){
-          var d = p.date || new Date(p.ts).toLocaleDateString();
-          h += "<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border);'>";
-          h += "<div><strong style='font-size:14px;color:var(--text);'>"+ex(p.amount||"")+"</strong> <span style='font-size:12px;color:var(--sub);'>· "+ex(d)+"</span>"+(p.promo?" <span style='background:#c9a227;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>🏷️ "+ex(p.promo)+"</span>":"")+(p.note?"<br/><span style='font-size:12px;color:var(--sub);'>"+ex(p.note)+"</span>":"")+"</div>";
-          h += "<button class='del-btn' onclick='deletePaymentEntry(\""+p._key+"\")'>✕</button>";
-          h += "</div>";
-        });
-      }
-      el.innerHTML = h;
-      var dateInput = document.getElementById("pay-date");
-      if(dateInput) dateInput.value = new Date().toISOString().slice(0,10);
+  resolveClientCodeKey(function(realKey){
+    if(!realKey){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Couldn't find this client's access code.</p>"; return; }
+    DB.ref("codes/"+realKey).once("value",function(codeSnap){
+      var cd = codeSnap.val() || {};
+      var status = cd.paymentStatus || "unpaid";
+      var isPaid = status === "paid";
+      var isExempt = status === "exempt";
+      DB.ref("payments/"+currentClientKey).once("value",function(paySnap){
+        var history = [];
+        if(paySnap.exists()) paySnap.forEach(function(c){ var v=c.val(); v._key=c.key; history.push(v); });
+        history.sort(function(a,b){ return b.ts-a.ts; });
+        var pillColor = isExempt ? "#7a6a9c" : (isPaid ? "#4a7c5c" : "#c05040");
+        var pillText = isExempt ? "🎁 No Charge" : (isPaid ? "✅ Paid" : "❌ Unpaid");
+        var h = "<div style='display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap;'>";
+        h += "<span style='padding:4px 12px;border-radius:12px;font-size:13px;font-weight:600;color:#fff;background:"+pillColor+";'>"+pillText+"</span>";
+        if(!isExempt){
+          h += "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:13px;padding:7px 12px;' onclick='markPaymentStatus(\""+(isPaid?"unpaid":"paid")+"\")'>Mark as "+(isPaid?"Unpaid":"Paid")+"</button>";
+          h += "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:13px;padding:7px 12px;' onclick='markPaymentStatus(\"exempt\")'>🎁 No Charge</button>";
+        } else {
+          h += "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:13px;padding:7px 12px;' onclick='markPaymentStatus(\"unpaid\")'>Undo — Track Payments Normally</button>";
+        }
+        h += "</div>";
+        if(isExempt){
+          h += "<p class='tip' style='margin-bottom:1rem;'>This client is marked No Charge — they won't show up under the Unpaid filter or badge, and won't be affected by any future payment reminders.</p>";
+        }
+        h += "<div class='admin-card' style='background:var(--inp);margin-bottom:1rem;'>";
+        h += "<p style='font-size:13px;font-weight:600;margin-bottom:8px;'>+ Log a Payment</p>";
+        h += "<div class='form-row'><span class='form-label'>Amount</span><input class='form-input' id='pay-amount' type='text' placeholder='e.g. 50, $50, or 0 for free/promo' /></div>";
+        h += "<div class='form-row'><span class='form-label'>Date</span><input class='form-input' id='pay-date' type='date' /></div>";
+        h += "<div class='form-row'><span class='form-label'>Promo Code (optional)</span><input class='form-input' id='pay-promo' type='text' placeholder='e.g. SUMMER2026' /></div>";
+        h += "<div class='form-row'><span class='form-label'>Note (optional)</span><input class='form-input' id='pay-note' type='text' placeholder='e.g. July - 4 weeks, or first month free' /></div>";
+        h += "<button class='action-btn' style='margin-top:8px;' onclick='logPayment()'>Log Payment</button>";
+        h += "</div>";
+        h += "<p style='font-size:13px;font-weight:600;margin-bottom:8px;'>Payment History</p>";
+        if(!history.length){
+          h += "<p style='color:var(--sub);font-size:13px;'>No payments logged yet.</p>";
+        } else {
+          history.forEach(function(p){
+            var d = p.date || new Date(p.ts).toLocaleDateString();
+            h += "<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border);'>";
+            h += "<div><strong style='font-size:14px;color:var(--text);'>"+ex(p.amount||"")+"</strong> <span style='font-size:12px;color:var(--sub);'>· "+ex(d)+"</span>"+(p.promo?" <span style='background:#c9a227;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>🏷️ "+ex(p.promo)+"</span>":"")+(p.note?"<br/><span style='font-size:12px;color:var(--sub);'>"+ex(p.note)+"</span>":"")+"</div>";
+            h += "<button class='del-btn' onclick='deletePaymentEntry(\""+p._key+"\")'>✕</button>";
+            h += "</div>";
+          });
+        }
+        el.innerHTML = h;
+        var dateInput = document.getElementById("pay-date");
+        if(dateInput) dateInput.value = new Date().toISOString().slice(0,10);
+      });
     });
   });
 }
 
 function markPaymentStatus(status){
   if(!DB||!currentClientKey||currentClientKey==="undefined"){ alert("Couldn't find this client — please close and reopen their profile, then try again."); return; }
-  DB.ref("codes/"+currentClientKey).update({paymentStatus:status}, function(e){
-    if(!e) loadClientPayments();
+  resolveClientCodeKey(function(realKey){
+    if(!realKey){ alert("Couldn't find this client's access code — nothing was changed."); return; }
+    DB.ref("codes/"+realKey).update({paymentStatus:status}, function(e){
+      if(!e) loadClientPayments();
+    });
   });
 }
 
@@ -3270,15 +3290,18 @@ function logPayment(){
   var promo = document.getElementById("pay-promo").value.trim();
   var note = document.getElementById("pay-note").value.trim();
   if(!amount){ alert("Please enter an amount."); return; }
-  DB.ref("payments/"+currentClientKey).push({
-    amount: amount, date: date, promo: promo, note: note, ts: Date.now()
-  }, function(e){
-    if(!e){
-      // Logging a payment marks the client as paid — the common case
-      DB.ref("codes/"+currentClientKey).update({paymentStatus:"paid"}, function(){
-        loadClientPayments();
-      });
-    }
+  resolveClientCodeKey(function(realKey){
+    if(!realKey){ alert("Couldn't find this client's access code — payment was not logged."); return; }
+    DB.ref("payments/"+currentClientKey).push({
+      amount: amount, date: date, promo: promo, note: note, ts: Date.now()
+    }, function(e){
+      if(!e){
+        // Logging a payment marks the client as paid — the common case
+        DB.ref("codes/"+realKey).update({paymentStatus:"paid"}, function(){
+          loadClientPayments();
+        });
+      }
+    });
   });
 }
 
@@ -4251,6 +4274,6 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-quick-delete-broken</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-payments-real-key-fix</p>
 </body>
 </html>
