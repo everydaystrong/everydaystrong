@@ -481,6 +481,7 @@ nav{background:#fff;border-bottom:1px solid #e8ddd2;padding:0.9rem 2rem;display:
       <h3>All Forms Complete! 🎉</h3>
       <p>You are all set! Heather will review your forms and be in touch shortly with next steps. We can't wait to get you started on your Everyday Strong journey!</p>
       <p style="margin-top:0.8rem;font-size:13px;color:#5a7a5a;">Questions? Email us at <a href="mailto:Everydaystrongteam@gmail.com" style="color:#1a7a4a;">Everydaystrongteam@gmail.com</a></p>
+      <div id="save-diag" style="display:none;margin-top:1rem;padding:12px;background:#fdf3f0;border:1px solid #e0b0a0;border-radius:8px;font-size:12px;color:#8a3020;font-family:monospace;white-space:pre-wrap;text-align:left;"></div>
     </div>
     <button class="submit-btn" id="btn-waiver" onclick="submitWaiver()">Submit Waiver & Complete Enrollment</button>
   </div>
@@ -589,6 +590,7 @@ function saveFormWithRetry(key, payload, attemptsLeft, label){
           setTimeout(function(){ saveFormWithRetry(key, payload, attemptsLeft-1, label); }, 1200);
         } else {
           console.error(label+" save FAILED after 3 attempts. Data was NOT saved to Firebase:", payload);
+          showSaveDiag(label, error.message||error.code||JSON.stringify(error), payload);
         }
       }
     });
@@ -598,8 +600,17 @@ function saveFormWithRetry(key, payload, attemptsLeft, label){
       setTimeout(function(){ saveFormWithRetry(key, payload, attemptsLeft-1, label); }, 1200);
     } else {
       console.error(label+" save FAILED after 3 attempts. Data was NOT saved to Firebase:", payload);
+      showSaveDiag(label, e.message||JSON.stringify(e), payload);
     }
   }
+}
+
+function showSaveDiag(label, errorText, payload){
+  var diag = document.getElementById("save-diag");
+  if(!diag) return;
+  diag.style.display = "block";
+  diag.textContent = "["+label+"] Save failed after 3 attempts.\nError: "+errorText+
+    "\n\nPlease screenshot this and send it — your info below is safe, just not saved to the server yet:\n"+JSON.stringify(payload.data);
 }
 
 function loadPrograms(){
@@ -803,5 +814,6 @@ function submitWaiver(){
     });
 }
 </script>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-waiver-diag-v2</p>
 </body>
 </html>
