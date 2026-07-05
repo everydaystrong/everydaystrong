@@ -793,7 +793,7 @@ function submitWaiver(){
   var cname2 = clientFormKey(name);
   saveFormWithRetry(cname2, {
     formType:"Waiver", ts:Date.now(),
-    data:{Name:name,DOB:dob,Email:email,Address:address,Phone:phone,"Emergency Contact":ecName+" / "+ecPhone,Signature:sig,"Parent/Guardian":val("w-guardian")||"N/A","Agreed to all 11 sections":"Yes"}
+    data:{Name:name,DOB:dob,Email:email,Address:address,Phone:phone,"Emergency Contact":ecName+" / "+ecPhone,Signature:sig,"Parent or Guardian":val("w-guardian")||"N/A","Agreed to all 11 sections":"Yes"}
   }, 3, "Waiver");
 
   document.getElementById("ok-waiver").style.display="block";
@@ -814,6 +814,6 @@ function submitWaiver(){
     });
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-waiver-diag-v2</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-waiver-fixed</p>
 </body>
 </html>
