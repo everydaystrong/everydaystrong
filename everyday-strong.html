@@ -848,7 +848,9 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
             <option value="FULL">Full Members Only</option>
           </select>
           <span style="font-size:11px;color:var(--sub);margin-top:4px;">Or target a specific program:</span>
-          <input class="form-input" id="a-program" placeholder="e.g. Live Classes, Bodyweight Program (leave blank for above)" style="text-transform:none;margin-top:6px;" />
+          <select class="form-select" id="a-program" style="margin-top:6px;">
+            <option value="">-- Everyone / Full Members Only (above) --</option>
+          </select>
         </div>
         <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">
           <input type="checkbox" id="a-pin" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
@@ -1906,6 +1908,18 @@ function populateProgramDatalist(){
     renderFocusChips("v");
     renderFocusChips("edit");
     renderCategorySettingsList(Object.keys(cats).sort());
+
+    var annSel = document.getElementById("a-program");
+    if(annSel){
+      var prevVal = annSel.value;
+      annSel.innerHTML = '<option value="">-- Everyone / Full Members Only (above) --</option>';
+      Object.keys(cats).sort().forEach(function(cat){
+        var opt = document.createElement("option");
+        opt.value = cat; opt.textContent = cat;
+        annSel.appendChild(opt);
+      });
+      annSel.value = prevVal || "";
+    }
   });
 }
 
@@ -4195,6 +4209,6 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-waiver-diag-v2</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-ann-program-dropdown</p>
 </body>
 </html>
