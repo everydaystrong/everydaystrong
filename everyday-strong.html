@@ -679,6 +679,10 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         <div id="dash-trials"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
       </div>
       <div class="admin-card">
+        <h3>💰 Unpaid Clients</h3>
+        <div id="dash-unpaid"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+      <div class="admin-card">
         <h3>📋 New Check ins This Week</h3>
         <div id="dash-checkins"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
       </div>
@@ -1706,7 +1710,7 @@ function loadAnnouncements(){
 function doAdmin(){
   var p=prompt("Instructor password:");
   if(p===null) return;
-  if(p===adminPass){ loadDashboard(); loadTrialTracker(); loadAdmVideos(); populateProgramDatalist(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); sp("pg-admin"); }
+  if(p===adminPass){ loadDashboard(); loadTrialTracker(); loadUnpaidDashboard(); loadAdmVideos(); populateProgramDatalist(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); sp("pg-admin"); }
   else alert("Incorrect password. Please try again.");
 }
 
@@ -2966,6 +2970,28 @@ function loadTrialTracker(){
   });
 }
 
+function loadUnpaidDashboard(){
+  if(!DB) return;
+  DB.ref("codes").on("value", function(snap){
+    var el = document.getElementById("dash-unpaid");
+    if(!el) return;
+    var unpaid = [];
+    if(snap.exists()) snap.forEach(function(c){
+      var cd = c.val();
+      var status = cd.paymentStatus || "unpaid";
+      if(status === "unpaid") unpaid.push({name:cd.name, code:cd.code, key:c.key});
+    });
+    if(!unpaid.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Everyone's paid up! 🎉</p>"; return; }
+    unpaid.sort(function(a,b){ return (a.name||"").localeCompare(b.name||""); });
+    el.innerHTML = unpaid.map(function(u){
+      return "<div style='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;' onclick='openClientProfile(\""+ex(u.name).replace(/"/g,"&quot;")+"\")'>"+
+        "<div><strong style='font-size:14px;color:var(--text);'>"+ex(u.name)+"</strong><br/><span style='font-family:monospace;font-size:11px;color:var(--sub);'>"+ex(u.code)+"</span></div>"+
+        "<span style='background:#c05040;color:#fff;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600;white-space:nowrap;'>Unpaid</span>"+
+        "</div>";
+    }).join("");
+  });
+}
+
 // DASHBOARD
 function loadDashboard(){
   if(!DB) return;
@@ -3216,14 +3242,14 @@ function loadClientPayments(){
 }
 
 function markPaymentStatus(status){
-  if(!DB||!currentClientKey) return;
+  if(!DB||!currentClientKey||currentClientKey==="undefined"){ alert("Couldn't find this client — please close and reopen their profile, then try again."); return; }
   DB.ref("codes/"+currentClientKey).update({paymentStatus:status}, function(e){
     if(!e) loadClientPayments();
   });
 }
 
 function logPayment(){
-  if(!DB||!currentClientKey) return;
+  if(!DB||!currentClientKey||currentClientKey==="undefined"){ alert("Couldn't find this client — please close and reopen their profile, then try again."); return; }
   var amount = document.getElementById("pay-amount").value.trim();
   var date = document.getElementById("pay-date").value;
   var promo = document.getElementById("pay-promo").value.trim();
@@ -3242,7 +3268,7 @@ function logPayment(){
 }
 
 function deletePaymentEntry(entryKey){
-  if(!DB||!currentClientKey) return;
+  if(!DB||!currentClientKey||currentClientKey==="undefined"){ alert("Couldn't find this client — please close and reopen their profile, then try again."); return; }
   if(!confirm("Delete this payment record? This can't be undone.")) return;
   DB.ref("payments/"+currentClientKey+"/"+entryKey).remove(function(e){
     if(!e) loadClientPayments();
@@ -3495,6 +3521,7 @@ function loadClients(){
 }
 
 function openClientProfile(name){
+  if(!name || name==="undefined"){ alert("Something went wrong loading this client — please try again from the client list."); return; }
   currentClientKey = sk(name);
   document.getElementById("client-profile-name").textContent = name + "  Profile";
   document.getElementById("client-profile-card").style.display="block";
@@ -4209,6 +4236,6 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-ann-program-dropdown</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-dashboard-unpaid</p>
 </body>
 </html>
