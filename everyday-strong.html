@@ -332,6 +332,10 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <input type="date" class="form-input" id="ec-expdate" />
       <p class="tip" style="margin-top:4px;">Access is blocked the day after this date. Clear it or push it forward anytime to extend.</p>
     </div>
+    <div class="form-row" style="margin-top:10px;">
+      <span class="form-label">Group / Tag (optional)</span>
+      <input class="form-input" id="ec-group" style="text-transform:none;" placeholder="e.g. LO Community" />
+    </div>
     <button class="action-btn" onclick="saveCodeEdit()" style="width:100%;margin-top:10px;">Save Changes</button>
     <button class="action-btn sec" id="ec-pause-btn" onclick="togglePauseEditingClient()" style="width:100%;margin-top:8px;">⏸️ Pause Access</button>
     <button class="action-btn sec" onclick="deleteEditingClient()" style="width:100%;margin-top:8px;color:#c05040;border-color:#c05040;">🗄️ Archive Client</button>
@@ -785,7 +789,16 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
             <input type="date" class="form-input" id="c-expdate" />
             <p class="tip" style="margin-top:4px;">For anything with a set end date — e.g. a 4-week community center program. Access is blocked the day after this date until you update or clear it.</p>
           </div>
+          <div class="form-row" style="margin-top:10px;">
+            <span class="form-label">Group / Tag (optional)</span>
+            <input class="form-input" id="c-group" style="text-transform:none;" placeholder="e.g. LO Community" />
+            <p class="tip" style="margin-top:4px;">For marking clients from a specific partnership or referral group. Shows as a badge and is filterable.</p>
+          </div>
           <button class="action-btn" id="add-code-btn" style="margin-top:10px;">Create Code</button>
+        </div>
+        <div class="form-row" style="margin-bottom:1rem;">
+          <span class="form-label">Filter by Group/Tag</span>
+          <input class="form-input" id="group-filter-input" placeholder="e.g. LO Community" style="text-transform:none;" oninput="renderClientList()" />
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;margin-top:1rem;">
           <button class="comm-cat-btn on" data-filter="all" onclick="filterClients('all',this)">All</button>
@@ -821,6 +834,19 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       </div>
     </div>
     <div class="tab-content" id="atc-submissions">
+      <div class="admin-card">
+        <h3>📷 Add Client from Paper Form</h3>
+        <p class="tip" style="margin-bottom:1rem;">For clients who fill out a paper form instead of your website — take a photo (or several, for multi-page forms) and it'll show up below in New Submissions just like a normal one.</p>
+        <div class="form-row"><span class="form-label">Client Name</span><input class="form-input" id="photo-upload-name" style="text-transform:none;" /></div>
+        <div class="form-row">
+          <span class="form-label">Photo(s) of the form</span>
+          <input type="file" id="photo-upload-files" accept="image/*" capture="environment" multiple style="margin-top:6px;" />
+        </div>
+        <div id="photo-upload-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+        <div class="form-row" style="margin-top:10px;"><span class="form-label">Notes (optional)</span><textarea class="form-textarea" id="photo-upload-notes" placeholder="Anything worth noting — program interest, trial requested, group, etc."></textarea></div>
+        <div class="success-msg" id="ok-photo-upload">Saved!</div>
+        <button class="action-btn" id="photo-upload-btn" onclick="submitPhotoUpload()" style="margin-top:8px;">Save Client Photos</button>
+      </div>
       <div class="admin-card">
         <h3>New Submissions</h3>
         <p class="tip" style="margin-bottom:1rem;">Every intake, agreement, and waiver submitted through your forms page — including from brand new leads who don't have a client code yet.</p>
@@ -869,6 +895,10 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       </div>
       <div class="admin-card">
         <h3>Announcements (<span id="ann-count">0</span>)</h3>
+        <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
+          <button class="comm-cat-btn on" data-annfilter="active" onclick="filterAnnList('active',this)">Active</button>
+          <button class="comm-cat-btn" data-annfilter="archived" onclick="filterAnnList('archived',this)">🗄️ Archived</button>
+        </div>
         <div id="ann-list"></div>
       </div>
     </div>
@@ -1654,6 +1684,7 @@ function renderCompleted(){
 
 // ANNOUNCEMENTS
 function annVisibleToUser(a){
+  if(a.archived) return false;
   // Everyone sees ALL announcements
   if(!a.audience || a.audience==="ALL") return true;
   // Full members only
@@ -1669,8 +1700,10 @@ function annVisibleToUser(a){
 
 function checkNewAnnouncements(){
   if(!DB) return;
-  DB.ref("announcements").orderByChild("ts").limitToLast(1).once("value",function(snap){
-    if(snap.exists()){
+  DB.ref("announcements").orderByChild("ts").limitToLast(10).once("value",function(snap){
+    var hasVisible = false;
+    if(snap.exists()) snap.forEach(function(c){ if(!c.val().archived) hasVisible = true; });
+    if(hasVisible){
       var btn=document.getElementById("pnav-all");
       if(btn && !btn.querySelector(".ann-dot")){
         var dot=document.createElement("span");
@@ -1760,6 +1793,7 @@ function editCode(key){
     document.getElementById("ec-code").value = cd.code||"";
     document.getElementById("ec-trial").checked = !!cd.trial;
     document.getElementById("ec-expdate").value = cd.customExpiresAt ? new Date(cd.customExpiresAt).toISOString().slice(0,10) : "";
+    document.getElementById("ec-group").value = cd.group || "";
     var isAll = cd.access==="ALL" || !cd.access;
     document.getElementById("ec-access-type").value = isAll ? "ALL" : "PROGRAMS";
     document.getElementById("ec-program-picker").style.display = isAll ? "none" : "block";
@@ -1828,10 +1862,11 @@ function saveCodeEdit(){
   var isTrial = document.getElementById("ec-trial").checked;
   var expDateVal = document.getElementById("ec-expdate").value;
   var customExpiresAt = expDateVal ? new Date(expDateVal+"T23:59:59").getTime() : null;
+  var group = document.getElementById("ec-group").value.trim();
   DB.ref("codes/"+editingCodeKey).once("value", function(snap){
     var existing = snap.val() || {};
     var expiresAt = isTrial ? (existing.expiresAt || (Date.now()+7*24*60*60*1000)) : null;
-    DB.ref("codes/"+editingCodeKey).update({name:n, code:c, access:access, trial:isTrial, expiresAt:expiresAt, customExpiresAt:customExpiresAt}, function(e){
+    DB.ref("codes/"+editingCodeKey).update({name:n, code:c, access:access, trial:isTrial, expiresAt:expiresAt, customExpiresAt:customExpiresAt, group:group||null}, function(e){
       if(!e){ closeEditCode(); }
       else{ alert("Something went wrong saving. Please try again."); }
     });
@@ -2237,9 +2272,10 @@ function addCode(){
   // End of the selected day, in the admin's local time, so "expires" doesn't
   // cut someone off partway through their last valid day.
   var customExpiresAt = expDateVal ? new Date(expDateVal+"T23:59:59").getTime() : null;
+  var group = document.getElementById("c-group").value.trim();
   DB.ref("codes").orderByChild("code").equalTo(c).once("value",function(snap){
     if(snap.exists()){ alert("That code already exists."); return; }
-    DB.ref("codes").push({name:n,code:c,access:access,trial:isTrial||false,expiresAt:expiresAt,customExpiresAt:customExpiresAt,inactive:false},function(e){
+    DB.ref("codes").push({name:n,code:c,access:access,trial:isTrial||false,expiresAt:expiresAt,customExpiresAt:customExpiresAt,group:group||null,inactive:false},function(e){
       if(!e){
         var label=isTrial?" (7-day trial)":"";
         showOk("ok-code","Code for "+n+": "+c+label);
@@ -2248,6 +2284,7 @@ function addCode(){
         document.getElementById("c-access-type").value="ALL";
         document.getElementById("c-trial").checked=false;
         document.getElementById("c-expdate").value="";
+        document.getElementById("c-group").value="";
         document.getElementById("program-picker").style.display="none";
       }
     });
@@ -2295,14 +2332,41 @@ function delCode(key, name){
 }
 
 // ANNOUNCEMENTS
+var annFilter = "active";
+
 function loadAdmAnn(){
   if(!DB) return;
   DB.ref("announcements").on("value",function(snap){
-    var cnt=0,h="";
-    if(snap.exists()){ var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.unshift(a); cnt++; }); items.forEach(function(a){ h+="<div class='list-item'><div class='list-item-left'><strong>"+ex(a.title)+"</strong><br/><span style='font-size:11px;color:var(--sub);'>"+ex(a.date)+"</span></div><div style='display:flex;gap:6px;'><button class='edit-btn' onclick='editAnn(\""+a._k+"\")'>✏️</button><button class='del-btn' onclick='delAnn(\""+a._k+"\")'>✕</button></div></div>"; }); }
+    var cnt=0,items=[];
+    if(snap.exists()){ snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.unshift(a); if(!a.archived) cnt++; }); }
     document.getElementById("ann-count").textContent=cnt;
-    document.getElementById("ann-list").innerHTML=h||"<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No announcements.</p>";
+    renderAdmAnnList(items);
   });
+}
+
+function filterAnnList(filter, btn){
+  annFilter = filter;
+  document.querySelectorAll("[data-annfilter]").forEach(function(b){ b.classList.remove("on"); });
+  btn.classList.add("on");
+  DB.ref("announcements").once("value", function(snap){
+    var items=[];
+    if(snap.exists()){ snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.unshift(a); }); }
+    renderAdmAnnList(items);
+  });
+}
+
+function renderAdmAnnList(items){
+  var el = document.getElementById("ann-list");
+  var filtered = items.filter(function(a){ return annFilter==="archived" ? !!a.archived : !a.archived; });
+  if(!filtered.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;padding:6px 0;'>"+(annFilter==="archived"?"No archived announcements.":"No announcements.")+"</p>"; return; }
+  var h="";
+  filtered.forEach(function(a){
+    var actions = annFilter==="archived"
+      ? "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;' onclick='restoreAnn(\""+a._k+"\")'>↩️ Restore</button><button class='del-btn' onclick='permanentlyDeleteAnn(\""+a._k+"\")'>🗑️</button>"
+      : "<button class='edit-btn' onclick='editAnn(\""+a._k+"\")'>✏️</button><button class='del-btn' onclick='archiveAnn(\""+a._k+"\")'>✕</button>";
+    h+="<div class='list-item'><div class='list-item-left'><strong>"+ex(a.title)+"</strong><br/><span style='font-size:11px;color:var(--sub);'>"+ex(a.date)+"</span></div><div style='display:flex;gap:6px;'>"+actions+"</div></div>";
+  });
+  el.innerHTML = h;
 }
 
 var editingAnnKey = null;
@@ -2392,7 +2456,9 @@ function toggleAnnPin(key, pinned){
   DB.ref("announcements/"+key).update({pinned:!pinned});
 }
 
-function delAnn(key){ if(!confirm("Remove?")) return; DB.ref("announcements/"+key).remove(); }
+function archiveAnn(key){ if(!confirm("Archive this announcement? It'll move to the Archived tab and stop showing to clients — you can restore it anytime.")) return; DB.ref("announcements/"+key).update({archived:true}); }
+function restoreAnn(key){ DB.ref("announcements/"+key).update({archived:false}); }
+function permanentlyDeleteAnn(key){ if(!confirm("Permanently delete this announcement? This can't be undone.")) return; DB.ref("announcements/"+key).remove(); }
 
 // SETTINGS
 document.getElementById("pass-btn").onclick=function(){
@@ -3098,6 +3164,8 @@ function filterClients(filter, btn){
 function renderClientList(){
   var el = document.getElementById("clients-list");
   el.innerHTML = "";
+  var groupFilterEl = document.getElementById("group-filter-input");
+  var groupFilterText = groupFilterEl ? groupFilterEl.value.trim().toLowerCase() : "";
   var items = allClientsData.filter(function(cd){
     var inactive = cd.inactive||false;
     var trialExpired = cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt;
@@ -3105,6 +3173,7 @@ function renderClientList(){
     var expired = trialExpired||customExpired;
     var isTrial = cd.trial&&!expired;
     var isUnpaid = (cd.paymentStatus||"unpaid")==="unpaid";
+    if(groupFilterText && (cd.group||"").toLowerCase().indexOf(groupFilterText)===-1) return false;
     if(clientFilter==="archived") return cd._archived;
     if(cd._archived) return false;
     if(clientFilter==="all") return true;
@@ -3133,6 +3202,7 @@ function renderClientList(){
     if(expired) badges+=" <span style='background:#c05040;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>EXPIRED</span>";
     if(cd.customExpiresAt&&!customExpired) badges+=" <span style='background:#4a6a9c;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>Expires "+new Date(cd.customExpiresAt).toLocaleDateString()+"</span>";
     if(!cd._archived&&isUnpaid) badges+=" <span style='background:#c9a227;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>💰 UNPAID</span>";
+    if(cd.group) badges+=" <span style='background:#6a5a8c;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>🏷️ "+ex(cd.group)+"</span>";
     if(!inactive&&!expired&&!cd.trial&&!cd._archived) badges+=" <span style='background:#4a7c5c;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>ACTIVE</span>";
     var isBroken = !cd.name || cd.name==="undefined";
     if(isBroken && !cd._archived) crow.onclick=null;
@@ -3191,6 +3261,11 @@ function loadClientForms(){
       h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'>";
       h+="<strong style='font-size:14px;color:var(--text);'>"+ex(f.formType)+"</strong>";
       h+="<span style='font-size:11px;color:var(--sub);'>"+d+"</span></div>";
+      if(f.photos && f.photos.length){
+        h+="<div style='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;'>"+
+          f.photos.map(function(src){ return "<a href='"+src+"' target='_blank'><img src='"+src+"' style='width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--border);' /></a>"; }).join("")+
+          "</div>";
+      }
       if(f.data){
         Object.keys(f.data).forEach(function(k){
           if(f.data[k]) h+="<p style='font-size:12px;color:var(--sub);margin-bottom:3px;white-space:pre-wrap;'><strong>"+ex(k)+":</strong> "+ex(String(f.data[k]))+"</p>";
@@ -3324,6 +3399,75 @@ var cachedCanonicalByNorm = {};
 var cachedMergeGroups = {};
 var submissionFilter = "new";
 
+// PHOTO UPLOAD (paper form -> client_forms, same pipeline as online forms)
+var photoUploadImages = [];
+
+document.getElementById("photo-upload-files").addEventListener("change", function(e){
+  var files = Array.from(e.target.files || []);
+  var preview = document.getElementById("photo-upload-preview");
+  photoUploadImages = [];
+  preview.innerHTML = "<p class='tip'>Compressing...</p>";
+  var remaining = files.length;
+  if(!remaining){ preview.innerHTML=""; return; }
+  var results = new Array(files.length);
+  files.forEach(function(file, idx){
+    compressImageFile(file, function(dataUrl){
+      results[idx] = dataUrl;
+      remaining--;
+      if(remaining===0){
+        photoUploadImages = results.filter(Boolean);
+        preview.innerHTML = photoUploadImages.map(function(src){
+          return "<img src='"+src+"' style='width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border);' />";
+        }).join("");
+      }
+    });
+  });
+});
+
+function compressImageFile(file, callback){
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var img = new Image();
+    img.onload = function(){
+      var maxW = 1000;
+      var scale = Math.min(1, maxW / img.width);
+      var canvas = document.createElement("canvas");
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      var ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      callback(canvas.toDataURL("image/jpeg", 0.6));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function submitPhotoUpload(){
+  var name = document.getElementById("photo-upload-name").value.trim();
+  var notes = document.getElementById("photo-upload-notes").value.trim();
+  if(!name){ alert("Please enter the client's name."); return; }
+  if(!photoUploadImages.length){ alert("Please add at least one photo."); return; }
+  if(!DB) return;
+  var key = sk(name);
+  DB.ref("client_forms/"+key).push({
+    formType: "Manual Photo Upload", ts: Date.now(),
+    data: { Name: name, Notes: notes || "None" },
+    photos: photoUploadImages
+  }, function(e){
+    if(!e){
+      document.getElementById("photo-upload-name").value="";
+      document.getElementById("photo-upload-notes").value="";
+      document.getElementById("photo-upload-files").value="";
+      document.getElementById("photo-upload-preview").innerHTML="";
+      photoUploadImages = [];
+      showOk("ok-photo-upload","Saved! Check New Submissions below.");
+    } else {
+      alert("Something went wrong saving — please try again.");
+    }
+  });
+}
+
 function initSubmissionsBadge(){
   if(!DB) return;
   DB.ref("client_forms").on("value", function(snap){
@@ -3417,6 +3561,12 @@ function renderSubmissionsList(){
         if(s.data[k]) fields += "<p style='font-size:12px;color:var(--sub);margin-bottom:3px;white-space:pre-wrap;'><strong>"+ex(k)+":</strong> "+ex(String(s.data[k]))+"</p>";
       });
     }
+    var photosHtml = "";
+    if(s.photos && s.photos.length){
+      photosHtml = "<div style='display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;'>"+
+        s.photos.map(function(src){ return "<a href='"+src+"' target='_blank'><img src='"+src+"' style='width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--border);' /></a>"; }).join("")+
+        "</div>";
+    }
     var mergeBtn = cachedMergeGroups[norm]
       ? "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;color:#8b6f10;border-color:#c9a227;' onclick='mergeSubmissionGroup(\""+norm+"\")'>🔀 Merge into one record</button>"
       : "";
@@ -3434,7 +3584,7 @@ function renderSubmissionsList(){
       (isNew ? "<span style='width:8px;height:8px;background:#c05040;border-radius:50%;'></span>" : "")+
       "<strong style='font-size:14px;'>"+ex(name)+"</strong>"+
       "<span style='font-size:11px;color:var(--sub);'>· "+ex(s.formType||"")+" · "+date+"</span>"+
-      "</div>"+fields+
+      "</div>"+photosHtml+fields+
       "<div style='display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;'>"+actionBtns+mergeBtn+
       "</div></div>";
   }).join("");
@@ -4274,6 +4424,6 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-payments-real-key-fix</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-groups-photo-upload</p>
 </body>
 </html>
