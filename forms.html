@@ -206,11 +206,23 @@ nav{background:#fff;border-bottom:1px solid #e8ddd2;padding:0.9rem 2rem;display:
         <input class="field-input" type="tel" id="i-phone" placeholder="(555) 000-0000" />
       </div>
     </div>
-    <div class="two-col">
-      <div class="field-group">
-        <label class="field-label">Date of Birth <span class="field-required">*</span></label>
-        <input class="field-input" type="date" id="i-dob" />
+    <div class="field-group">
+      <label class="field-label">Date of Birth <span class="field-required">*</span></label>
+      <div style="display:flex;gap:8px;">
+        <select class="field-select" id="i-dob-month" style="flex:1.2;"><option value="">Month</option></select>
+        <select class="field-select" id="i-dob-day" style="flex:1;"><option value="">Day</option></select>
+        <select class="field-select" id="i-dob-year" style="flex:1;"><option value="">Year</option></select>
       </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Pick an access code for your dashboard (optional)</label>
+      <div style="display:flex;gap:8px;">
+        <input class="field-input" id="i-preferredcode" style="text-transform:uppercase;flex:1;" placeholder="e.g. SARAH24, or leave blank and Heather will assign one" maxlength="20" />
+        <button type="button" onclick="suggestClientCode()" style="white-space:nowrap;padding:0 14px;border-radius:9px;border:1.5px solid #d8cfc6;background:#f9f6f2;color:#a0522d;font-weight:600;font-size:14px;">🎲 Suggest</button>
+      </div>
+      <p id="i-code-status" style="font-size:12px;margin-top:4px;"></p>
+    </div>
+    <div class="two-col">
       <div class="field-group" id="program-field-group">
         <label class="field-label">Program Interest <span class="field-required">*</span></label>
         <select class="field-select" id="i-program">
@@ -263,14 +275,6 @@ nav{background:#fff;border-bottom:1px solid #e8ddd2;padding:0.9rem 2rem;display:
         <option>Facebook</option>
         <option>Other</option>
       </select>
-    </div>
-    <div class="field-group">
-      <label class="field-label">Pick an access code for your dashboard (optional)</label>
-      <div style="display:flex;gap:8px;">
-        <input class="field-input" id="i-preferredcode" style="text-transform:uppercase;flex:1;" placeholder="e.g. SARAH24, or leave blank and Heather will assign one" maxlength="20" />
-        <button type="button" onclick="suggestClientCode()" style="white-space:nowrap;padding:0 14px;border-radius:9px;border:1.5px solid #d8cfc6;background:#f9f6f2;color:#a0522d;font-weight:600;font-size:14px;">🎲 Suggest</button>
-      </div>
-      <p id="i-code-status" style="font-size:12px;margin-top:4px;"></p>
     </div>
     <div class="field-group">
       <label class="field-label">Anything else you want Heather to know?</label>
@@ -431,14 +435,16 @@ nav{background:#fff;border-bottom:1px solid #e8ddd2;padding:0.9rem 2rem;display:
     <div class="divider"></div>
     <p class="field-label" style="margin-bottom:1rem;font-size:13px;color:#3a2a1a;text-transform:none;letter-spacing:0;">Participant Information</p>
 
-    <div class="two-col">
-      <div class="field-group">
-        <label class="field-label">Full Name <span class="field-required">*</span></label>
-        <input class="field-input" type="text" id="w-name" placeholder="Your full name" />
-      </div>
-      <div class="field-group">
-        <label class="field-label">Date of Birth <span class="field-required">*</span></label>
-        <input class="field-input" type="date" id="w-dob" />
+    <div class="field-group">
+      <label class="field-label">Full Name <span class="field-required">*</span></label>
+      <input class="field-input" type="text" id="w-name" placeholder="Your full name" />
+    </div>
+    <div class="field-group">
+      <label class="field-label">Date of Birth <span class="field-required">*</span></label>
+      <div style="display:flex;gap:8px;">
+        <select class="field-select" id="w-dob-month" style="flex:1.2;"><option value="">Month</option></select>
+        <select class="field-select" id="w-dob-day" style="flex:1;"><option value="">Day</option></select>
+        <select class="field-select" id="w-dob-year" style="flex:1;"><option value="">Year</option></select>
       </div>
     </div>
     <div class="field-group">
@@ -675,6 +681,43 @@ function switchFormByName(name){
 }
 
 function val(id){ return (document.getElementById(id)||{}).value||""; }
+
+// Month/Day/Year dropdowns for DOB — always render as native scroll wheels on
+// iPhone regardless of iOS version, unlike <input type="date"> which has been
+// inconsistent (sometimes shows a calendar grid instead of the wheel picker).
+var MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+function populateDobDropdowns(prefix){
+  var monthSel = document.getElementById(prefix+"-month");
+  var daySel = document.getElementById(prefix+"-day");
+  var yearSel = document.getElementById(prefix+"-year");
+  if(!monthSel || !daySel || !yearSel) return;
+  MONTH_NAMES.forEach(function(name, idx){
+    var opt = document.createElement("option");
+    opt.value = String(idx+1).padStart(2,"0");
+    opt.textContent = name;
+    monthSel.appendChild(opt);
+  });
+  for(var d=1; d<=31; d++){
+    var opt = document.createElement("option");
+    opt.value = String(d).padStart(2,"0");
+    opt.textContent = d;
+    daySel.appendChild(opt);
+  }
+  var currentYear = new Date().getFullYear();
+  for(var y=currentYear; y>=currentYear-100; y--){
+    var opt = document.createElement("option");
+    opt.value = String(y);
+    opt.textContent = y;
+    yearSel.appendChild(opt);
+  }
+}
+function getDobValue(prefix){
+  var m = val(prefix+"-month"), d = val(prefix+"-day"), y = val(prefix+"-year");
+  if(!m || !d || !y) return "";
+  return y+"-"+m+"-"+d;
+}
+populateDobDropdowns("i-dob");
+populateDobDropdowns("w-dob");
 // Matches the admin panel's sk() function exactly, so client keys line up
 // between forms.html submissions and the admin Clients page.
 function esKey(s){ var r="",str=String(s); for(var i=0;i<str.length;i++){ var c=str[i]; r+=(c==="."||c==="#"||c==="$"||c==="["||c==="]"||c==="/")?"_":c; } return r; }
@@ -692,7 +735,7 @@ function clientFormKey(fallbackName){
 }
 
 function submitIntake(){
-  var fname=val("i-fname"),lname=val("i-lname"),email=val("i-email"),phone=val("i-phone"),dob=val("i-dob"),program=val("i-program"),level=val("i-level"),goals=val("i-goals");
+  var fname=val("i-fname"),lname=val("i-lname"),email=val("i-email"),phone=val("i-phone"),dob=getDobValue("i-dob"),program=val("i-program"),level=val("i-level"),goals=val("i-goals");
   var trialRequested = document.getElementById("i-trial-request").checked;
   var fundamentalsRequested = document.getElementById("i-fundamentals-request").checked;
   var err=document.getElementById("err-intake");
@@ -831,7 +874,7 @@ function autoActivateTrial(name, email, preferredCode, program, callback){
 }
 
 function submitWaiver(){
-  var name=val("w-name"),dob=val("w-dob"),email=val("w-email"),address=val("w-address"),phone=val("w-phone");
+  var name=val("w-name"),dob=getDobValue("w-dob"),email=val("w-email"),address=val("w-address"),phone=val("w-phone");
   var ecName=val("w-ec-name"),ecPhone=val("w-ec-phone"),sig=val("w-sig");
   var agreed=document.getElementById("w-agree").checked;
   var err=document.getElementById("err-waiver");
@@ -907,7 +950,7 @@ function submitWaiver(){
       params.subject = "New TRIAL Client (auto-activated) - "+name;
       params.message = body;
       successBox.querySelector("h3").textContent = "All Forms Complete! Your Dashboard is Ready! 🎉";
-      successBox.querySelector("p").innerHTML = "You're all set! Your 7-day trial is active right now — log into your dashboard with code <strong>"+activatedCode+"</strong> at the top of this site. Payment isn't due until your trial ends.";
+      successBox.querySelector("p").innerHTML = "You're all set! Your 7-day trial is active right now — log into your dashboard with code <strong>"+activatedCode+"</strong> at the top of this site. During your trial you'll see every class and program, even ones outside what you selected above. Payment isn't due until your trial ends.";
     } else {
       params.message = body;
     }
@@ -919,7 +962,7 @@ function submitWaiver(){
           to_email: email,
           subject: activatedCode ? "Your Everyday Strong dashboard is ready!" : "You are all set with Everyday Strong!",
           message: activatedCode
-            ? ("Hi "+name+"!\n\nYour 7-day free trial is active right now — no waiting needed!\n\nYour dashboard access code: "+activatedCode+"\n\nLog in anytime at everydaystrongfit.com with that code.\n\nPayment is due every Sunday for the upcoming week once your trial ends. Pay via Venmo @hduff13\n\nWelcome to the Everyday Strong family!\nHeather\nEveryday Strong\nEverydaystrongteam@gmail.com")
+            ? ("Hi "+name+"!\n\nYour 7-day free trial is active right now — no waiting needed!\n\nYour dashboard access code: "+activatedCode+"\n\nLog in anytime at everydaystrongfit.com with that code.\n\nDuring your trial, you have full access to every class and program so you can see everything Everyday Strong offers, even if you only expressed interest in one program above. After your trial, your ongoing access will be based on the membership you choose.\n\nPayment is due every Sunday for the upcoming week once your trial ends. Pay via Venmo @hduff13\n\nWelcome to the Everyday Strong family!\nHeather\nEveryday Strong\nEverydaystrongteam@gmail.com")
             : ("Hi "+name+"!\n\nAll three of your Everyday Strong forms have been received and you are officially enrolled!\n\nWhat happens next:\n- Heather will review your forms and reach out shortly\n- Payment is due every Sunday for the upcoming week\n- Pay via Venmo @hduff13\n- Your Zoom link will be available on your member dashboard once payment is confirmed\n\nWelcome to the Everyday Strong family!\nHeather\nEveryday Strong\nEverydaystrongteam@gmail.com"),
           client_name: "Everyday Strong",
           client_email: email
@@ -937,6 +980,6 @@ function submitWaiver(){
   }
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-code-availability-check</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-trial-access-clarity</p>
 </body>
 </html>
