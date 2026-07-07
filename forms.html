@@ -265,6 +265,14 @@ nav{background:#fff;border-bottom:1px solid #e8ddd2;padding:0.9rem 2rem;display:
       </select>
     </div>
     <div class="field-group">
+      <label class="field-label">Pick an access code for your dashboard (optional)</label>
+      <div style="display:flex;gap:8px;">
+        <input class="field-input" id="i-preferredcode" style="text-transform:uppercase;flex:1;" placeholder="e.g. SARAH24, or leave blank and Heather will assign one" maxlength="20" />
+        <button type="button" onclick="suggestClientCode()" style="white-space:nowrap;padding:0 14px;border-radius:9px;border:1.5px solid #d8cfc6;background:#f9f6f2;color:#a0522d;font-weight:600;font-size:14px;">🎲 Suggest</button>
+      </div>
+      <p id="i-code-status" style="font-size:12px;margin-top:4px;"></p>
+    </div>
+    <div class="field-group">
       <label class="field-label">Anything else you want Heather to know?</label>
       <textarea class="field-textarea" id="i-notes" placeholder="Questions, concerns, special circumstances..." style="min-height:60px;"></textarea>
     </div>
@@ -697,9 +705,11 @@ function submitIntake(){
 
   // Save to Firebase FIRST — the client's data should never be lost even if email fails
   var cname = clientFormKey(fname+" "+lname);
+  // Letters and numbers only, uppercase — matches how codes are stored/matched elsewhere
+  var preferredCode = val("i-preferredcode").trim().toUpperCase().replace(/[^A-Z0-9]/g,"");
   saveFormWithRetry(cname, {
     formType:"Intake Form", ts:Date.now(),
-    data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,TrialRequested:(trialRequested?"Yes":"No"),FundamentalsClassRequested:(fundamentalsRequested?"Yes":"No"),Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None"}
+    data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,TrialRequested:(trialRequested?"Yes":"No"),FundamentalsClassRequested:(fundamentalsRequested?"Yes":"No"),Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None","Preferred Code":preferredCode||"None (Heather will assign one)"}
   }, 3, "Intake Form");
 
   // Show success immediately — the data is safely saved regardless of email outcome
@@ -731,6 +741,93 @@ function submitAgreement(){
   btn.style.display="none";
   // No email here — Heather now gets one combined email after the waiver
   // (final step) covering all three forms, instead of one per step.
+}
+
+function generateFallbackCode(){
+  var chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789", out="";
+  for(var i=0;i<8;i++) out+=chars[Math.floor(Math.random()*chars.length)];
+  return out;
+}
+
+// Checks a single code against existing client codes; calls back with true/false
+function checkCodeTaken(code, callback){
+  firebase.database(fbApp).ref("codes").orderByChild("code").equalTo(code).once("value", function(snap){
+    callback(snap.exists());
+  }, function(){ callback(false); }); // if the check itself fails, don't block them
+}
+
+var codeCheckTimeout = null;
+function onPreferredCodeInput(){
+  var status = document.getElementById("i-code-status");
+  var raw = document.getElementById("i-preferredcode").value.trim().toUpperCase().replace(/[^A-Z0-9]/g,"");
+  clearTimeout(codeCheckTimeout);
+  if(!raw){
+    status.textContent = "Letters and numbers only. This is what you'll use to log into your dashboard.";
+    status.style.color = "#9a8a7a";
+    return;
+  }
+  status.textContent = "Checking availability...";
+  status.style.color = "#9a8a7a";
+  codeCheckTimeout = setTimeout(function(){
+    checkCodeTaken(raw, function(taken){
+      if(taken){
+        status.textContent = "❌ That code is already taken — please try another, or tap Suggest.";
+        status.style.color = "#c0392b";
+      } else {
+        status.textContent = "✅ Available!";
+        status.style.color = "#1a7a4a";
+      }
+    });
+  }, 500);
+}
+
+function suggestClientCode(){
+  var status = document.getElementById("i-code-status");
+  status.textContent = "Finding an available code...";
+  status.style.color = "#9a8a7a";
+  reserveCodeSuggestion(generateFallbackCode(), 5);
+}
+function reserveCodeSuggestion(candidate, attemptsLeft){
+  var status = document.getElementById("i-code-status");
+  if(attemptsLeft <= 0){ status.textContent = "Couldn't find one — try typing your own."; status.style.color="#c0392b"; return; }
+  checkCodeTaken(candidate, function(taken){
+    if(taken){ reserveCodeSuggestion(generateFallbackCode(), attemptsLeft-1); return; }
+    document.getElementById("i-preferredcode").value = candidate;
+    status.textContent = "✅ Available!";
+    status.style.color = "#1a7a4a";
+  });
+}
+document.getElementById("i-preferredcode").addEventListener("input", onPreferredCodeInput);
+onPreferredCodeInput();
+
+// Checks a candidate code for uniqueness against existing client codes, and
+// keeps trying fallback codes until one is free. Calls back with the final
+// code that was actually reserved (or null if something went wrong).
+function reserveUniqueCode(candidate, attemptsLeft, callback){
+  if(attemptsLeft === undefined) attemptsLeft = 5;
+  if(attemptsLeft <= 0){ callback(null); return; }
+  firebase.database(fbApp).ref("codes").orderByChild("code").equalTo(candidate).once("value", function(snap){
+    if(snap.exists()){
+      // Taken — fall back to a random generated code instead
+      reserveUniqueCode(generateFallbackCode(), attemptsLeft-1, callback);
+    } else {
+      callback(candidate);
+    }
+  }, function(){ callback(null); });
+}
+
+function autoActivateTrial(name, email, preferredCode, program, callback){
+  var candidate = preferredCode || generateFallbackCode();
+  reserveUniqueCode(candidate, 5, function(finalCode){
+    if(!finalCode){ callback(null); return; }
+    firebase.database(fbApp).ref("codes").push({
+      name:name, code:finalCode, access:"ALL", trial:true,
+      expiresAt: Date.now()+7*24*60*60*1000,
+      paymentStatus:"unpaid", inactive:false
+    }, function(e){
+      callback(e ? null : finalCode);
+    });
+  });
 }
 
 function submitWaiver(){
@@ -770,6 +867,7 @@ function submitWaiver(){
       "Injuries/Limitations: "+(val("i-injuries")||"None")+"\n"+
       "Equipment: "+(val("i-equipment")||"Not specified")+"\n"+
       "How they heard about us: "+(val("i-referral")||"Not specified")+"\n"+
+      "Preferred Access Code: "+(val("i-preferredcode").trim().toUpperCase().replace(/[^A-Z0-9]/g,"")||"None (assign one)")+"\n"+
       "Additional Notes: "+(val("i-notes")||"None");
   } else {
     body += "\n\n— INTAKE FORM —\nNot available on this device — check the New Submissions tab in admin for their full intake details.";
@@ -796,24 +894,49 @@ function submitWaiver(){
     data:{Name:name,DOB:dob,Email:email,Address:address,Phone:phone,"Emergency Contact":ecName+" / "+ecPhone,Signature:sig,"Parent or Guardian":val("w-guardian")||"N/A","Agreed to all 11 sections":"Yes"}
   }, 3, "Waiver");
 
-  document.getElementById("ok-waiver").style.display="block";
-  btn.style.display="none";
   clearFormDraft();
 
-  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
-    .then(function(){
-      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        to_email: email,
-        subject: "You are all set with Everyday Strong!",
-        message: "Hi "+name+"!\n\nAll three of your Everyday Strong forms have been received and you are officially enrolled!\n\nWhat happens next:\n- Heather will review your forms and reach out shortly\n- Payment is due every Sunday for the upcoming week\n- Pay via Venmo @hduff13\n- Your Zoom link will be available on your member dashboard once payment is confirmed\n\nWelcome to the Everyday Strong family!\nHeather\nEveryday Strong\nEverydaystrongteam@gmail.com",
-        client_name: "Everyday Strong",
-        client_email: email
+  var trialRequested = document.getElementById("i-trial-request") && document.getElementById("i-trial-request").checked;
+  var preferredCode = val("i-preferredcode").trim().toUpperCase().replace(/[^A-Z0-9]/g,"");
+  var program = val("i-program");
+
+  function finishUp(activatedCode){
+    var successBox = document.getElementById("ok-waiver");
+    if(activatedCode){
+      body = "TRIAL AUTO-ACTIVATED — code "+activatedCode+"\n\n" + body;
+      params.subject = "New TRIAL Client (auto-activated) - "+name;
+      params.message = body;
+      successBox.querySelector("h3").textContent = "All Forms Complete! Your Dashboard is Ready! 🎉";
+      successBox.querySelector("p").innerHTML = "You're all set! Your 7-day trial is active right now — log into your dashboard with code <strong>"+activatedCode+"</strong> at the top of this site. Payment isn't due until your trial ends.";
+    } else {
+      params.message = body;
+    }
+    btn.style.display="none";
+    successBox.style.display="block";
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
+      .then(function(){
+        var clientParams = {
+          to_email: email,
+          subject: activatedCode ? "Your Everyday Strong dashboard is ready!" : "You are all set with Everyday Strong!",
+          message: activatedCode
+            ? ("Hi "+name+"!\n\nYour 7-day free trial is active right now — no waiting needed!\n\nYour dashboard access code: "+activatedCode+"\n\nLog in anytime at everydaystrongfit.com with that code.\n\nPayment is due every Sunday for the upcoming week once your trial ends. Pay via Venmo @hduff13\n\nWelcome to the Everyday Strong family!\nHeather\nEveryday Strong\nEverydaystrongteam@gmail.com")
+            : ("Hi "+name+"!\n\nAll three of your Everyday Strong forms have been received and you are officially enrolled!\n\nWhat happens next:\n- Heather will review your forms and reach out shortly\n- Payment is due every Sunday for the upcoming week\n- Pay via Venmo @hduff13\n- Your Zoom link will be available on your member dashboard once payment is confirmed\n\nWelcome to the Everyday Strong family!\nHeather\nEveryday Strong\nEverydaystrongteam@gmail.com"),
+          client_name: "Everyday Strong",
+          client_email: email
+        };
+        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, clientParams);
+      }, function(err){
+        console.error("Waiver confirmation email failed to send, but data was saved.", err);
       });
-    }, function(err){
-      console.error("Waiver confirmation email failed to send, but data was saved.", err);
-    });
+  }
+
+  if(trialRequested){
+    autoActivateTrial(name, email, preferredCode, program, finishUp);
+  } else {
+    finishUp(null);
+  }
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-waiver-fixed</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-code-availability-check</p>
 </body>
 </html>

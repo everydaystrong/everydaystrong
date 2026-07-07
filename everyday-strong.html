@@ -3412,6 +3412,7 @@ var SUB_LAST_CHECK_KEY = "es_admin_lastSubCheck";
 var cachedAllSubmissions = [];
 var cachedCanonicalByNorm = {};
 var cachedMergeGroups = {};
+var cachedPreferredCodeByNorm = {};
 var submissionFilter = "new";
 
 // PHOTO UPLOAD (paper form -> client_forms, same pipeline as online forms)
@@ -3495,6 +3496,7 @@ function initSubmissionsBadge(){
     // steps before this matching was fixed. Whichever key the Intake form used
     // is the "correct" one; anything else needs merging into it.
     var groups = {};
+    var preferredCodeByNorm = {};
     if(snap.exists()){
       snap.forEach(function(clientNode){
         var key = clientNode.key;
@@ -3512,6 +3514,8 @@ function initSubmissionsBadge(){
               groups[norm].keys[key] = true;
               var priority = v.formType==="Intake Form" ? 3 : v.formType==="Client Agreement" ? 2 : 1;
               if(priority > groups[norm].bestPriority){ groups[norm].bestPriority = priority; groups[norm].bestName = rawName; }
+              var pc = v.data && v.data["Preferred Code"];
+              if(pc && pc.indexOf("None")!==0) preferredCodeByNorm[norm] = pc;
             }
           }
         });
@@ -3530,6 +3534,7 @@ function initSubmissionsBadge(){
     cachedAllSubmissions = all;
     cachedCanonicalByNorm = canonicalByNorm;
     cachedMergeGroups = mergeGroups;
+    cachedPreferredCodeByNorm = preferredCodeByNorm;
     var dot = document.getElementById("sub-tab-dot");
     if(dot) dot.style.display = hasNew ? "inline-block" : "none";
     renderSubmissionsList();
@@ -3590,7 +3595,7 @@ function renderSubmissionsList(){
       actionBtns = "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='restoreSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\")'>↩️ Restore</button>"+
         "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;color:#c05040;border-color:#c05040;' onclick='permanentlyDeleteSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\",\""+ex(name).replace(/"/g,"&quot;")+"\")'>🗑️ Delete Forever</button>";
     } else {
-      actionBtns = "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='createCodeFromSubmission(\""+ex(name).replace(/"/g,"&quot;")+"\")'>+ Create Client Code</button>"+
+      actionBtns = "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='createCodeFromSubmission(\""+ex(name).replace(/"/g,"&quot;")+"\",\""+ex(cachedPreferredCodeByNorm[norm]||"").replace(/"/g,"&quot;")+"\")'>+ Create Client Code</button>"+
         "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='editSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\")'>✏️ Edit</button>"+
         "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;color:#c05040;border-color:#c05040;' onclick='deleteSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\",\""+ex(name).replace(/"/g,"&quot;")+"\")'>🗑️ Delete</button>";
     }
@@ -3691,14 +3696,16 @@ function toggleNewClientForm(){
   form.style.display = form.style.display==="none" ? "block" : "none";
 }
 
-function createCodeFromSubmission(name){
+function createCodeFromSubmission(name, preferredCode){
   var clientsBtn = document.getElementById("atab-clients");
   setAdmTab("clients", clientsBtn);
   loadClients();
   document.getElementById("new-client-form").style.display = "block";
   document.getElementById("c-name").value = name;
+  document.getElementById("c-code").value = preferredCode || "";
   document.getElementById("new-client-form").scrollIntoView({behavior:"smooth", block:"start"});
-  document.getElementById("c-name").focus();
+  if(preferredCode) document.getElementById("c-code").focus();
+  else document.getElementById("c-name").focus();
 }
 
 function loadClients(){
@@ -4440,6 +4447,6 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-photo-lightbox</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-preferred-code</p>
 </body>
 </html>
