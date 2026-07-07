@@ -295,6 +295,13 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
   </div>
 </div>
 
+<div class="modal-overlay" id="photo-lightbox">
+  <div class="modal" style="max-width:90vw;width:100%;padding:12px;background:transparent;box-shadow:none;">
+    <button class="modal-close" onclick="closePhotoLightbox()" style="background:#fff;">✕</button>
+    <img id="photo-lightbox-img" src="" style="width:100%;height:auto;max-height:85vh;object-fit:contain;border-radius:8px;" />
+  </div>
+</div>
+
 <!-- EDIT SUBMISSION -->
 <div class="modal-overlay" id="edit-submission-modal">
   <div class="modal">
@@ -1618,6 +1625,15 @@ function openVideo(url){
 function closeVideoModal(){
   document.getElementById("video-modal-frame").src = ""; // stop playback
   document.getElementById("video-modal").classList.remove("open");
+}
+
+function openPhotoLightbox(src){
+  document.getElementById("photo-lightbox-img").src = src;
+  document.getElementById("photo-lightbox").classList.add("open");
+}
+function closePhotoLightbox(){
+  document.getElementById("photo-lightbox").classList.remove("open");
+  document.getElementById("photo-lightbox-img").src = "";
 }
 
 function toggleFav(key){
@@ -3262,7 +3278,7 @@ function loadClientForms(){
       h+="<span style='font-size:11px;color:var(--sub);'>"+d+"</span></div>";
       if(f.photos && f.photos.length){
         h+="<div style='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;'>"+
-          f.photos.map(function(src){ return "<a href='"+src+"' target='_blank'><img src='"+src+"' style='width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--border);' /></a>"; }).join("")+
+          f.photos.map(function(src){ return "<img src='"+src+"' onclick=\"openPhotoLightbox(this.src)\" style='width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;' />"; }).join("")+
           "</div>";
       }
       if(f.data){
@@ -3563,7 +3579,7 @@ function renderSubmissionsList(){
     var photosHtml = "";
     if(s.photos && s.photos.length){
       photosHtml = "<div style='display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;'>"+
-        s.photos.map(function(src){ return "<a href='"+src+"' target='_blank'><img src='"+src+"' style='width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--border);' /></a>"; }).join("")+
+        s.photos.map(function(src){ return "<img src='"+src+"' onclick=\"openPhotoLightbox(this.src)\" style='width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;' />"; }).join("")+
         "</div>";
     }
     var mergeBtn = cachedMergeGroups[norm]
@@ -4413,6 +4429,7 @@ document.getElementById("install-modal").onclick = function(e){ if(e.target===th
 document.getElementById("edit-submission-modal").onclick = function(e){ if(e.target===this) closeEditSubmission(); };
 document.getElementById("edit-code-modal").onclick = function(e){ if(e.target===this) closeEditCode(); };
 document.getElementById("video-modal").onclick = function(e){ if(e.target===this) closeVideoModal(); };
+document.getElementById("photo-lightbox").onclick = function(e){ if(e.target===this) closePhotoLightbox(); };
 document.getElementById("admin-comm-post-btn").onclick=postAdminToComm;
 document.getElementById("checkin-btn").onclick=submitCheckin;
 document.getElementById("goal-btn").onclick=saveGoal;
@@ -4423,6 +4440,6 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-remove-new-client-btn</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-photo-lightbox</p>
 </body>
 </html>
