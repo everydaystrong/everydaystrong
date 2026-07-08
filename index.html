@@ -199,6 +199,7 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <body>
 
 <nav>
@@ -732,6 +733,7 @@ try {
     appId:"1:835314554846:web:cd5367a8002833c6ed2f4f"
   }, "landing");
   var landingDB = firebase.database(landingApp);
+  try { emailjs.init("Df_RHTxaHGQXv0-yY"); } catch(e){}
 
   // Load programs — only replace the static pricing cards if programs have
   // actually been published from admin (showWeb:true). Otherwise leave the
@@ -784,7 +786,7 @@ try {
     var sec = document.getElementById("site-announcements");
     if(!snap.exists()){ sec.style.display="none"; sec.innerHTML=""; return; }
     var items=[];
-    snap.forEach(function(c){ var a=c.val(); if(a.showOnWeb) items.push(a); });
+    snap.forEach(function(c){ var a=c.val(); if(a.showOnWeb && !a.archived) items.push(a); });
     items.sort(function(a,b){ if(b.pinned&&!a.pinned) return 1; if(a.pinned&&!b.pinned) return -1; return b.ts-a.ts; });
     if(!items.length){ sec.style.display="none"; sec.innerHTML=""; return; }
     sec.style.display="block";
@@ -925,6 +927,15 @@ function submitPublicTestimonial(){
       if(!e){
         document.getElementById("test-submit-form").style.display="none";
         document.getElementById("test-submit-ok").style.display="block";
+        try {
+          emailjs.send("service_svquk8m", "template_yfxtkhj", {
+            to_email: "Everydaystrongteam@gmail.com",
+            subject: "New testimonial to review — "+name,
+            message: name+" submitted a "+stars+"-star testimonial:\n\n\""+quote+"\"\n\nReview it in your dashboard's Testimonials tab.",
+            client_name: "Everyday Strong Website",
+            client_email: "Everydaystrongteam@gmail.com"
+          });
+        } catch(err){}
       } else {
         alert("Something went wrong. Please try again or email us at Everydaystrongteam@gmail.com");
       }
@@ -953,6 +964,6 @@ document.addEventListener("click",function(e){
   }
 });
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-05-waiver-diag-v2</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-testimonial-notify</p>
 </body>
 </html>
