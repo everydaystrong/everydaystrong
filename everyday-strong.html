@@ -620,12 +620,12 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
     <div id="tab-msg" class="portal-tab" style="display:none;">
       <p class="section-title">💌 Messages</p>
       <p class="section-sub">Send a message to Heather</p>
+      <div id="msg-thread"><div style="text-align:center;padding:2rem;color:var(--sub);font-size:14px;">Loading messages...</div></div>
       <div class="admin-card">
         <div class="ok-msg" id="ok-msg">Message sent!</div>
         <textarea class="form-textarea" id="msg-text" placeholder="Ask a question, share an update, or just say hi..."></textarea>
         <button class="action-btn" id="msg-send-btn" style="margin-top:8px;">Send Message</button>
       </div>
-      <div id="msg-thread"><div style="text-align:center;padding:2rem;color:var(--sub);font-size:14px;">Loading messages...</div></div>
     </div>
 
     <!-- RECIPES TAB -->
@@ -1449,6 +1449,7 @@ function previewAsClient(){
   checkNewVideo();
   loadGoal();
   loadWorkoutStats();
+  loadMyCheckins();
   sp("pg-portal");
 }
 
@@ -1494,6 +1495,7 @@ function doLogin(){
       checkNewVideo();
       loadGoal();
       loadWorkoutStats();
+      loadMyCheckins();
       sp("pg-portal");
     } else {
       err.style.display="block"; err.textContent="Incorrect code. Please check with your instructor.";
@@ -4797,6 +4799,6 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-realtime-msg-dot</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-msg-order-checkin-load</p>
 </body>
 </html>
