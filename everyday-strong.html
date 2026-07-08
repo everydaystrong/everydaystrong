@@ -607,8 +607,13 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         </div>
         </div>
         <button class="action-btn" id="checkin-btn">Submit Check-in</button>
+        <button class="action-btn sec" id="checkin-cancel-btn" style="margin-top:8px;display:none;" onclick="cancelEditCheckin()">Cancel Edit</button>
       </div>
       <div style="font-size:13px;color:var(--sub);text-align:center;padding:1rem 0;">Private check-ins are only visible to you and Heather.</div>
+      <div class="admin-card">
+        <h3>My Past Check-ins</h3>
+        <div id="my-checkins-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
     </div>
 
     <!-- MESSAGES TAB -->
@@ -921,17 +926,17 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
     </div>
 
     <div class="tab-content" id="atc-messages">
-      <div class="admin-card">
+      <div class="admin-card" id="admin-msg-inbox-card">
         <h3>Client Messages</h3>
         <div id="admin-msg-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
       </div>
-      <div class="admin-card">
-        <h3>Reply to a Client</h3>
-        <div class="ok-msg" id="ok-admin-reply">Reply sent!</div>
-        <div class="form-row">
-          <span class="form-label">Client Name</span>
-          <input class="form-input" id="reply-to" placeholder="e.g. Sarah" style="text-transform:none;" />
+      <div class="admin-card" id="admin-msg-thread-card" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <button class="action-btn sec" style="width:auto;margin-bottom:0;font-size:13px;padding:7px 12px;" onclick="closeAdminThread()">← Back to Messages</button>
+          <h3 id="admin-thread-name" style="margin-bottom:0;"></h3>
         </div>
+        <div id="admin-thread-messages" style="max-height:400px;overflow-y:auto;margin-bottom:1rem;"></div>
+        <div class="ok-msg" id="ok-admin-reply">Reply sent!</div>
         <textarea class="form-textarea" id="reply-text" placeholder="Type your reply..."></textarea>
         <button class="action-btn" id="admin-reply-btn">Send Reply (Dashboard)</button>
         <button class="action-btn sec" style="margin-top:8px;" onclick="sendAdminReplyByEmail()">📧 Reply by Email Instead</button>
@@ -1295,13 +1300,13 @@ function notifyClientIfOk(clientKey, subject, message){
 // choosing the channel yourself). Also logs the reply in the dashboard
 // thread so it's not lost from your normal message history.
 function sendAdminReplyByEmail(){
-  var to = document.getElementById("reply-to").value.trim();
   var txt = document.getElementById("reply-text").value.trim();
-  if(!to || !txt){ alert("Please enter a client name and reply."); return; }
+  if(!currentAdminThreadKey){ alert("Please select a conversation first."); return; }
+  if(!txt){ alert("Please type a reply."); return; }
   if(!DB) return;
-  var key = sk(to);
+  var key = currentAdminThreadKey;
   lookupClientEmail(key, function(email){
-    if(!email){ alert("Couldn't find an email on file for "+to+". Try the dashboard reply instead."); return; }
+    if(!email){ alert("Couldn't find an email on file for this client. Try the dashboard reply instead."); return; }
     try {
       emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
         to_email: email, subject: "Message from Heather — Everyday Strong",
@@ -1309,7 +1314,7 @@ function sendAdminReplyByEmail(){
       });
       DB.ref("messages/"+key).push({from:"Heather", text:txt, ts:Date.now(), fromClient:false, viaEmail:true});
       document.getElementById("reply-text").value="";
-      showOk("ok-admin-reply","Reply emailed to "+to+"!");
+      showOk("ok-admin-reply","Reply emailed!");
     } catch(e){ alert("Something went wrong sending the email."); }
   });
 }
@@ -1404,7 +1409,7 @@ function switchPortalTab(name,btn){
   if(name==="fav") renderFavorites();
   if(name==="done") renderCompleted();
   if(name==="comm") loadCommunity();
-  if(name==="msg") loadMessages();
+  if(name==="msg"){ loadMessages(); clearNewMessagesBadge(); }
   if(name==="progress") loadProgress();
   if(name==="food") loadFood();
   if(name==="recipes") loadRecipes();
@@ -1439,6 +1444,7 @@ function previewAsClient(){
   loadAnnouncements();
   loadStreak();
   checkNewAnnouncements();
+  checkNewMessages();
   checkBirthday();
   checkNewVideo();
   loadGoal();
@@ -1483,6 +1489,7 @@ function doLogin(){
       loadAnnouncements();
       loadStreak();
       checkNewAnnouncements();
+      checkNewMessages();
       checkBirthday();
       checkNewVideo();
       loadGoal();
@@ -1817,6 +1824,33 @@ function annVisibleToUser(a){
     return currentAccess===a.program;
   }
   return true;
+}
+
+function checkNewMessages(){
+  if(!DB||!currentUser) return;
+  DB.ref("messages/"+sk(currentUser)).orderByChild("ts").limitToLast(10).on("value",function(snap){
+    var lastCheck = parseInt(localStorage.getItem("esMsgLastCheck_"+sk(currentUser))||"0");
+    var hasNew = false;
+    if(snap.exists()) snap.forEach(function(c){ var m=c.val(); if(!m.fromClient && m.ts>lastCheck) hasNew=true; });
+    var btn=document.getElementById("pnav-msg");
+    if(!btn) return;
+    var existingDot = btn.querySelector(".msg-dot");
+    if(hasNew && !existingDot){
+      var dot=document.createElement("span");
+      dot.className="msg-dot";
+      dot.style.cssText="display:inline-block;width:8px;height:8px;background:#c05040;border-radius:50%;margin-left:5px;vertical-align:middle;";
+      btn.appendChild(dot);
+    } else if(!hasNew && existingDot){
+      existingDot.remove();
+    }
+  });
+}
+function clearNewMessagesBadge(){
+  if(!currentUser) return;
+  localStorage.setItem("esMsgLastCheck_"+sk(currentUser), String(Date.now()));
+  var btn=document.getElementById("pnav-msg");
+  var dot = btn && btn.querySelector(".msg-dot");
+  if(dot) dot.remove();
 }
 
 function checkNewAnnouncements(){
@@ -2973,6 +3007,8 @@ function loadWorkoutStats(){
 }
 
 // CHECK-INS
+var editingCheckinKey = null;
+
 function submitCheckin(){
   var feeling=document.querySelector('input[name="ci-feeling"]:checked');
   var good=document.getElementById("ci-good").value.trim();
@@ -2983,6 +3019,20 @@ function submitCheckin(){
   if(!DB){ alert("Database not connected."); return; }
   var ciVisEl=document.querySelector('input[name="ci-visibility"]:checked');
   var ciVisibility=ciVisEl?ciVisEl.value:"instructor";
+
+  if(editingCheckinKey){
+    DB.ref("checkins/"+editingCheckinKey).update({
+      feeling:feeling.value, good:good, hard:hard, q:q, visibility:ciVisibility
+    }, function(e){
+      if(!e){
+        cancelEditCheckin();
+        showOk("ok-checkin","Check-in updated!");
+        loadMyCheckins();
+      }
+    });
+    return;
+  }
+
   DB.ref("checkins").push({
     name:currentUser, feeling:feeling.value,
     good:good, hard:hard, q:q,
@@ -2995,8 +3045,65 @@ function submitCheckin(){
       if(feeling) feeling.checked=false;
       showOk("ok-checkin","Check-in submitted! 🎉");
       notifyHeather("New check-in from "+currentUser, currentUser+" submitted a weekly check-in.\n\nFeeling: "+feeling.value+"\nWhat went well: "+good+(hard?"\nWhat was hard: "+hard:"")+(q?"\nQuestion: "+q:""));
+      loadMyCheckins();
     }
   });
+}
+
+var FEELING_EMOJI = {"1":"😩","2":"😕","3":"😐","4":"😊","5":"🔥"};
+var VIS_LABEL = {"self":"🔐 Only me","instructor":"🔒 Me and Heather","community":"🌐 Community"};
+
+function loadMyCheckins(){
+  if(!DB||!currentUser) return;
+  var el = document.getElementById("my-checkins-list");
+  if(!el) return;
+  DB.ref("checkins").orderByChild("name").equalTo(currentUser).once("value", function(snap){
+    var items = [];
+    if(snap.exists()) snap.forEach(function(c){ var v=c.val(); v._key=c.key; items.push(v); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    if(!items.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No check-ins yet.</p>"; return; }
+    el.innerHTML = items.map(function(ci){
+      var d = new Date(ci.ts).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+      return "<div style='padding:10px 0;border-bottom:0.5px solid var(--border);'>"+
+        "<div style='display:flex;justify-content:space-between;align-items:flex-start;gap:8px;'>"+
+        "<div><strong style='font-size:14px;'>"+(FEELING_EMOJI[ci.feeling]||"")+"</strong> <span style='font-size:12px;color:var(--sub);'>"+d+" · "+(VIS_LABEL[ci.visibility]||"")+"</span><br/>"+
+        "<span style='font-size:13px;'>"+ex(ci.good||"")+"</span>"+(ci.hard?"<br/><span style='font-size:12px;color:var(--sub);'>Challenge: "+ex(ci.hard)+"</span>":"")+(ci.q?"<br/><span style='font-size:12px;color:var(--sub);'>Question: "+ex(ci.q)+"</span>":"")+"</div>"+
+        "<div style='display:flex;gap:6px;flex-shrink:0;'><button class='edit-btn' onclick='startEditCheckin(\""+ci._key+"\")'>✏️</button><button class='del-btn' onclick='deleteMyCheckin(\""+ci._key+"\")'>✕</button></div>"+
+        "</div></div>";
+    }).join("");
+  });
+}
+
+function startEditCheckin(key){
+  DB.ref("checkins/"+key).once("value", function(snap){
+    var ci = snap.val();
+    if(!ci) return;
+    editingCheckinKey = key;
+    document.querySelectorAll('input[name="ci-feeling"]').forEach(function(r){ r.checked = (r.value===ci.feeling); });
+    document.getElementById("ci-good").value = ci.good||"";
+    document.getElementById("ci-hard").value = ci.hard||"";
+    document.getElementById("ci-q").value = ci.q||"";
+    document.querySelectorAll('input[name="ci-visibility"]').forEach(function(r){ r.checked = (r.value===ci.visibility); });
+    document.getElementById("checkin-btn").textContent = "Save Changes";
+    document.getElementById("checkin-cancel-btn").style.display = "block";
+    document.getElementById("checkin-btn").scrollIntoView({behavior:"smooth", block:"center"});
+  });
+}
+
+function cancelEditCheckin(){
+  editingCheckinKey = null;
+  document.getElementById("ci-good").value="";
+  document.getElementById("ci-hard").value="";
+  document.getElementById("ci-q").value="";
+  document.querySelectorAll('input[name="ci-feeling"]').forEach(function(r){ r.checked=false; });
+  document.querySelector('input[name="ci-visibility"][value="instructor"]').checked = true;
+  document.getElementById("checkin-btn").textContent = "Submit Check-in";
+  document.getElementById("checkin-cancel-btn").style.display = "none";
+}
+
+function deleteMyCheckin(key){
+  if(!confirm("Delete this check-in? This can't be undone.")) return;
+  DB.ref("checkins/"+key).remove(function(e){ if(!e) loadMyCheckins(); });
 }
 
 function loadAdminCheckins(){
@@ -3095,46 +3202,78 @@ function clearMessageBadge(){
   if(dot) dot.style.display = "none";
 }
 
+var currentAdminThreadKey = null;
+
 function loadAdminMessages(){
   if(!DB) return;
   DB.ref("messages").on("value",function(snap){
     var el=document.getElementById("admin-msg-list");
     if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No messages yet.</p>"; return; }
-    var threads=[]; 
-    snap.forEach(function(c){ 
-      var msgs=[]; var name=c.key;
+    var threads=[];
+    snap.forEach(function(c){
+      var msgs=[]; var key=c.key;
       c.forEach(function(m){ msgs.push(m.val()); });
       msgs.sort(function(a,b){ return b.ts-a.ts; });
-      if(msgs.length) threads.push({name:name, latest:msgs[0], count:msgs.length});
+      if(msgs.length) threads.push({key:key, latest:msgs[0], count:msgs.length});
     });
     threads.sort(function(a,b){ return b.latest.ts-a.latest.ts; });
     var h="";
     threads.forEach(function(t){
       var d=new Date(t.latest.ts).toLocaleDateString("en-US",{month:"short",day:"numeric"});
-      h+="<div style='padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;' onclick='showThread(\""+ex(t.name)+"\")'>"+
-        "<strong>"+ex(t.latest.from||t.name)+"</strong> <span style='color:var(--sub);font-size:11px;'>"+d+"</span><br/>"+
-        "<span style='font-size:13px;color:var(--sub);'>"+ex((t.latest.text||"").substring(0,50))+"...</span></div>";
+      var displayName = t.latest.fromClient ? (t.latest.from||t.key) : t.key;
+      var unread = !!t.latest.fromClient; // client sent last message — awaiting your reply
+      h+="<div style='padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;' onclick='openAdminThread(\""+ex(t.key)+"\",\""+ex(displayName).replace(/"/g,"&quot;")+"\")'>"+
+        "<div><strong>"+ex(displayName)+"</strong>"+(unread?" <span style='width:8px;height:8px;background:#c05040;border-radius:50%;display:inline-block;margin-left:4px;vertical-align:middle;'></span>":"")+" <span style='color:var(--sub);font-size:11px;'>"+d+"</span><br/>"+
+        "<span style='font-size:13px;color:var(--sub);'>"+ex((t.latest.text||"").substring(0,50))+"</span></div>"+
+        "<span style='color:var(--accent);font-size:13px;white-space:nowrap;'>View →</span></div>";
     });
     el.innerHTML=h||"<p style='color:var(--sub);font-size:13px;'>No messages yet.</p>";
   });
 }
 
-function showThread(clientKey){
-  document.getElementById("reply-to").value=clientKey;
+function openAdminThread(clientKey, displayName){
+  currentAdminThreadKey = clientKey;
+  document.getElementById("admin-msg-inbox-card").style.display="none";
+  document.getElementById("admin-msg-thread-card").style.display="block";
+  document.getElementById("admin-thread-name").textContent = displayName;
+  DB.ref("messages/"+clientKey).on("value", function(snap){
+    var el = document.getElementById("admin-thread-messages");
+    if(!el) return;
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No messages yet.</p>"; return; }
+    var msgs=[]; snap.forEach(function(m){ msgs.push(m.val()); });
+    msgs.sort(function(a,b){ return a.ts-b.ts; });
+    var h="";
+    msgs.forEach(function(m){
+      var isClient = m.fromClient;
+      h+="<div style='display:flex;flex-direction:column;align-items:"+(isClient?"flex-start":"flex-end")+";margin-bottom:8px;'>";
+      h+="<div style='background:"+(isClient?"var(--inp)":"var(--accent)")+";color:"+(isClient?"var(--text)":"#fff")+";border-radius:10px;padding:8px 12px;max-width:80%;font-size:13px;'>";
+      h+=ex(m.text)+"</div>";
+      h+="<span style='font-size:10px;color:var(--sub);margin-top:2px;'>"+new Date(m.ts).toLocaleString()+"</span></div>";
+    });
+    el.innerHTML=h;
+    el.scrollTop = el.scrollHeight;
+  });
+}
+
+function closeAdminThread(){
+  if(currentAdminThreadKey) DB.ref("messages/"+currentAdminThreadKey).off("value");
+  currentAdminThreadKey = null;
+  document.getElementById("admin-msg-thread-card").style.display="none";
+  document.getElementById("admin-msg-inbox-card").style.display="block";
 }
 
 function sendAdminReply(){
-  var to=document.getElementById("reply-to").value.trim();
   var txt=document.getElementById("reply-text").value.trim();
-  if(!to||!txt){ alert("Please enter a client name and reply."); return; }
+  if(!currentAdminThreadKey){ alert("Please select a conversation first."); return; }
+  if(!txt){ alert("Please type a reply."); return; }
   if(!DB) return;
-  DB.ref("messages/"+sk(to)).push({
+  DB.ref("messages/"+currentAdminThreadKey).push({
     from:"Heather", text:txt, ts:Date.now(), fromClient:false
   }, function(e){
     if(!e){
       document.getElementById("reply-text").value="";
       showOk("ok-admin-reply","Reply sent!");
-      notifyClientIfOk(sk(to), "New message from Heather", "Heather replied to your message:\n\n"+txt+"\n\nLog in to your dashboard to reply: https://everydaystrongfit.com/everyday-strong.html");
+      notifyClientIfOk(currentAdminThreadKey, "New message from Heather", "Heather replied to your message:\n\n"+txt+"\n\nLog in to your dashboard to reply: https://everydaystrongfit.com/everyday-strong.html");
     }
   });
 }
@@ -3260,7 +3399,7 @@ function loadDashboard(){
       var row=document.createElement("div");
       row.style.cssText="padding:8px 0;border-bottom:0.5px solid var(--border);font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;";
       row.setAttribute("data-msgname",t.name);
-      row.onclick=function(){ var n=this.getAttribute("data-msgname"); document.getElementById("atab-messages").click(); document.getElementById("reply-to").value=n; };
+      row.onclick=function(){ var n=this.getAttribute("data-msgname"); document.getElementById("atab-messages").click(); openAdminThread(n, t.latest.from||n); };
       row.innerHTML="<div><strong>"+ex(t.latest.from||t.name)+"</strong><br/><span style='font-size:12px;color:var(--sub);'>"+ex((t.latest.text||"").substring(0,50))+"</span></div><span style='background:#c05040;color:#fff;font-size:10px;padding:2px 7px;border-radius:8px;white-space:nowrap;'>"+t.count+" new</span>";
       el.appendChild(row);
     });
@@ -4658,6 +4797,6 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-payment-edit-return</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-realtime-msg-dot</p>
 </body>
 </html>
