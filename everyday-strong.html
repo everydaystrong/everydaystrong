@@ -933,7 +933,8 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
           <input class="form-input" id="reply-to" placeholder="e.g. Sarah" style="text-transform:none;" />
         </div>
         <textarea class="form-textarea" id="reply-text" placeholder="Type your reply..."></textarea>
-        <button class="action-btn" id="admin-reply-btn">Send Reply</button>
+        <button class="action-btn" id="admin-reply-btn">Send Reply (Dashboard)</button>
+        <button class="action-btn sec" style="margin-top:8px;" onclick="sendAdminReplyByEmail()">📧 Reply by Email Instead</button>
       </div>
     </div>
 
@@ -1248,6 +1249,21 @@ function notifyHeather(subject, message){
 // Looks up a client's email + contact preferences from their most recent
 // Intake Form submission, then emails them IF they said it's okay to contact
 // them and prefer Email or Dashboard Messaging (not Text/Phone only).
+// Looks up a client's email from their most recent Intake Form submission.
+// callback(email) — email will be null if none found.
+function lookupClientEmail(clientKey, callback){
+  if(!DB || !clientKey){ callback(null); return; }
+  DB.ref("client_forms/"+clientKey).once("value", function(snap){
+    if(!snap.exists()){ callback(null); return; }
+    var best = null, bestTs = -1;
+    snap.forEach(function(c){
+      var v = c.val();
+      if(v && v.formType==="Intake Form" && v.ts > bestTs){ best = v; bestTs = v.ts; }
+    });
+    callback(best && best.data && best.data.Email ? best.data.Email : null);
+  });
+}
+
 function notifyClientIfOk(clientKey, subject, message){
   if(!DB || !clientKey) return;
   DB.ref("client_forms/"+clientKey).once("value", function(snap){
@@ -1271,6 +1287,47 @@ function notifyClientIfOk(clientKey, subject, message){
         client_email: d.Email
       });
     } catch(e){ console.error("Client notification email failed:", e); }
+  });
+}
+
+// Reply-by-email buttons — a deliberate choice to email a client directly,
+// so unlike notifyClientIfOk this doesn't check contact preferences (you're
+// choosing the channel yourself). Also logs the reply in the dashboard
+// thread so it's not lost from your normal message history.
+function sendAdminReplyByEmail(){
+  var to = document.getElementById("reply-to").value.trim();
+  var txt = document.getElementById("reply-text").value.trim();
+  if(!to || !txt){ alert("Please enter a client name and reply."); return; }
+  if(!DB) return;
+  var key = sk(to);
+  lookupClientEmail(key, function(email){
+    if(!email){ alert("Couldn't find an email on file for "+to+". Try the dashboard reply instead."); return; }
+    try {
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: email, subject: "Message from Heather — Everyday Strong",
+        message: txt, client_name: "Everyday Strong", client_email: email
+      });
+      DB.ref("messages/"+key).push({from:"Heather", text:txt, ts:Date.now(), fromClient:false, viaEmail:true});
+      document.getElementById("reply-text").value="";
+      showOk("ok-admin-reply","Reply emailed to "+to+"!");
+    } catch(e){ alert("Something went wrong sending the email."); }
+  });
+}
+
+function sendClientReplyByEmail(){
+  var inp = document.getElementById("cp-reply-inp");
+  var txt = inp ? inp.value.trim() : "";
+  if(!txt || !currentClientKey) return;
+  lookupClientEmail(currentClientKey, function(email){
+    if(!email){ alert("Couldn't find an email on file for this client. Try Send instead."); return; }
+    try {
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: email, subject: "Message from Heather — Everyday Strong",
+        message: txt, client_name: "Everyday Strong", client_email: email
+      });
+      DB.ref("messages/"+currentClientKey).push({from:"Heather", text:txt, ts:Date.now(), fromClient:false, viaEmail:true});
+      inp.value="";
+    } catch(e){ alert("Something went wrong sending the email."); }
   });
 }
 
@@ -3879,7 +3936,7 @@ function loadClientMsgs(){
       h+="<span style='font-size:10px;color:var(--sub);margin-top:2px;'>"+ago2fn(m.ts)+"</span></div>";
     });
     h+="</div>";
-    h+="<div style='display:flex;gap:8px;'><input class='form-input' id='cp-reply-inp' placeholder='Reply...' style='flex:1;font-size:13px;padding:8px 12px;' /><button class='action-btn' style='font-size:12px;padding:8px 14px;' onclick='sendClientReply()'>Send</button></div>";
+    h+="<div style='display:flex;gap:8px;flex-wrap:wrap;'><input class='form-input' id='cp-reply-inp' placeholder='Reply...' style='flex:1;font-size:13px;padding:8px 12px;min-width:150px;' /><button class='action-btn' style='font-size:12px;padding:8px 14px;' onclick='sendClientReply()'>Send</button><button class='action-btn sec' style='font-size:12px;padding:8px 14px;' onclick='sendClientReplyByEmail()'>📧 Email Instead</button></div>";
     el.innerHTML=h;
   });
 }
@@ -4539,6 +4596,6 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-notifications-contact-info</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-reply-by-email</p>
 </body>
 </html>
