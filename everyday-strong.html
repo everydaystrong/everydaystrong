@@ -3454,12 +3454,14 @@ function loadClientPayments(){
           h += "<p class='tip' style='margin-bottom:1rem;'>This client is marked No Charge — they won't show up under the Unpaid filter or badge, and won't be affected by any future payment reminders.</p>";
         }
         h += "<div class='admin-card' style='background:var(--inp);margin-bottom:1rem;'>";
-        h += "<p style='font-size:13px;font-weight:600;margin-bottom:8px;'>+ Log a Payment</p>";
+        h += "<p style='font-size:13px;font-weight:600;margin-bottom:8px;' id='pay-form-title'>+ Log a Payment</p>";
         h += "<div class='form-row'><span class='form-label'>Amount</span><input class='form-input' id='pay-amount' type='text' placeholder='e.g. 50, $50, or 0 for free/promo' /></div>";
-        h += "<div class='form-row'><span class='form-label'>Date</span><input class='form-input' id='pay-date' type='date' /></div>";
+        h += "<div class='form-row'><span class='form-label'>Date Paid</span><input class='form-input' id='pay-date' type='date' /></div>";
+        h += "<div class='form-row'><span class='form-label'>Next Due Date (optional)</span><input class='form-input' id='pay-nextdue' type='date' /></div>";
         h += "<div class='form-row'><span class='form-label'>Promo Code (optional)</span><input class='form-input' id='pay-promo' type='text' placeholder='e.g. SUMMER2026' /></div>";
         h += "<div class='form-row'><span class='form-label'>Note (optional)</span><input class='form-input' id='pay-note' type='text' placeholder='e.g. July - 4 weeks, or first month free' /></div>";
-        h += "<button class='action-btn' style='margin-top:8px;' onclick='logPayment()'>Log Payment</button>";
+        h += "<button class='action-btn' id='pay-form-btn' style='margin-top:8px;' onclick='logPayment()'>Log Payment</button>";
+        h += "<button class='action-btn sec' id='pay-form-cancel' style='margin-top:8px;display:none;' onclick='cancelEditPayment()'>Cancel</button>";
         h += "</div>";
         h += "<p style='font-size:13px;font-weight:600;margin-bottom:8px;'>Payment History</p>";
         if(!history.length){
@@ -3467,10 +3469,11 @@ function loadClientPayments(){
         } else {
           history.forEach(function(p){
             var d = p.date || new Date(p.ts).toLocaleDateString();
-            h += "<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border);'>";
-            h += "<div><strong style='font-size:14px;color:var(--text);'>"+ex(p.amount||"")+"</strong> <span style='font-size:12px;color:var(--sub);'>· "+ex(d)+"</span>"+(p.promo?" <span style='background:#c9a227;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>🏷️ "+ex(p.promo)+"</span>":"")+(p.note?"<br/><span style='font-size:12px;color:var(--sub);'>"+ex(p.note)+"</span>":"")+"</div>";
-            h += "<button class='del-btn' onclick='deletePaymentEntry(\""+p._key+"\")'>✕</button>";
-            h += "</div>";
+            h += "<div style='padding:10px 0;border-bottom:0.5px solid var(--border);'>";
+            h += "<div style='display:flex;justify-content:space-between;align-items:flex-start;gap:8px;'>";
+            h += "<div><strong style='font-size:14px;color:var(--text);'>"+ex(p.amount||"")+"</strong> <span style='font-size:12px;color:var(--sub);'>· Paid "+ex(d)+"</span>"+(p.nextDue?" <span style='font-size:12px;color:var(--sub);'>· Next due "+ex(p.nextDue)+"</span>":"")+(p.promo?" <span style='background:#c9a227;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>🏷️ "+ex(p.promo)+"</span>":"")+(p.returned?" <span style='background:#c05040;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>🔄 RETURNED</span>":"")+(p.note?"<br/><span style='font-size:12px;color:var(--sub);'>"+ex(p.note)+"</span>":"")+(p.returned&&p.returnNote?"<br/><span style='font-size:12px;color:#c05040;'>Return reason: "+ex(p.returnNote)+"</span>":"")+"</div>";
+            h += "<div style='display:flex;gap:6px;flex-shrink:0;'><button class='edit-btn' onclick='startEditPayment(\""+p._key+"\")'>✏️</button>"+(p.returned?"":"<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:11px;padding:5px 8px;' onclick='returnPaymentEntry(\""+p._key+"\")'>🔄</button>")+"<button class='del-btn' onclick='deletePaymentEntry(\""+p._key+"\")'>✕</button></div>";
+            h += "</div></div>";
           });
         }
         el.innerHTML = h;
@@ -3478,6 +3481,54 @@ function loadClientPayments(){
         if(dateInput) dateInput.value = new Date().toISOString().slice(0,10);
       });
     });
+  });
+}
+
+var editingPaymentKey = null;
+
+function startEditPayment(entryKey){
+  if(!DB||!currentClientKey) return;
+  DB.ref("payments/"+currentClientKey+"/"+entryKey).once("value", function(snap){
+    var p = snap.val();
+    if(!p) return;
+    editingPaymentKey = entryKey;
+    document.getElementById("pay-amount").value = p.amount || "";
+    document.getElementById("pay-date").value = p.date || "";
+    document.getElementById("pay-nextdue").value = p.nextDue || "";
+    document.getElementById("pay-promo").value = p.promo || "";
+    document.getElementById("pay-note").value = p.note || "";
+    document.getElementById("pay-form-title").textContent = "✏️ Edit Payment";
+    document.getElementById("pay-form-btn").textContent = "Save Changes";
+    document.getElementById("pay-form-cancel").style.display = "inline-block";
+    document.getElementById("pay-form-title").scrollIntoView({behavior:"smooth", block:"center"});
+  });
+}
+
+function cancelEditPayment(){
+  editingPaymentKey = null;
+  document.getElementById("pay-amount").value = "";
+  document.getElementById("pay-nextdue").value = "";
+  document.getElementById("pay-promo").value = "";
+  document.getElementById("pay-note").value = "";
+  document.getElementById("pay-date").value = new Date().toISOString().slice(0,10);
+  document.getElementById("pay-form-title").textContent = "+ Log a Payment";
+  document.getElementById("pay-form-btn").textContent = "Log Payment";
+  document.getElementById("pay-form-cancel").style.display = "none";
+}
+
+function returnPaymentEntry(entryKey){
+  if(!DB||!currentClientKey) return;
+  var reason = prompt("Reason for the return/refund? (required)");
+  if(reason===null) return; // cancelled
+  if(!reason.trim()){ alert("Please enter a reason."); return; }
+  DB.ref("payments/"+currentClientKey+"/"+entryKey).update({returned:true, returnNote:reason.trim()}, function(e){
+    if(!e){
+      // A returned payment means they're likely unpaid again unless you say otherwise
+      resolveClientCodeKey(function(realKey){
+        if(realKey) DB.ref("codes/"+realKey).update({paymentStatus:"unpaid"}, function(){ loadClientPayments(); });
+        else loadClientPayments();
+      });
+    }
   });
 }
 
@@ -3495,13 +3546,24 @@ function logPayment(){
   if(!DB||!currentClientKey||currentClientKey==="undefined"){ alert("Couldn't find this client — please close and reopen their profile, then try again."); return; }
   var amount = document.getElementById("pay-amount").value.trim();
   var date = document.getElementById("pay-date").value;
+  var nextDue = document.getElementById("pay-nextdue").value;
   var promo = document.getElementById("pay-promo").value.trim();
   var note = document.getElementById("pay-note").value.trim();
   if(!amount){ alert("Please enter an amount."); return; }
+
+  if(editingPaymentKey){
+    DB.ref("payments/"+currentClientKey+"/"+editingPaymentKey).update({
+      amount: amount, date: date, nextDue: nextDue||null, promo: promo, note: note
+    }, function(e){
+      if(!e){ editingPaymentKey = null; loadClientPayments(); }
+    });
+    return;
+  }
+
   resolveClientCodeKey(function(realKey){
     if(!realKey){ alert("Couldn't find this client's access code — payment was not logged."); return; }
     DB.ref("payments/"+currentClientKey).push({
-      amount: amount, date: date, promo: promo, note: note, ts: Date.now()
+      amount: amount, date: date, nextDue: nextDue||null, promo: promo, note: note, ts: Date.now()
     }, function(e){
       if(!e){
         // Logging a payment marks the client as paid — the common case
@@ -4596,6 +4658,6 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-reply-by-email</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-payment-edit-return</p>
 </body>
 </html>
