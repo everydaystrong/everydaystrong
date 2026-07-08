@@ -219,6 +219,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
 .modal-close{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--sub);}
 </style>
 </head>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <body>
 
 
@@ -825,6 +826,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
             <button onclick="document.getElementById('client-profile-card').style.display='none';" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--sub);">✕</button>
           </div>
         </div>
+        <div id="cp-contact-info" style="margin-bottom:1rem;"></div>
         <div class="admin-tabs" style="margin-bottom:1rem;">
           <button class="tab-btn on" id="cp-tab-checkins" onclick="cpTab('checkins',this)">📋 Check ins</button>
           <button class="tab-btn" id="cp-tab-msgs" onclick="cpTab('msgs',this)">💌 Messages</button>
@@ -1224,6 +1226,53 @@ try {
   DB = firebase.database();
   DB.ref("adminPass").once("value",function(s){ if(s.exists()) adminPass=s.val(); });
 } catch(e){}
+
+// Email notifications for dashboard activity
+var EMAILJS_PUBLIC_KEY = "Df_RHTxaHGQXv0-yY";
+var EMAILJS_SERVICE_ID = "service_svquk8m";
+var EMAILJS_TEMPLATE_ID = "template_yfxtkhj";
+try { emailjs.init(EMAILJS_PUBLIC_KEY); } catch(e){}
+
+function notifyHeather(subject, message){
+  try {
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email: "Everydaystrongteam@gmail.com",
+      subject: subject,
+      message: message,
+      client_name: "Everyday Strong Dashboard",
+      client_email: "Everydaystrongteam@gmail.com"
+    });
+  } catch(e){ console.error("Notification email failed:", e); }
+}
+
+// Looks up a client's email + contact preferences from their most recent
+// Intake Form submission, then emails them IF they said it's okay to contact
+// them and prefer Email or Dashboard Messaging (not Text/Phone only).
+function notifyClientIfOk(clientKey, subject, message){
+  if(!DB || !clientKey) return;
+  DB.ref("client_forms/"+clientKey).once("value", function(snap){
+    if(!snap.exists()) return;
+    var best = null, bestTs = -1;
+    snap.forEach(function(c){
+      var v = c.val();
+      if(v && v.formType==="Intake Form" && v.ts > bestTs){ best = v; bestTs = v.ts; }
+    });
+    if(!best || !best.data || !best.data.Email) return;
+    var d = best.data;
+    if(d["OK to Contact"] !== "Yes") return;
+    var method = d["Preferred Contact Method"];
+    if(method === "Text/Phone") return; // respect their preference — don't email
+    try {
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: d.Email,
+        subject: subject,
+        message: message,
+        client_name: "Everyday Strong",
+        client_email: d.Email
+      });
+    } catch(e){ console.error("Client notification email failed:", e); }
+  });
+}
 
 function sp(id){
   document.getElementById("pg-login").style.display="none";
@@ -2378,7 +2427,7 @@ function renderAdmAnnList(items){
   filtered.forEach(function(a){
     var actions = annFilter==="archived"
       ? "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;' onclick='restoreAnn(\""+a._k+"\")'>↩️ Restore</button><button class='del-btn' onclick='permanentlyDeleteAnn(\""+a._k+"\")'>🗑️</button>"
-      : "<button class='edit-btn' onclick='editAnn(\""+a._k+"\")'>✏️</button><button class='del-btn' onclick='archiveAnn(\""+a._k+"\")'>✕</button>";
+      : "<button class='edit-btn' onclick='editAnn(\""+a._k+"\")'>✏️</button><button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;' onclick='archiveAnn(\""+a._k+"\")'>🗄️ Archive</button>";
     h+="<div class='list-item'><div class='list-item-left'><strong>"+ex(a.title)+"</strong><br/><span style='font-size:11px;color:var(--sub);'>"+ex(a.date)+"</span></div><div style='display:flex;gap:6px;'>"+actions+"</div></div>";
   });
   el.innerHTML = h;
@@ -2658,6 +2707,7 @@ function postToComm(){
       document.getElementById("comm-text").value="";
       document.getElementById("comm-img").value="";
       showOk("ok-comm","Posted!");
+      notifyHeather("New community post from "+currentUser, currentUser+" posted in the community feed:\n\n"+txt);
     }
   });
 }
@@ -2736,6 +2786,7 @@ function logProgress(){
       document.getElementById("prog-note").value="";
       showOk("ok-progress","Photo logged!");
       loadProgress();
+      notifyHeather("New progress photo from "+currentUser, currentUser+" logged a progress photo."+(note?"\n\nNote: "+note:""));
       if(visibility==="community"){
         DB.ref("community").push({
           name:currentUser,
@@ -2886,6 +2937,7 @@ function submitCheckin(){
       document.getElementById("ci-q").value="";
       if(feeling) feeling.checked=false;
       showOk("ok-checkin","Check-in submitted! 🎉");
+      notifyHeather("New check-in from "+currentUser, currentUser+" submitted a weekly check-in.\n\nFeeling: "+feeling.value+"\nWhat went well: "+good+(hard?"\nWhat was hard: "+hard:"")+(q?"\nQuestion: "+q:""));
     }
   });
 }
@@ -2931,7 +2983,12 @@ function sendMessage(){
   DB.ref("messages/"+sk(currentUser)).push({
     from:currentUser, text:txt, ts:Date.now(), fromClient:true
   }, function(e){
-    if(!e){ document.getElementById("msg-text").value=""; showOk("ok-msg","Message sent!"); loadMessages(); }
+    if(!e){
+      document.getElementById("msg-text").value="";
+      showOk("ok-msg","Message sent!");
+      loadMessages();
+      notifyHeather("New dashboard message from "+currentUser, currentUser+" sent you a message:\n\n"+txt);
+    }
   });
 }
 
@@ -3017,7 +3074,11 @@ function sendAdminReply(){
   DB.ref("messages/"+sk(to)).push({
     from:"Heather", text:txt, ts:Date.now(), fromClient:false
   }, function(e){
-    if(!e){ document.getElementById("reply-text").value=""; showOk("ok-admin-reply","Reply sent!"); }
+    if(!e){
+      document.getElementById("reply-text").value="";
+      showOk("ok-admin-reply","Reply sent!");
+      notifyClientIfOk(sk(to), "New message from Heather", "Heather replied to your message:\n\n"+txt+"\n\nLog in to your dashboard to reply: https://everydaystrongfit.com/everyday-strong.html");
+    }
   });
 }
 
@@ -3737,6 +3798,32 @@ function openClientProfile(name){
   document.getElementById("client-profile-card").style.display="block";
   document.getElementById("client-profile-card").scrollIntoView({behavior:"smooth"});
   cpTab("checkins", document.getElementById("cp-tab-checkins"));
+  loadClientContactInfo();
+}
+
+function loadClientContactInfo(){
+  var el = document.getElementById("cp-contact-info");
+  if(!el || !DB || !currentClientKey) return;
+  el.innerHTML = "";
+  DB.ref("client_forms/"+currentClientKey).once("value", function(snap){
+    if(!snap.exists()) return;
+    var best = null, bestTs = -1;
+    snap.forEach(function(c){
+      var v = c.val();
+      if(v && v.formType==="Intake Form" && v.ts > bestTs){ best = v; bestTs = v.ts; }
+    });
+    if(!best || !best.data) return;
+    var d = best.data;
+    var contactOk = d["OK to Contact"];
+    var method = d["Preferred Contact Method"];
+    var parts = [];
+    if(d.Email) parts.push("📧 "+ex(d.Email));
+    if(d.Phone) parts.push("📞 "+ex(d.Phone));
+    if(method) parts.push("💬 Prefers: "+ex(method));
+    if(contactOk) parts.push(contactOk==="Yes" ? "✅ OK to contact" : "🚫 Do not contact");
+    if(!parts.length) return;
+    el.innerHTML = "<div style='background:var(--inp);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--sub);display:flex;flex-wrap:wrap;gap:14px;'>"+parts.map(function(p){ return "<span>"+p+"</span>"; }).join("")+"</div>";
+  });
 }
 
 function cpTab(name, btn){
@@ -3801,7 +3888,12 @@ function sendClientReply(){
   var inp=document.getElementById("cp-reply-inp");
   var txt=inp?inp.value.trim():"";
   if(!txt||!currentClientKey) return;
-  DB.ref("messages/"+currentClientKey).push({from:"Heather",text:txt,ts:Date.now(),fromClient:false},function(e){ if(!e) inp.value=""; });
+  DB.ref("messages/"+currentClientKey).push({from:"Heather",text:txt,ts:Date.now(),fromClient:false},function(e){
+    if(!e){
+      inp.value="";
+      notifyClientIfOk(currentClientKey, "New message from Heather", "Heather replied to your message:\n\n"+txt+"\n\nLog in to your dashboard to reply: https://everydaystrongfit.com/everyday-strong.html");
+    }
+  });
 }
 
 function loadClientProgress(){
@@ -4447,6 +4539,6 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-preferred-code</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-notifications-contact-info</p>
 </body>
 </html>
