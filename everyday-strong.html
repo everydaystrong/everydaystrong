@@ -838,12 +838,14 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
           <button class="tab-btn" id="cp-tab-progress" onclick="cpTab('progress',this)">📸 Progress</button>
           <button class="tab-btn" id="cp-tab-forms" onclick="cpTab('forms',this)">📄 Forms</button>
           <button class="tab-btn" id="cp-tab-payments" onclick="cpTab('payments',this)">💰 Payments</button>
+          <button class="tab-btn" id="cp-tab-activity" onclick="cpTab('activity',this)">⭐ Activity</button>
         </div>
         <div id="cp-checkins"><p style="color:var(--sub);font-size:13px;">Select a client above.</p></div>
         <div id="cp-msgs" style="display:none;"><p style="color:var(--sub);font-size:13px;">Select a client above.</p></div>
         <div id="cp-progress" style="display:none;"><p style="color:var(--sub);font-size:13px;">Select a client above.</p></div>
         <div id="cp-forms" style="display:none;"><p style="color:var(--sub);font-size:13px;">Select a client above.</p></div>
         <div id="cp-payments" style="display:none;"><p style="color:var(--sub);font-size:13px;">Select a client above.</p></div>
+        <div id="cp-activity" style="display:none;"><p style="color:var(--sub);font-size:13px;">Select a client above.</p></div>
       </div>
     </div>
     <div class="tab-content" id="atc-submissions">
@@ -1440,7 +1442,7 @@ function previewAsClient(){
   document.getElementById("welcome-bar").textContent="👀 Preview Mode — this is what clients see. Nothing here is a real client account.";
   document.getElementById("back-to-admin-btn").style.display="inline-block";
   document.getElementById("trial-bar").style.display="none";
-  loadVideos();
+  loadMyUserData(function(){ refreshPopularVideos(function(){ loadVideos(); }); });
   loadAnnouncements();
   loadStreak();
   checkNewAnnouncements();
@@ -1486,7 +1488,7 @@ function doLogin(){
       err.style.display="none";
       document.getElementById("welcome-bar").textContent="Welcome, "+found.name+"! Ready to get strong?";
       showTrialBanner(found);
-      loadVideos();
+      loadMyUserData(function(){ refreshPopularVideos(function(){ loadVideos(); }); });
       loadAnnouncements();
       loadStreak();
       checkNewAnnouncements();
@@ -1571,13 +1573,26 @@ function renderCategories(){
     if(v.catImg) cats[tag].img=v.catImg;
   });
   var keys=Object.keys(cats);
-  if(!keys.length){ grid.innerHTML="<div class='empty-state'><p style='font-size:32px;margin-bottom:10px;'>🏋️</p><p>No workouts yet — check back soon!</p></div>"; return; }
+  if(!keys.length && !popularVideoKeys.length){ grid.innerHTML="<div class='empty-state'><p style='font-size:32px;margin-bottom:10px;'>🏋️</p><p>No workouts yet — check back soon!</p></div>"; return; }
 
   var standaloneNames = getStandaloneNames();
   var mergeableKeys = keys.filter(function(k){ return !standaloneNames[k]; });
   var standaloneKeys = keys.filter(function(k){ return standaloneNames[k]; });
 
   var h="";
+
+  // Most Popular — full members only (currentAccess === "ALL"). Someone who
+  // only paid for a specific program shouldn't see a tile showcasing videos
+  // outside what they actually have access to.
+  if(currentAccess==="ALL" && popularVideoKeys.length){
+    var popVids = allVideos.filter(function(v){ return popularVideoKeys.indexOf(v._k)!==-1; });
+    if(popVids.length){
+      h+="<div class='cat-card' onclick='openPopularCategory()'>";
+      h+="<div class='cat-img-placeholder'>⭐</div>";
+      h+="<div class='cat-info'><div class='cat-name'>Most Popular</div><div class='cat-count'>"+popVids.length+" video"+(popVids.length!==1?"s":"")+"</div></div></div>";
+    }
+  }
+
   if(mergeableKeys.length>1){
     var allVids=[];
     mergeableKeys.forEach(function(k){ allVids=allVids.concat(cats[k].videos); });
@@ -1641,14 +1656,71 @@ function openMergedCategories(){
   window.scrollTo(0,0);
 }
 
-// USER DATA (favorites, completed, notes stored in localStorage per user)
+// MOST POPULAR — aggregated from every client's favorites (not just this one),
+// shown to all members regardless of their access level, as a discovery tool.
+var popularVideoKeys = [];
+var POPULAR_COUNT = 8;
+
+function refreshPopularVideos(callback){
+  if(!DB){ if(callback) callback(); return; }
+  DB.ref("userdata").once("value", function(snap){
+    var tally = {};
+    if(snap.exists()) snap.forEach(function(clientNode){
+      var favs = clientNode.child("favorites").val();
+      if(favs) Object.keys(favs).forEach(function(vidKey){ tally[vidKey] = (tally[vidKey]||0) + 1; });
+    });
+    popularVideoKeys = Object.keys(tally)
+      .sort(function(a,b){ return tally[b]-tally[a]; })
+      .slice(0, POPULAR_COUNT);
+    if(callback) callback();
+  });
+}
+
+function openPopularCategory(){
+  currentCat="__POPULAR__";
+  currentFocusFilter=null;
+  document.getElementById("cat-view").style.display="none";
+  document.getElementById("vid-view").style.display="block";
+  document.getElementById("vid-title").textContent="⭐ Most Popular";
+  currentCatVids=allVideos.filter(function(v){ return popularVideoKeys.indexOf(v._k)!==-1; });
+  renderFocusFilters();
+  renderFilteredVideos();
+  window.scrollTo(0,0);
+}
+
+// USER DATA — favorites & completed now live in Firebase (not just localStorage)
+// so admin can see them and they sync across a client's devices. Kept as an
+// in-memory cache for fast synchronous rendering, loaded once at login.
+var myFavorites = {};
+var myCompleted = {};
+
+function loadMyUserData(callback){
+  if(!DB || !currentUserKey){ if(callback) callback(); return; }
+  DB.ref("userdata/"+currentUserKey+"/favorites").once("value", function(snap){
+    myFavorites = snap.exists() ? snap.val() : {};
+    DB.ref("userdata/"+currentUserKey+"/completed").once("value", function(snap2){
+      myCompleted = snap2.exists() ? snap2.val() : {};
+      if(callback) callback();
+    });
+  });
+}
 function getUserData(type, videoKey){
+  if(type==="fav") return myFavorites[videoKey] || null;
+  if(type==="completed") return myCompleted[videoKey] || null;
   try{ var d=JSON.parse(localStorage.getItem("es_"+currentUserKey+"_"+type)||"{}"); return d[videoKey]||null; } catch(e){ return null; }
 }
 function setUserData(type, videoKey, val){
+  if(type==="fav" || type==="completed"){
+    var cache = type==="fav" ? myFavorites : myCompleted;
+    if(val===null) delete cache[videoKey]; else cache[videoKey]=val;
+    if(DB && currentUserKey) DB.ref("userdata/"+currentUserKey+"/"+(type==="fav"?"favorites":"completed")+"/"+videoKey).set(val===null?null:true);
+    return;
+  }
   try{ var d=JSON.parse(localStorage.getItem("es_"+currentUserKey+"_"+type)||"{}"); if(val===null) delete d[videoKey]; else d[videoKey]=val; localStorage.setItem("es_"+currentUserKey+"_"+type,JSON.stringify(d)); } catch(e){}
 }
 function getAllUserData(type){
+  if(type==="fav") return myFavorites;
+  if(type==="completed") return myCompleted;
   try{ return JSON.parse(localStorage.getItem("es_"+currentUserKey+"_"+type)||"{}"); } catch(e){ return {}; }
 }
 
@@ -1710,7 +1782,6 @@ function buildVideoCard(v){
   var th=ytId?"<img src='https://img.youtube.com/vi/"+ytId+"/mqdefault.jpg' onerror='this.style.display=\"none\"' />":"";
   var isFav=getUserData("fav",v._k);
   var isDone=getUserData("completed",v._k);
-  var note=getUserData("note",v._k)||"";
   var h="<div class='video-card' id='vc-"+v._k+"'>";
   h+="<div class='video-thumb' onclick='openVideo(\""+ex(v.url)+"\")'>";
   h+=th+"<div class='play-overlay'></div>";
@@ -1721,12 +1792,12 @@ function buildVideoCard(v){
   h+="<div class='video-actions'>";
   h+="<button class='vact-btn "+(isFav?"active":"")+"' onclick='toggleFav(\""+v._k+"\")' title='Favorite'>"+(isFav?"⭐":"☆")+"</button>";
   h+="<button class='vact-btn "+(isDone?"active":"")+"' onclick='toggleDone(\""+v._k+"\")' title='Mark complete'>"+(isDone?"✅":"○ Done")+"</button>";
-  h+="<button class='vact-btn' onclick='toggleNote(\""+v._k+"\")' title='Notes'>📝"+(note?" ·":"")+"</button>";
+  h+="<button class='vact-btn' onclick='toggleComments(\""+v._k+"\")' title='Comments'>💬</button>";
   h+="</div>";
   h+="<div class='note-box' id='nb-"+v._k+"'>";
-  h+="<textarea class='note-inp' id='ni-"+v._k+"' placeholder='Add a note... (weights used, how it felt, etc.)'>"+ex(note)+"</textarea>";
-  h+="<button class='note-save' onclick='saveNote(\""+v._k+"\")'>Save Note</button>";
-  if(note) h+="<div class='note-display'>"+ex(note)+"</div>";
+  h+="<div id='comments-list-"+v._k+"' style='margin-bottom:8px;'></div>";
+  h+="<textarea class='note-inp' id='ni-"+v._k+"' placeholder='Ask a question or leave a comment for everyone to see...'></textarea>";
+  h+="<button class='note-save' onclick='postComment(\""+v._k+"\")'>Post Comment</button>";
   h+="</div></div></div>";
   return h;
 }
@@ -1768,16 +1839,43 @@ function toggleDone(key){
   refreshCard(key); renderCategories(); loadStreak();
 }
 
-function toggleNote(key){
+// VIDEO COMMENTS — shared thread visible to all clients, notifies Heather
+function toggleComments(key){
   var nb=document.getElementById("nb-"+key);
-  nb.style.display=nb.style.display==="block"?"none":"block";
+  var opening = nb.style.display!=="block";
+  nb.style.display=opening?"block":"none";
+  if(opening) loadComments(key);
 }
 
-function saveNote(key){
-  var val=document.getElementById("ni-"+key).value.trim();
-  setUserData("note",key,val||null);
-  document.getElementById("nb-"+key).style.display="none";
-  refreshCard(key);
+function loadComments(key){
+  if(!DB) return;
+  var el = document.getElementById("comments-list-"+key);
+  if(!el) return;
+  el.innerHTML = "<p style='font-size:12px;color:var(--sub);'>Loading comments...</p>";
+  DB.ref("videoComments/"+key).orderByChild("ts").once("value", function(snap){
+    if(!snap.exists()){ el.innerHTML = "<p style='font-size:12px;color:var(--sub);'>No comments yet — be the first to ask something!</p>"; return; }
+    var items = [];
+    snap.forEach(function(c){ items.push(c.val()); });
+    el.innerHTML = items.map(function(c){
+      var d = new Date(c.ts).toLocaleDateString("en-US",{month:"short",day:"numeric"});
+      return "<div style='padding:6px 0;border-bottom:0.5px solid var(--border);font-size:13px;'><strong>"+ex(c.name)+"</strong> <span style='font-size:11px;color:var(--sub);'>"+d+"</span><br/>"+ex(c.text)+"</div>";
+    }).join("");
+  });
+}
+
+function postComment(key){
+  var inp = document.getElementById("ni-"+key);
+  var txt = inp.value.trim();
+  if(!txt || !DB || !currentUser) return;
+  DB.ref("videoComments/"+key).push({name:currentUser, text:txt, ts:Date.now()}, function(e){
+    if(!e){
+      inp.value="";
+      loadComments(key);
+      var vidTitle = "a video";
+      for(var i=0;i<allVideos.length;i++){ if(allVideos[i]._k===key){ vidTitle=allVideos[i].title; break; } }
+      notifyHeather("New video comment from "+currentUser, currentUser+" commented on \""+vidTitle+"\":\n\n"+txt);
+    }
+  });
 }
 
 function refreshCard(key){
@@ -4087,7 +4185,7 @@ function loadClientContactInfo(){
 }
 
 function cpTab(name, btn){
-  ["checkins","msgs","progress","forms","payments"].forEach(function(t){ document.getElementById("cp-"+t).style.display="none"; });
+  ["checkins","msgs","progress","forms","payments","activity"].forEach(function(t){ document.getElementById("cp-"+t).style.display="none"; });
   document.querySelectorAll("[id^='cp-tab']").forEach(function(b){ b.classList.remove("on"); });
   document.getElementById("cp-"+name).style.display="block";
   btn.classList.add("on");
@@ -4096,6 +4194,31 @@ function cpTab(name, btn){
   if(name==="progress") loadClientProgress();
   if(name==="forms") loadClientForms();
   if(name==="payments") loadClientPayments();
+  if(name==="activity") loadClientActivity();
+}
+
+function loadClientActivity(){
+  if(!DB||!currentClientKey) return;
+  var el = document.getElementById("cp-activity");
+  el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>Loading...</p>";
+  DB.ref("userdata/"+currentClientKey).once("value", function(snap){
+    var d = snap.exists() ? snap.val() : {};
+    var favs = d.favorites ? Object.keys(d.favorites) : [];
+    var done = d.completed ? Object.keys(d.completed) : [];
+    function titleFor(key){
+      for(var i=0;i<allVideos.length;i++){ if(allVideos[i]._k===key) return allVideos[i].title; }
+      return null;
+    }
+    var favTitles = favs.map(titleFor).filter(Boolean);
+    var doneTitles = done.map(titleFor).filter(Boolean);
+    var h = "<div class='admin-card' style='margin-bottom:1rem;'><h3>⭐ Favorited ("+favTitles.length+")</h3>";
+    h += favTitles.length ? favTitles.map(function(t){ return "<p style='font-size:13px;padding:6px 0;border-bottom:0.5px solid var(--border);'>"+ex(t)+"</p>"; }).join("") : "<p style='color:var(--sub);font-size:13px;'>No favorites yet.</p>";
+    h += "</div>";
+    h += "<div class='admin-card'><h3>✅ Completed ("+doneTitles.length+")</h3>";
+    h += doneTitles.length ? doneTitles.map(function(t){ return "<p style='font-size:13px;padding:6px 0;border-bottom:0.5px solid var(--border);'>"+ex(t)+"</p>"; }).join("") : "<p style='color:var(--sub);font-size:13px;'>No completed videos yet.</p>";
+    h += "</div>";
+    el.innerHTML = h;
+  });
 }
 
 function loadClientCheckins(){
@@ -4799,6 +4922,6 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-msg-order-checkin-load</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-popular-full-members-only</p>
 </body>
 </html>
