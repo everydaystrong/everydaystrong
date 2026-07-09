@@ -383,7 +383,6 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
   <div class="welcome-bar" id="welcome-bar">Welcome back!</div>
   <div class="portal-body">
     <div id="ann-sec"></div>
-      <div id="workout-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1rem;"></div>
     <div class="streak-bar" id="streak-bar" style="display:none;">
       <span class="streak-fire">🔥</span>
       <div><div class="streak-num" id="streak-num">0</div><div class="streak-label">day streak</div></div>
@@ -407,6 +406,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <button class="pnav-btn" id="pnav-progress" data-tab="progress" onclick="switchPortalTab(this.dataset.tab,this)">📸 Progress</button>
       <button class="pnav-btn" id="pnav-food" data-tab="food" onclick="switchPortalTab(this.dataset.tab,this)">🥗 Food Journal</button>
       <button class="pnav-btn" id="pnav-recipes" data-tab="recipes" onclick="switchPortalTab(this.dataset.tab,this)">🍽️ Recipes</button>
+      <button class="pnav-btn" id="pnav-stats" data-tab="stats" onclick="switchPortalTab(this.dataset.tab,this)">📊 Stats</button>
     </div>
 
     <!-- PROGRAMS TAB -->
@@ -650,6 +650,12 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       </div>
 
       <div id="recipes-list"><div class="empty-state"><p style="font-size:28px;margin-bottom:8px;">🍽️</p><p>Loading recipes...</p></div></div>
+    </div>
+    <!-- STATS TAB -->
+    <div id="tab-stats" class="portal-tab" style="display:none;">
+      <p class="section-title">📊 My Stats</p>
+      <p class="section-sub">Your activity at a glance</p>
+      <div id="workout-stats"></div>
     </div>
     <!-- COMPLETED TAB -->
     <div id="tab-done" class="portal-tab" style="display:none;">
@@ -1426,6 +1432,7 @@ function switchPortalTab(name,btn){
   if(name==="food") loadFood();
   if(name==="recipes") loadRecipes();
   if(name==="checkin"){ loadGoal(); }
+  if(name==="stats") loadWorkoutStats();
 }
 
 function showTrialBanner(found){
@@ -1460,7 +1467,6 @@ function previewAsClient(){
   checkBirthday();
   checkNewVideo();
   loadGoal();
-  loadWorkoutStats();
   loadMyCheckins();
   sp("pg-portal");
 }
@@ -1506,7 +1512,6 @@ function doLogin(){
       checkBirthday();
       checkNewVideo();
       loadGoal();
-      loadWorkoutStats();
       loadMyCheckins();
       sp("pg-portal");
     } else {
@@ -5125,6 +5130,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-stats-and-comment-notify</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-stats-own-tab</p>
 </body>
 </html>
