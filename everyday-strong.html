@@ -686,6 +686,7 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
       <button class="tab-btn" id="atab-report">📊 Monthly Report</button>
       <button class="tab-btn" id="atab-checkins">📋 Check-ins</button>
       <button class="tab-btn" id="atab-messages">💌 Messages<span id="msg-tab-dot" style="display:none;width:8px;height:8px;background:#c05040;border-radius:50%;margin-left:5px;vertical-align:middle;"></span></button>
+      <button class="tab-btn" id="atab-comments">💬 Comments<span id="comments-tab-dot" style="display:none;width:8px;height:8px;background:#c05040;border-radius:50%;margin-left:5px;vertical-align:middle;"></span></button>
     </div>
 
 
@@ -942,6 +943,15 @@ body{font-family:Arial,sans-serif;background:var(--bg);min-height:100vh;transiti
         <textarea class="form-textarea" id="reply-text" placeholder="Type your reply..."></textarea>
         <button class="action-btn" id="admin-reply-btn">Send Reply (Dashboard)</button>
         <button class="action-btn sec" style="margin-top:8px;" onclick="sendAdminReplyByEmail()">📧 Reply by Email Instead</button>
+      </div>
+    </div>
+
+    <!-- COMMENTS TAB -->
+    <div class="tab-content" id="atc-comments">
+      <div class="admin-card">
+        <h3>Video Comments</h3>
+        <p class="tip" style="margin-bottom:1rem;">Every comment left on any video, across all your categories, newest first.</p>
+        <div id="admin-comments-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
       </div>
     </div>
 
@@ -1855,11 +1865,39 @@ function loadComments(key){
   DB.ref("videoComments/"+key).orderByChild("ts").once("value", function(snap){
     if(!snap.exists()){ el.innerHTML = "<p style='font-size:12px;color:var(--sub);'>No comments yet — be the first to ask something!</p>"; return; }
     var items = [];
-    snap.forEach(function(c){ items.push(c.val()); });
+    snap.forEach(function(c){ var v=c.val(); v._key=c.key; items.push(v); });
     el.innerHTML = items.map(function(c){
       var d = new Date(c.ts).toLocaleDateString("en-US",{month:"short",day:"numeric"});
-      return "<div style='padding:6px 0;border-bottom:0.5px solid var(--border);font-size:13px;'><strong>"+ex(c.name)+"</strong> <span style='font-size:11px;color:var(--sub);'>"+d+"</span><br/>"+ex(c.text)+"</div>";
+      var canManage = previewingAsClient || c.name===currentUser;
+      var actions = canManage
+        ? "<span style='font-size:11px;'> · <a href='#' onclick='editComment(\""+key+"\",\""+c._key+"\");return false;' style='color:var(--accent);'>Edit</a> · <a href='#' onclick='deleteComment(\""+key+"\",\""+c._key+"\");return false;' style='color:#c05040;'>Delete</a></span>"
+        : "";
+      return "<div style='padding:6px 0;border-bottom:0.5px solid var(--border);font-size:13px;' id='comment-"+c._key+"'><strong>"+ex(c.name)+"</strong> <span style='font-size:11px;color:var(--sub);'>"+d+"</span>"+actions+"<div id='comment-body-"+c._key+"'>"+ex(c.text)+"</div></div>";
     }).join("");
+  });
+}
+
+function editComment(videoKey, commentKey){
+  var bodyEl = document.getElementById("comment-body-"+commentKey);
+  if(!bodyEl) return;
+  var currentText = bodyEl.textContent;
+  bodyEl.innerHTML = "<textarea class='note-inp' id='edit-comment-"+commentKey+"' style='margin-top:4px;'>"+ex(currentText)+"</textarea>"+
+    "<button class='note-save' onclick='saveCommentEdit(\""+videoKey+"\",\""+commentKey+"\")'>Save</button>"+
+    "<button class='action-btn sec' style='margin-top:6px;margin-left:6px;width:auto;' onclick='loadComments(\""+videoKey+"\")'>Cancel</button>";
+}
+
+function saveCommentEdit(videoKey, commentKey){
+  var val = document.getElementById("edit-comment-"+commentKey).value.trim();
+  if(!val){ alert("Comment can't be empty — delete it instead if you want it gone."); return; }
+  DB.ref("videoComments/"+videoKey+"/"+commentKey).update({text:val, edited:true}, function(e){
+    if(!e) loadComments(videoKey);
+  });
+}
+
+function deleteComment(videoKey, commentKey){
+  if(!confirm("Delete this comment?")) return;
+  DB.ref("videoComments/"+videoKey+"/"+commentKey).remove(function(e){
+    if(!e) loadComments(videoKey);
   });
 }
 
@@ -1998,7 +2036,7 @@ function loadAnnouncements(){
 function doAdmin(){
   var p=prompt("Instructor password:");
   if(p===null) return;
-  if(p===adminPass){ loadDashboard(); loadTrialTracker(); loadUnpaidDashboard(); loadAdmVideos(); populateProgramDatalist(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); sp("pg-admin"); }
+  if(p===adminPass){ loadDashboard(); loadTrialTracker(); loadUnpaidDashboard(); loadAdmVideos(); populateProgramDatalist(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); initCommentsBadge(); sp("pg-admin"); }
   else alert("Incorrect password. Please try again.");
 }
 
@@ -3279,6 +3317,70 @@ function loadMessages(){
 
 // MESSAGE NOTIFICATION BADGE (only counts client-sent messages, ignores Heather's own replies)
 var MSG_LAST_CHECK_KEY = "es_admin_lastMsgCheck";
+var COMMENTS_LAST_CHECK_KEY = "es_admin_lastCommentsCheck";
+
+function initCommentsBadge(){
+  if(!DB) return;
+  DB.ref("videoComments").on("value", function(snap){
+    var lastCheck = parseInt(localStorage.getItem(COMMENTS_LAST_CHECK_KEY)||"0");
+    var hasNew = false;
+    if(snap.exists()){
+      snap.forEach(function(vidNode){
+        vidNode.forEach(function(c){
+          var v = c.val();
+          if(v && v.ts > lastCheck) hasNew = true;
+        });
+      });
+    }
+    var dot = document.getElementById("comments-tab-dot");
+    if(dot) dot.style.display = hasNew ? "inline-block" : "none";
+  });
+}
+function clearCommentsBadge(){
+  localStorage.setItem(COMMENTS_LAST_CHECK_KEY, String(Date.now()));
+  var dot = document.getElementById("comments-tab-dot");
+  if(dot) dot.style.display = "none";
+}
+
+function deleteAdminComment(videoKey, commentKey){
+  if(!confirm("Delete this comment?")) return;
+  DB.ref("videoComments/"+videoKey+"/"+commentKey).remove(function(e){
+    if(!e) loadAdminComments();
+  });
+}
+
+function loadAdminComments(){
+  if(!DB) return;
+  var el = document.getElementById("admin-comments-list");
+  el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>Loading...</p>";
+  DB.ref("videoComments").once("value", function(snap){
+    if(!snap.exists()){ el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>No comments yet.</p>"; return; }
+    var all = [];
+    snap.forEach(function(vidNode){
+      var videoKey = vidNode.key;
+      var vidTitle = "Unknown video", vidTag = "", vidUrl = "";
+      for(var i=0;i<allVideos.length;i++){ if(allVideos[i]._k===videoKey){ vidTitle=allVideos[i].title; vidTag=allVideos[i].tag||""; vidUrl=allVideos[i].url||""; break; } }
+      vidNode.forEach(function(c){
+        var v = c.val();
+        v._key = c.key; v._videoKey = videoKey; v._vidTitle = vidTitle; v._vidTag = vidTag; v._vidUrl = vidUrl;
+        all.push(v);
+      });
+    });
+    all.sort(function(a,b){ return b.ts-a.ts; });
+    if(!all.length){ el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>No comments yet.</p>"; return; }
+    el.innerHTML = all.map(function(c){
+      var d = new Date(c.ts).toLocaleString();
+      var titleHtml = c._vidUrl
+        ? "<a href='#' onclick=\"openVideo('"+ex(c._vidUrl).replace(/'/g,"&#39;")+"');return false;\" style='color:var(--accent);text-decoration:underline;'>"+ex(c._vidTitle)+" ▶</a>"
+        : ex(c._vidTitle);
+      return "<div style='padding:12px 0;border-bottom:0.5px solid var(--border);'>"+
+        "<div style='font-size:12px;color:var(--sub);margin-bottom:4px;'>"+titleHtml+(c._vidTag?" · "+ex(c._vidTag):"")+" · "+d+"</div>"+
+        "<div style='font-size:13px;'><strong>"+ex(c.name)+"</strong>"+(c.edited?" <span style='font-size:11px;color:var(--sub);'>(edited)</span>":"")+"<br/>"+ex(c.text)+"</div>"+
+        "<button class='del-btn' style='margin-top:6px;' onclick='deleteAdminComment(\""+c._videoKey+"\",\""+c._key+"\")'>✕ Delete</button>"+
+        "</div>";
+    }).join("");
+  });
+}
 function initMessageBadge(){
   if(!DB) return;
   DB.ref("messages").on("value", function(snap){
@@ -4205,17 +4307,29 @@ function loadClientActivity(){
     var d = snap.exists() ? snap.val() : {};
     var favs = d.favorites ? Object.keys(d.favorites) : [];
     var done = d.completed ? Object.keys(d.completed) : [];
-    function titleFor(key){
-      for(var i=0;i<allVideos.length;i++){ if(allVideos[i]._k===key) return allVideos[i].title; }
+    function infoFor(key){
+      for(var i=0;i<allVideos.length;i++){
+        if(allVideos[i]._k===key){
+          var v = allVideos[i];
+          var focusTags = normalizeFocus(v.focus).join(", ");
+          return {title:v.title, tag:v.tag||"Uncategorized", focus:focusTags, url:v.url||""};
+        }
+      }
       return null;
     }
-    var favTitles = favs.map(titleFor).filter(Boolean);
-    var doneTitles = done.map(titleFor).filter(Boolean);
-    var h = "<div class='admin-card' style='margin-bottom:1rem;'><h3>⭐ Favorited ("+favTitles.length+")</h3>";
-    h += favTitles.length ? favTitles.map(function(t){ return "<p style='font-size:13px;padding:6px 0;border-bottom:0.5px solid var(--border);'>"+ex(t)+"</p>"; }).join("") : "<p style='color:var(--sub);font-size:13px;'>No favorites yet.</p>";
+    var favInfo = favs.map(infoFor).filter(Boolean);
+    var doneInfo = done.map(infoFor).filter(Boolean);
+    function renderRow(info){
+      var titleHtml = info.url
+        ? "<a href='#' onclick=\"openVideo('"+ex(info.url).replace(/'/g,"&#39;")+"');return false;\" style='color:var(--accent);text-decoration:underline;'>"+ex(info.title)+" ▶</a>"
+        : ex(info.title);
+      return "<p style='font-size:13px;padding:6px 0;border-bottom:0.5px solid var(--border);'><strong>"+titleHtml+"</strong><br/><span style='font-size:12px;color:var(--sub);'>"+ex(info.tag)+(info.focus?" · "+ex(info.focus):"")+"</span></p>";
+    }
+    var h = "<div class='admin-card' style='margin-bottom:1rem;'><h3>⭐ Favorited ("+favInfo.length+")</h3>";
+    h += favInfo.length ? favInfo.map(renderRow).join("") : "<p style='color:var(--sub);font-size:13px;'>No favorites yet.</p>";
     h += "</div>";
-    h += "<div class='admin-card'><h3>✅ Completed ("+doneTitles.length+")</h3>";
-    h += doneTitles.length ? doneTitles.map(function(t){ return "<p style='font-size:13px;padding:6px 0;border-bottom:0.5px solid var(--border);'>"+ex(t)+"</p>"; }).join("") : "<p style='color:var(--sub);font-size:13px;'>No completed videos yet.</p>";
+    h += "<div class='admin-card'><h3>✅ Completed ("+doneInfo.length+")</h3>";
+    h += doneInfo.length ? doneInfo.map(renderRow).join("") : "<p style='color:var(--sub);font-size:13px;'>No completed videos yet.</p>";
     h += "</div>";
     el.innerHTML = h;
   });
@@ -4921,7 +5035,8 @@ document.getElementById("food-btn").onclick=logFood;
 document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
+document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-popular-full-members-only</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-clickable-video-preview</p>
 </body>
 </html>
