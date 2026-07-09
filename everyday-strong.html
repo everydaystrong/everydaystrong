@@ -3353,32 +3353,41 @@ function loadAdminComments(){
   if(!DB) return;
   var el = document.getElementById("admin-comments-list");
   el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>Loading...</p>";
-  DB.ref("videoComments").once("value", function(snap){
-    if(!snap.exists()){ el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>No comments yet.</p>"; return; }
-    var all = [];
-    snap.forEach(function(vidNode){
-      var videoKey = vidNode.key;
-      var vidTitle = "Unknown video", vidTag = "", vidUrl = "";
-      for(var i=0;i<allVideos.length;i++){ if(allVideos[i]._k===videoKey){ vidTitle=allVideos[i].title; vidTag=allVideos[i].tag||""; vidUrl=allVideos[i].url||""; break; } }
-      vidNode.forEach(function(c){
-        var v = c.val();
-        v._key = c.key; v._videoKey = videoKey; v._vidTitle = vidTitle; v._vidTag = vidTag; v._vidUrl = vidUrl;
-        all.push(v);
+  // Fetch videos directly rather than relying on allVideos, which is only
+  // populated during a client/preview session — a plain admin login never
+  // fills it, so lookups against it would silently come back empty.
+  DB.ref("videos").once("value", function(vidSnap){
+    var videoLookup = {};
+    if(vidSnap.exists()) vidSnap.forEach(function(c){ videoLookup[c.key] = c.val(); });
+    DB.ref("videoComments").once("value", function(snap){
+      if(!snap.exists()){ el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>No comments yet.</p>"; return; }
+      var all = [];
+      snap.forEach(function(vidNode){
+        var videoKey = vidNode.key;
+        var vidData = videoLookup[videoKey];
+        var vidTitle = vidData ? vidData.title : "Unknown/deleted video";
+        var vidTag = vidData ? (vidData.tag||"") : "";
+        var vidUrl = vidData ? (vidData.url||"") : "";
+        vidNode.forEach(function(c){
+          var v = c.val();
+          v._key = c.key; v._videoKey = videoKey; v._vidTitle = vidTitle; v._vidTag = vidTag; v._vidUrl = vidUrl;
+          all.push(v);
+        });
       });
+      all.sort(function(a,b){ return b.ts-a.ts; });
+      if(!all.length){ el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>No comments yet.</p>"; return; }
+      el.innerHTML = all.map(function(c){
+        var d = new Date(c.ts).toLocaleString();
+        var titleHtml = c._vidUrl
+          ? "<a href='#' onclick=\"openVideo('"+ex(c._vidUrl).replace(/'/g,"&#39;")+"');return false;\" style='color:var(--accent);text-decoration:underline;'>"+ex(c._vidTitle)+" ▶</a>"
+          : ex(c._vidTitle);
+        return "<div style='padding:12px 0;border-bottom:0.5px solid var(--border);'>"+
+          "<div style='font-size:12px;color:var(--sub);margin-bottom:4px;'>"+titleHtml+(c._vidTag?" · "+ex(c._vidTag):"")+" · "+d+"</div>"+
+          "<div style='font-size:13px;'><strong>"+ex(c.name)+"</strong>"+(c.edited?" <span style='font-size:11px;color:var(--sub);'>(edited)</span>":"")+"<br/>"+ex(c.text)+"</div>"+
+          "<button class='del-btn' style='margin-top:6px;' onclick='deleteAdminComment(\""+c._videoKey+"\",\""+c._key+"\")'>✕ Delete</button>"+
+          "</div>";
+      }).join("");
     });
-    all.sort(function(a,b){ return b.ts-a.ts; });
-    if(!all.length){ el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>No comments yet.</p>"; return; }
-    el.innerHTML = all.map(function(c){
-      var d = new Date(c.ts).toLocaleString();
-      var titleHtml = c._vidUrl
-        ? "<a href='#' onclick=\"openVideo('"+ex(c._vidUrl).replace(/'/g,"&#39;")+"');return false;\" style='color:var(--accent);text-decoration:underline;'>"+ex(c._vidTitle)+" ▶</a>"
-        : ex(c._vidTitle);
-      return "<div style='padding:12px 0;border-bottom:0.5px solid var(--border);'>"+
-        "<div style='font-size:12px;color:var(--sub);margin-bottom:4px;'>"+titleHtml+(c._vidTag?" · "+ex(c._vidTag):"")+" · "+d+"</div>"+
-        "<div style='font-size:13px;'><strong>"+ex(c.name)+"</strong>"+(c.edited?" <span style='font-size:11px;color:var(--sub);'>(edited)</span>":"")+"<br/>"+ex(c.text)+"</div>"+
-        "<button class='del-btn' style='margin-top:6px;' onclick='deleteAdminComment(\""+c._videoKey+"\",\""+c._key+"\")'>✕ Delete</button>"+
-        "</div>";
-    }).join("");
   });
 }
 function initMessageBadge(){
@@ -4303,35 +4312,35 @@ function loadClientActivity(){
   if(!DB||!currentClientKey) return;
   var el = document.getElementById("cp-activity");
   el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>Loading...</p>";
-  DB.ref("userdata/"+currentClientKey).once("value", function(snap){
-    var d = snap.exists() ? snap.val() : {};
-    var favs = d.favorites ? Object.keys(d.favorites) : [];
-    var done = d.completed ? Object.keys(d.completed) : [];
-    function infoFor(key){
-      for(var i=0;i<allVideos.length;i++){
-        if(allVideos[i]._k===key){
-          var v = allVideos[i];
-          var focusTags = normalizeFocus(v.focus).join(", ");
-          return {title:v.title, tag:v.tag||"Uncategorized", focus:focusTags, url:v.url||""};
-        }
+  DB.ref("videos").once("value", function(vidSnap){
+    var videoLookup = {};
+    if(vidSnap.exists()) vidSnap.forEach(function(c){ videoLookup[c.key] = c.val(); });
+    DB.ref("userdata/"+currentClientKey).once("value", function(snap){
+      var d = snap.exists() ? snap.val() : {};
+      var favs = d.favorites ? Object.keys(d.favorites) : [];
+      var done = d.completed ? Object.keys(d.completed) : [];
+      function infoFor(key){
+        var v = videoLookup[key];
+        if(!v) return null;
+        var focusTags = normalizeFocus(v.focus).join(", ");
+        return {title:v.title, tag:v.tag||"Uncategorized", focus:focusTags, url:v.url||""};
       }
-      return null;
-    }
-    var favInfo = favs.map(infoFor).filter(Boolean);
-    var doneInfo = done.map(infoFor).filter(Boolean);
-    function renderRow(info){
-      var titleHtml = info.url
-        ? "<a href='#' onclick=\"openVideo('"+ex(info.url).replace(/'/g,"&#39;")+"');return false;\" style='color:var(--accent);text-decoration:underline;'>"+ex(info.title)+" ▶</a>"
-        : ex(info.title);
-      return "<p style='font-size:13px;padding:6px 0;border-bottom:0.5px solid var(--border);'><strong>"+titleHtml+"</strong><br/><span style='font-size:12px;color:var(--sub);'>"+ex(info.tag)+(info.focus?" · "+ex(info.focus):"")+"</span></p>";
-    }
-    var h = "<div class='admin-card' style='margin-bottom:1rem;'><h3>⭐ Favorited ("+favInfo.length+")</h3>";
-    h += favInfo.length ? favInfo.map(renderRow).join("") : "<p style='color:var(--sub);font-size:13px;'>No favorites yet.</p>";
-    h += "</div>";
-    h += "<div class='admin-card'><h3>✅ Completed ("+doneInfo.length+")</h3>";
-    h += doneInfo.length ? doneInfo.map(renderRow).join("") : "<p style='color:var(--sub);font-size:13px;'>No completed videos yet.</p>";
-    h += "</div>";
-    el.innerHTML = h;
+      var favInfo = favs.map(infoFor).filter(Boolean);
+      var doneInfo = done.map(infoFor).filter(Boolean);
+      function renderRow(info){
+        var titleHtml = info.url
+          ? "<a href='#' onclick=\"openVideo('"+ex(info.url).replace(/'/g,"&#39;")+"');return false;\" style='color:var(--accent);text-decoration:underline;'>"+ex(info.title)+" ▶</a>"
+          : ex(info.title);
+        return "<p style='font-size:13px;padding:6px 0;border-bottom:0.5px solid var(--border);'><strong>"+titleHtml+"</strong><br/><span style='font-size:12px;color:var(--sub);'>"+ex(info.tag)+(info.focus?" · "+ex(info.focus):"")+"</span></p>";
+      }
+      var h = "<div class='admin-card' style='margin-bottom:1rem;'><h3>⭐ Favorited ("+favInfo.length+")</h3>";
+      h += favInfo.length ? favInfo.map(renderRow).join("") : "<p style='color:var(--sub);font-size:13px;'>No favorites yet.</p>";
+      h += "</div>";
+      h += "<div class='admin-card'><h3>✅ Completed ("+doneInfo.length+")</h3>";
+      h += doneInfo.length ? doneInfo.map(renderRow).join("") : "<p style='color:var(--sub);font-size:13px;'>No completed videos yet.</p>";
+      h += "</div>";
+      el.innerHTML = h;
+    });
   });
 }
 
@@ -5037,6 +5046,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-clickable-video-preview</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-admin-video-lookup-fix</p>
 </body>
 </html>
