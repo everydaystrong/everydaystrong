@@ -1840,7 +1840,7 @@ function toggleFav(key){
 
 function toggleDone(key){
   var cur=getUserData("completed",key);
-  setUserData("completed",key,cur?null:true);
+  setUserData("completed",key,cur?null:Date.now());
   // Save date to Firebase for streak
   if(!cur&&DB&&currentUserKey){
     var today=new Date().toISOString().slice(0,10);
@@ -1912,6 +1912,18 @@ function postComment(key){
       var vidTitle = "a video";
       for(var i=0;i<allVideos.length;i++){ if(allVideos[i]._k===key){ vidTitle=allVideos[i].title; break; } }
       notifyHeather("New video comment from "+currentUser, currentUser+" commented on \""+vidTitle+"\":\n\n"+txt);
+      // Notify anyone else who's already commented on this same video —
+      // treats the thread like a conversation people are "following"
+      DB.ref("videoComments/"+key).once("value", function(snap){
+        var notified = {};
+        if(snap.exists()) snap.forEach(function(c){
+          var otherName = c.val().name;
+          if(otherName && otherName!==currentUser && !notified[otherName]){
+            notified[otherName] = true;
+            notifyClientIfOk(sk(otherName), "New reply on a video you commented on", currentUser+" also commented on \""+vidTitle+"\":\n\n"+txt);
+          }
+        });
+      });
     }
   });
 }
@@ -3129,18 +3141,78 @@ function checkNewVideo(){
 }
 
 // WORKOUT STATS
+// Shared stats calculator — used by the client's own dashboard AND the
+// admin's per-client Activity tab, so both sides always see the same numbers.
+function computeClientStats(clientKey, clientName, callback){
+  if(!DB || !clientKey){ callback(null); return; }
+  DB.ref("userdata/"+clientKey).once("value", function(uSnap){
+    var u = uSnap.exists() ? uSnap.val() : {};
+    var completed = u.completed || {};
+    var favorites = u.favorites || {};
+    var now = Date.now();
+    var startOfWeek = now - (now % (24*60*60*1000)) - (new Date().getDay())*24*60*60*1000;
+    var startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+    var thisWeek=0, thisMonth=0, allTime=0;
+    Object.keys(completed).forEach(function(k){
+      var val = completed[k];
+      allTime++;
+      if(typeof val === "number"){
+        if(val >= startOfWeek) thisWeek++;
+        if(val >= startOfMonth) thisMonth++;
+      }
+    });
+    // Streak
+    var dates = u.completedDates ? Object.keys(u.completedDates).sort() : [];
+    var streak=0, d=new Date();
+    while(true){
+      var ds=d.toISOString().slice(0,10);
+      if(dates.indexOf(ds)!==-1){ streak++; d.setDate(d.getDate()-1); } else break;
+    }
+    // Favorite category — most common tag among favorited videos
+    DB.ref("videos").once("value", function(vSnap){
+      var tagCounts = {};
+      if(vSnap.exists()) vSnap.forEach(function(c){
+        if(favorites[c.key]){
+          var tag = (c.val().tag)||"Uncategorized";
+          tagCounts[tag] = (tagCounts[tag]||0)+1;
+        }
+      });
+      var favCategory = null, favCategoryCount = 0;
+      Object.keys(tagCounts).forEach(function(t){ if(tagCounts[t]>favCategoryCount){ favCategory=t; favCategoryCount=tagCounts[t]; } });
+      // Check-ins — matched by name since checkins are keyed by push ID, not client key
+      DB.ref("checkins").orderByChild("name").once("value", function(cSnap){
+        var totalCheckins = 0;
+        if(cSnap.exists()) cSnap.forEach(function(c){ if(c.val().name===clientName) totalCheckins++; });
+        callback({
+          thisWeek:thisWeek, thisMonth:thisMonth, allTime:allTime,
+          streak:streak, totalCheckins:totalCheckins,
+          favoriteCount:Object.keys(favorites).length,
+          favCategory:favCategory, favCategoryCount:favCategoryCount
+        });
+      });
+    });
+  });
+}
+
+function statsCardsHtml(stats){
+  if(!stats) return "<p style='color:var(--sub);font-size:13px;'>No stats yet.</p>";
+  var h = "<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;'>";
+  h += "<div class='stat-card'><div class='stat-num'>"+stats.thisWeek+"</div><div class='stat-label'>This Week</div></div>";
+  h += "<div class='stat-card'><div class='stat-num'>"+stats.thisMonth+"</div><div class='stat-label'>This Month</div></div>";
+  h += "<div class='stat-card'><div class='stat-num'>"+stats.allTime+"</div><div class='stat-label'>All-Time Workouts</div></div>";
+  h += "<div class='stat-card'><div class='stat-num'>"+stats.streak+"</div><div class='stat-label'>Day Streak</div></div>";
+  h += "<div class='stat-card'><div class='stat-num'>"+stats.totalCheckins+"</div><div class='stat-label'>Check-ins</div></div>";
+  h += "<div class='stat-card'><div class='stat-num'>"+stats.favoriteCount+"</div><div class='stat-label'>Favorited</div></div>";
+  h += "</div>";
+  if(stats.favCategory) h += "<p style='font-size:13px;color:var(--sub);'>Most favorited category: <strong style='color:var(--text);'>"+ex(stats.favCategory)+"</strong> ("+stats.favCategoryCount+")</p>";
+  return h;
+}
+
 function loadWorkoutStats(){
   if(!DB||!currentUser) return;
-  DB.ref("userdata/"+sk(currentUser)+"/completed").once("value",function(snap){
-    var total=snap.exists()?Object.keys(snap.val()).length:0;
-    DB.ref("checkins").orderByChild("name").once("value",function(csnap){
-      var weeks=0;
-      if(csnap.exists()) csnap.forEach(function(c){ if(c.val().name===currentUser) weeks++; });
-      var statsEl=document.getElementById("workout-stats");
-      if(statsEl) statsEl.innerHTML=
-        "<div class='stat-card'><div class='stat-num'>"+total+"</div><div class='stat-label'>Workouts Done</div></div>"+
-        "<div class='stat-card'><div class='stat-num'>"+weeks+"</div><div class='stat-label'>Weekly Check ins</div></div>";
-    });
+  computeClientStats(currentUserKey, currentUser, function(stats){
+    var statsEl=document.getElementById("workout-stats");
+    if(statsEl) statsEl.innerHTML = statsCardsHtml(stats);
   });
 }
 
@@ -3935,6 +4007,7 @@ function deletePaymentEntry(entryKey){
 
 // CLIENT PROFILES
 var currentClientKey = null;
+var currentClientName = null;
 
 // NEW SUBMISSIONS FEED (every client_forms entry, across all keys, regardless of code status)
 var SUB_LAST_CHECK_KEY = "es_admin_lastSubCheck";
@@ -4263,6 +4336,7 @@ function loadClients(){
 function openClientProfile(name){
   if(!name || name==="undefined"){ alert("Something went wrong loading this client — please try again from the client list."); return; }
   currentClientKey = sk(name);
+  currentClientName = name;
   document.getElementById("client-profile-name").textContent = name + "  Profile";
   document.getElementById("client-profile-card").style.display="block";
   document.getElementById("client-profile-card").scrollIntoView({behavior:"smooth"});
@@ -4333,13 +4407,18 @@ function loadClientActivity(){
           : ex(info.title);
         return "<p style='font-size:13px;padding:6px 0;border-bottom:0.5px solid var(--border);'><strong>"+titleHtml+"</strong><br/><span style='font-size:12px;color:var(--sub);'>"+ex(info.tag)+(info.focus?" · "+ex(info.focus):"")+"</span></p>";
       }
-      var h = "<div class='admin-card' style='margin-bottom:1rem;'><h3>⭐ Favorited ("+favInfo.length+")</h3>";
+      var h = "<div class='admin-card' style='margin-bottom:1rem;'><h3>📊 Stats</h3><div id='cp-stats-inner'><p style='color:var(--sub);font-size:13px;'>Loading...</p></div></div>";
+      h += "<div class='admin-card' style='margin-bottom:1rem;'><h3>⭐ Favorited ("+favInfo.length+")</h3>";
       h += favInfo.length ? favInfo.map(renderRow).join("") : "<p style='color:var(--sub);font-size:13px;'>No favorites yet.</p>";
       h += "</div>";
       h += "<div class='admin-card'><h3>✅ Completed ("+doneInfo.length+")</h3>";
       h += doneInfo.length ? doneInfo.map(renderRow).join("") : "<p style='color:var(--sub);font-size:13px;'>No completed videos yet.</p>";
       h += "</div>";
       el.innerHTML = h;
+      computeClientStats(currentClientKey, currentClientName, function(stats){
+        var statsInner = document.getElementById("cp-stats-inner");
+        if(statsInner) statsInner.innerHTML = statsCardsHtml(stats);
+      });
     });
   });
 }
@@ -5046,6 +5125,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-admin-video-lookup-fix</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-stats-and-comment-notify</p>
 </body>
 </html>
