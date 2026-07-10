@@ -66,7 +66,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 
 /* ANNOUNCEMENTS */
 .announce-card{background:var(--card);border-radius:11px;border:0.5px solid var(--border);overflow:hidden;margin-bottom:10px;}
-.announce-header{background:var(--admbg);color:#f5f0eb;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;}
+.announce-header{background:var(--accent);color:#fff;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;}
 .announce-body{padding:14px 16px;font-size:14px;color:var(--text);line-height:1.7;white-space:pre-wrap;word-break:break-word;}
 .announce-body a{color:var(--accent);}
 .announce-date{font-size:11px;color:var(--sub);padding:0 16px 10px;}
@@ -403,16 +403,16 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 
     <div class="portal-nav-wrap">
       <select class="portal-nav-select" id="portal-nav-select" onchange="switchPortalTab(this.value,null)">
-        <option value="all">🏋️ Workouts</option>
-        <option value="fav">⭐ Favorites</option>
-        <option value="done">✅ Completed</option>
-        <option value="comm">🏘️ Community</option>
-        <option value="checkin">📋 Check-in</option>
-        <option value="msg">💌 Messages</option>
-        <option value="progress">📸 Progress</option>
-        <option value="food">🥗 Food Journal</option>
-        <option value="recipes">🍽️ Recipes</option>
-        <option value="stats">📊 Stats</option>
+        <option value="all">Workouts</option>
+        <option value="fav">Favorites</option>
+        <option value="done">Completed</option>
+        <option value="comm">Community</option>
+        <option value="checkin">Check-in</option>
+        <option value="msg">Messages</option>
+        <option value="progress">Progress</option>
+        <option value="food">Food Journal</option>
+        <option value="recipes">Recipes</option>
+        <option value="stats">Stats</option>
       </select>
       <span class="nav-dropdown-dot" id="nav-dropdown-dot" style="display:none;"></span>
     </div>
@@ -433,7 +433,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 
     <!-- FAVORITES TAB -->
     <div id="tab-fav" class="portal-tab" style="display:none;">
-      <p class="section-title">⭐ Favorites</p>
+      <p class="section-title">Favorites</p>
       <p class="section-sub">Videos you've saved</p>
       <div class="video-grid" id="fav-grid"></div>
     </div>
@@ -441,7 +441,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 
     <!-- COMMUNITY TAB -->
     <div id="tab-comm" class="portal-tab" style="display:none;">
-      <p class="section-title">🏘️ Community</p>
+      <p class="section-title">Community</p>
       <p class="section-sub">Share wins, ask questions, check in!</p>
 
       <!-- POST FORM -->
@@ -481,7 +481,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 
     <!-- PROGRESS PHOTOS TAB -->
     <div id="tab-progress" class="portal-tab" style="display:none;">
-      <p class="section-title">📸 Progress Photos</p>
+      <p class="section-title">Progress Photos</p>
       <p class="section-sub">Track your transformation over time</p>
       <div class="admin-card">
         <h3>Add a Progress Photo</h3>
@@ -517,7 +517,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 
     <!-- FOOD JOURNAL TAB -->
     <div id="tab-food" class="portal-tab" style="display:none;">
-      <p class="section-title">🥗 Food Journal</p>
+      <p class="section-title">Food Journal</p>
       <p class="section-sub">Log your meals and nutrition notes</p>
       <div class="admin-card">
         <h3>Log a Meal</h3>
@@ -564,7 +564,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     </div>
     <!-- CHECK-IN TAB -->
     <div id="tab-checkin" class="portal-tab" style="display:none;">
-      <p class="section-title">📋 Weekly Check-in</p>
+      <p class="section-title">Weekly Check-in</p>
       <p class="section-sub">Let Heather know how your week went!</p>
       <div class="admin-card" id="goal-card" style="margin-bottom:1rem;">
         <h3>🎯 My Goal</h3>
@@ -626,7 +626,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 
     <!-- MESSAGES TAB -->
     <div id="tab-msg" class="portal-tab" style="display:none;">
-      <p class="section-title">💌 Messages</p>
+      <p class="section-title">Messages</p>
       <p class="section-sub">Send a message to Heather</p>
       <div id="msg-thread"><div style="text-align:center;padding:2rem;color:var(--sub);font-size:14px;">Loading messages...</div></div>
       <div class="admin-card">
@@ -638,7 +638,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 
     <!-- RECIPES TAB -->
     <div id="tab-recipes" class="portal-tab" style="display:none;">
-      <p class="section-title">🍽️ Recipes</p>
+      <p class="section-title">Recipes</p>
       <p class="section-sub">Healthy recipes to fuel your workouts</p>
 
       <!-- FILTERS -->
@@ -661,13 +661,13 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     </div>
     <!-- STATS TAB -->
     <div id="tab-stats" class="portal-tab" style="display:none;">
-      <p class="section-title">📊 My Stats</p>
+      <p class="section-title">My Stats</p>
       <p class="section-sub">Your activity at a glance</p>
       <div id="workout-stats"></div>
     </div>
     <!-- COMPLETED TAB -->
     <div id="tab-done" class="portal-tab" style="display:none;">
-      <p class="section-title">✅ Completed Workouts</p>
+      <p class="section-title">Completed Workouts</p>
       <p class="section-sub">Your workout history</p>
       <div class="video-grid" id="done-grid"></div>
     </div>
@@ -1609,7 +1609,7 @@ function renderCategories(){
     var popVids = allVideos.filter(function(v){ return popularVideoKeys.indexOf(v._k)!==-1; });
     if(popVids.length){
       h+="<div class='cat-card' onclick='openPopularCategory()'>";
-      h+="<div class='cat-img-placeholder'><span>⭐</span></div>";
+      h+="<div class='cat-img-placeholder'></div>";
       h+="<div class='cat-info'><div class='cat-name'>Most Popular</div><div class='cat-count'>"+popVids.length+" video"+(popVids.length!==1?"s":"")+"</div></div></div>";
     }
   }
@@ -1625,7 +1625,7 @@ function renderCategories(){
     mergeableKeys.forEach(function(k){ if(!img && cats[k].img) img=cats[k].img; });
     h+="<div class='cat-card' onclick='openMergedCategories()'>";
     if(img){ h+="<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />"; }
-    else{ h+="<div class='cat-img-placeholder'><span>🏋️</span></div>"; }
+    else{ h+="<div class='cat-img-placeholder'></div>"; }
     h+="<div class='cat-info'><div class='cat-name'>Live Classes</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
     if(pct>0) h+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
     h+="</div></div>";
@@ -1638,7 +1638,7 @@ function renderCategories(){
       var pct=count>0?Math.round(completedCount/count*100):0;
       h+="<div class='cat-card' onclick='openCategory(\""+ex(cat)+"\")'>";
       if(data.img){ h+="<img class='cat-img' src='"+ex(data.img)+"' onerror='this.style.display=\"none\"' />"; }
-      else{ h+="<div class='cat-img-placeholder'><span>"+getCatIcon(cat)+"</span></div>"; }
+      else{ h+="<div class='cat-img-placeholder'></div>"; }
       h+="<div class='cat-info'><div class='cat-name'>"+ex(cat)+"</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
       if(pct>0) h+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
       h+="</div></div>";
@@ -1654,7 +1654,7 @@ function renderCategories(){
     var pct=count>0?Math.round(completedCount/count*100):0;
     h+="<div class='cat-card' onclick='openCategory(\""+ex(cat)+"\")'>";
     if(data.img){ h+="<img class='cat-img' src='"+ex(data.img)+"' onerror='this.style.display=\"none\"' />"; }
-    else{ h+="<div class='cat-img-placeholder'><span>"+getCatIcon(cat)+"</span></div>"; }
+    else{ h+="<div class='cat-img-placeholder'></div>"; }
     h+="<div class='cat-info'><div class='cat-name'>"+ex(cat)+"</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
     if(pct>0) h+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
     h+="</div></div>";
@@ -2038,7 +2038,7 @@ function loadAnnouncements(){
     items.forEach(function(a){
       var b=ex(a.body).replace(/https?:\/\/[^\s<]+/g,function(u){ return "<a href='"+u+"' target='_blank'>"+u+"</a>"; });
       h+="<div class='announce-card'>";
-      h+="<div class='announce-header'>"+(a.pinned?"📌 ":"")+( lb[a.type]||"Announcement")+"</div>";
+      h+="<div class='announce-header'>"+(a.pinned?"PINNED: ":"")+( lb[a.type]||"Announcement")+"</div>";
       h+="<div class='announce-body'><strong>"+ex(a.title)+"</strong><br/>"+b+"</div>";
       h+="<div class='announce-date'>"+ex(a.date)+"</div>";
       h+="</div>";
@@ -5134,6 +5134,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-09-color-a76a5b-confirmed</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-09-cleaner-less-emoji</p>
 </body>
 </html>
