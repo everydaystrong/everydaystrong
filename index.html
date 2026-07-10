@@ -31,57 +31,57 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
-body{font-family:Georgia,serif;background:#faf6f2;color:#3a2a1a;}
+body{font-family:'Raleway',sans-serif;background:#faf6f2;color:#3a2a1a;}
 
 /* NAV */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(250,246,242,0.97);border-bottom:1px solid #e8ddd2;padding:0.8rem 1.2rem;display:flex;align-items:center;justify-content:space-between;}
-.nav-brand-txt{font-family:Georgia,serif;font-size:17px;font-weight:700;color:#3a2a1a;text-decoration:none;}
-.nav-brand-txt span{color:#a0522d;}
+.nav-brand-txt{font-family:'Raleway',sans-serif;font-size:17px;font-weight:700;color:#3a2a1a;text-decoration:none;}
+.nav-brand-txt span{color:#a76a5b;}
 .nav-links{display:flex;align-items:center;gap:1.5rem;}
-.nav-links a{font-family:Arial,sans-serif;font-size:13px;color:#6a5a48;text-decoration:none;font-weight:600;letter-spacing:0.5px;}
-.nav-links a:hover{color:#a0522d;}
-.nav-cta{background:#a0522d;color:#fff !important;padding:8px 18px;border-radius:20px;font-size:13px !important;}
-.nav-cta:hover{background:#8b4513 !important;}
+.nav-links a{font-family:'Raleway',sans-serif;font-size:13px;color:#6a5a48;text-decoration:none;font-weight:600;letter-spacing:0.5px;}
+.nav-links a:hover{color:#a76a5b;}
+.nav-cta{background:#a76a5b;color:#fff !important;padding:8px 18px;border-radius:20px;font-size:13px !important;}
+.nav-cta:hover{background:#8b4a3d !important;}
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;padding:4px;}
 .hamburger span{width:24px;height:2px;background:#3a2a1a;border-radius:2px;display:block;}
 .mobile-menu{display:none;position:fixed;top:57px;left:0;right:0;background:#faf6f2;border-bottom:2px solid #e8ddd2;padding:1.2rem 1.5rem;z-index:99;flex-direction:column;gap:1rem;box-shadow:0 4px 20px rgba(0,0,0,0.1);}
-.mobile-menu a{font-family:Arial,sans-serif;font-size:16px;color:#3a2a1a;text-decoration:none;font-weight:600;padding:6px 0;border-bottom:0.5px solid #e8ddd2;}
-.mobile-menu a:last-child{border-bottom:none;color:#a0522d;}
+.mobile-menu a{font-family:'Raleway',sans-serif;font-size:16px;color:#3a2a1a;text-decoration:none;font-weight:600;padding:6px 0;border-bottom:0.5px solid #e8ddd2;}
+.mobile-menu a:last-child{border-bottom:none;color:#a76a5b;}
 .mobile-menu.open{display:flex;}
 
 /* HERO */
 .hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:5rem 1.2rem 3rem;background:linear-gradient(160deg,#faf6f2 0%,#f0e8e0 100%);}
 .hero-inner{max-width:700px;}
-.hero-eyebrow{font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#a0522d;margin-bottom:1.2rem;}
+.hero-eyebrow{font-family:'Raleway',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#a76a5b;margin-bottom:1.2rem;}
 .hero h1{font-size:clamp(38px,7vw,72px);line-height:1.1;color:#3a2a1a;margin-bottom:1.4rem;font-style:italic;}
-.hero h1 span{color:#a0522d;font-style:normal;}
-.hero-sub{font-family:Arial,sans-serif;font-size:17px;color:#6a5a48;line-height:1.7;margin-bottom:2.4rem;max-width:520px;margin-left:auto;margin-right:auto;}
+.hero h1 span{color:#a76a5b;font-style:normal;}
+.hero-sub{font-family:'Raleway',sans-serif;font-size:17px;color:#6a5a48;line-height:1.7;margin-bottom:2.4rem;max-width:520px;margin-left:auto;margin-right:auto;}
 .hero-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;}
-.btn-primary{background:#a0522d;color:#fff;padding:15px 36px;border-radius:30px;font-family:Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;display:inline-block;transition:background 0.2s,transform 0.15s;}
-.btn-primary:hover{background:#8b4513;transform:translateY(-2px);}
-.btn-secondary{background:transparent;color:#a0522d;padding:15px 36px;border-radius:30px;font-family:Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;border:2px solid #a0522d;display:inline-block;transition:all 0.2s;}
-.btn-secondary:hover{background:#a0522d;color:#fff;}
-.hero-note{font-family:Arial,sans-serif;font-size:12px;color:#9a8a7a;margin-top:1.2rem;}
+.btn-primary{background:#a76a5b;color:#fff;padding:15px 36px;border-radius:30px;font-family:'Raleway',sans-serif;font-size:15px;font-weight:700;text-decoration:none;display:inline-block;transition:background 0.2s,transform 0.15s;}
+.btn-primary:hover{background:#8b4a3d;transform:translateY(-2px);}
+.btn-secondary{background:transparent;color:#a76a5b;padding:15px 36px;border-radius:30px;font-family:'Raleway',sans-serif;font-size:15px;font-weight:700;text-decoration:none;border:2px solid #a76a5b;display:inline-block;transition:all 0.2s;}
+.btn-secondary:hover{background:#a76a5b;color:#fff;}
+.hero-note{font-family:'Raleway',sans-serif;font-size:12px;color:#9a8a7a;margin-top:1.2rem;}
 
 /* SECTION COMMON */
 section{padding:5rem 1.5rem;}
 .container{max-width:900px;margin:0 auto;}
-.section-label{font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#a0522d;margin-bottom:0.8rem;}
+.section-label{font-family:'Raleway',sans-serif;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#a76a5b;margin-bottom:0.8rem;}
 .section-title{font-size:clamp(28px,4vw,42px);color:#3a2a1a;margin-bottom:1rem;line-height:1.2;}
-.section-sub{font-family:Arial,sans-serif;font-size:16px;color:#6a5a48;line-height:1.7;max-width:600px;}
+.section-sub{font-family:'Raleway',sans-serif;font-size:16px;color:#6a5a48;line-height:1.7;max-width:600px;}
 
 /* ABOUT */
 .about{background:#fff;}
 .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;}
-.about-text p{font-family:Arial,sans-serif;font-size:15px;color:#5a4a38;line-height:1.8;margin-bottom:1rem;}
+.about-text p{font-family:'Raleway',sans-serif;font-size:15px;color:#5a4a38;line-height:1.8;margin-bottom:1rem;}
 .about-text p:last-child{margin-bottom:0;}
 .about-stats{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2rem;}
 .stat-box{background:#faf6f2;border-radius:12px;padding:1.4rem;text-align:center;border:0.5px solid #e8ddd2;}
-.stat-num{font-size:32px;font-weight:700;color:#a0522d;margin-bottom:4px;}
-.stat-lbl{font-family:Arial,sans-serif;font-size:12px;color:#9a8a7a;text-transform:uppercase;letter-spacing:0.5px;}
-.about-quote{background:linear-gradient(135deg,#a0522d,#8b4513);border-radius:16px;padding:2.5rem;color:#fff;text-align:center;}
+.stat-num{font-size:32px;font-weight:700;color:#a76a5b;margin-bottom:4px;}
+.stat-lbl{font-family:'Raleway',sans-serif;font-size:12px;color:#9a8a7a;text-transform:uppercase;letter-spacing:0.5px;}
+.about-quote{background:linear-gradient(135deg,#a76a5b,#8b4a3d);border-radius:16px;padding:2.5rem;color:#fff;text-align:center;}
 .about-quote blockquote{font-size:22px;line-height:1.5;font-style:italic;margin-bottom:1rem;}
-.about-quote cite{font-family:Arial,sans-serif;font-size:13px;opacity:0.8;}
+.about-quote cite{font-family:'Raleway',sans-serif;font-size:13px;opacity:0.8;}
 
 /* PROGRAMS */
 .programs{background:#faf6f2;}
@@ -90,41 +90,41 @@ section{padding:5rem 1.5rem;}
 .prog-card:hover{transform:translateY(-4px);box-shadow:0 8px 30px rgba(60,30,10,0.08);}
 .prog-icon{font-size:36px;margin-bottom:1rem;}
 .prog-title{font-size:20px;color:#3a2a1a;margin-bottom:0.5rem;}
-.prog-price{font-family:Arial,sans-serif;font-size:22px;font-weight:700;color:#a0522d;margin-bottom:0.8rem;}
-.prog-desc{font-family:Arial,sans-serif;font-size:14px;color:#6a5a48;line-height:1.6;}
+.prog-price{font-family:'Raleway',sans-serif;font-size:22px;font-weight:700;color:#a76a5b;margin-bottom:0.8rem;}
+.prog-desc{font-family:'Raleway',sans-serif;font-size:14px;color:#6a5a48;line-height:1.6;}
 .prog-details{margin-top:1rem;padding-top:1rem;border-top:0.5px solid #e8ddd2;}
-.prog-detail{font-family:Arial,sans-serif;font-size:13px;color:#6a5a48;padding:4px 0;display:flex;gap:8px;align-items:flex-start;}
-.prog-detail::before{content:"✓";color:#a0522d;font-weight:700;flex-shrink:0;}
+.prog-detail{font-family:'Raleway',sans-serif;font-size:13px;color:#6a5a48;padding:4px 0;display:flex;gap:8px;align-items:flex-start;}
+.prog-detail::before{content:"✓";color:#a76a5b;font-weight:700;flex-shrink:0;}
 
 /* HOW IT WORKS */
 .how{background:#fff;}
 .steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:2rem;margin-top:3rem;}
 .step{text-align:center;}
-.step-num{width:52px;height:52px;background:#a0522d;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;margin:0 auto 1rem;font-family:Arial,sans-serif;}
+.step-num{width:52px;height:52px;background:#a76a5b;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;margin:0 auto 1rem;font-family:'Raleway',sans-serif;}
 .step h3{font-size:17px;color:#3a2a1a;margin-bottom:0.5rem;}
-.step p{font-family:Arial,sans-serif;font-size:14px;color:#6a5a48;line-height:1.6;}
+.step p{font-family:'Raleway',sans-serif;font-size:14px;color:#6a5a48;line-height:1.6;}
 
 /* FAQ */
 .faq{background:#faf6f2;}
 .faq-list{margin-top:2.5rem;}
 .faq-item{background:#fff;border-radius:12px;margin-bottom:10px;overflow:hidden;border:0.5px solid #e8ddd2;}
-.faq-q{width:100%;text-align:left;padding:1.2rem 1.4rem;background:none;border:none;font-family:Arial,sans-serif;font-size:15px;font-weight:700;color:#3a2a1a;cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
-.faq-q:hover{color:#a0522d;}
-.faq-icon{font-size:18px;color:#a0522d;transition:transform 0.2s;flex-shrink:0;}
+.faq-q{width:100%;text-align:left;padding:1.2rem 1.4rem;background:none;border:none;font-family:'Raleway',sans-serif;font-size:15px;font-weight:700;color:#3a2a1a;cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
+.faq-q:hover{color:#a76a5b;}
+.faq-icon{font-size:18px;color:#a76a5b;transition:transform 0.2s;flex-shrink:0;}
 .faq-item.open .faq-icon{transform:rotate(45deg);}
-.faq-a{display:none;padding:0 1.4rem 1.2rem;font-family:Arial,sans-serif;font-size:14px;color:#6a5a48;line-height:1.7;}
+.faq-a{display:none;padding:0 1.4rem 1.2rem;font-family:'Raleway',sans-serif;font-size:14px;color:#6a5a48;line-height:1.7;}
 .faq-item.open .faq-a{display:block;}
 
 /* CTA */
 .cta-section{background:linear-gradient(135deg,#3a2a1a,#5a3a24);padding:5rem 1.5rem;text-align:center;}
 .cta-section h2{font-size:clamp(28px,4vw,46px);color:#fff;margin-bottom:1rem;}
-.cta-section p{font-family:Arial,sans-serif;font-size:16px;color:rgba(255,255,255,0.8);margin-bottom:2rem;max-width:500px;margin-left:auto;margin-right:auto;}
-.cta-email{font-family:Arial,sans-serif;font-size:14px;color:rgba(255,255,255,0.6);margin-top:1rem;}
+.cta-section p{font-family:'Raleway',sans-serif;font-size:16px;color:rgba(255,255,255,0.8);margin-bottom:2rem;max-width:500px;margin-left:auto;margin-right:auto;}
+.cta-email{font-family:'Raleway',sans-serif;font-size:14px;color:rgba(255,255,255,0.6);margin-top:1rem;}
 .cta-email a{color:#e8c0a0;text-decoration:none;}
 
 /* FOOTER */
 footer{background:#2a1a0a;padding:2rem 1.5rem;text-align:center;}
-footer p{font-family:Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.4);}
+footer p{font-family:'Raleway',sans-serif;font-size:13px;color:rgba(255,255,255,0.4);}
 footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
 
 /* MOBILE */
@@ -144,7 +144,7 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
   .steps{grid-template-columns:1fr;}
 }
 
-.site-ann-bar{background:#a0522d;color:#fff;padding:10px 1.5rem;text-align:center;font-family:Arial,sans-serif;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;}
+.site-ann-bar{background:#a76a5b;color:#fff;padding:10px 1.5rem;text-align:center;font-family:'Raleway',sans-serif;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;}
 .site-ann-bar a{color:#ffe8d6;text-decoration:underline;}
 .site-ann-pinned{background:#3a2a1a;}
 
@@ -169,7 +169,7 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
 .test-nav-btn{
   position:absolute; top:40%; transform:translateY(-50%); z-index:3;
   width:42px; height:42px; border-radius:50%; border:0.5px solid #e8ddd2;
-  background:#fff; color:#a0522d; font-size:18px; cursor:pointer;
+  background:#fff; color:#a76a5b; font-size:18px; cursor:pointer;
   box-shadow:0 4px 14px rgba(60,30,10,0.15); display:flex; align-items:center; justify-content:center;
   transition:opacity 0.2s, transform 0.15s;
 }
@@ -185,7 +185,7 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
   width:7px; height:7px; border-radius:50%; background:#d8cfc6; border:none; padding:0; cursor:pointer;
   transition:background 0.2s, width 0.2s;
 }
-#testimonials-dots .dot.active{ background:#a0522d; width:18px; border-radius:4px; }
+#testimonials-dots .dot.active{ background:#a76a5b; width:18px; border-radius:4px; }
 
 @media(max-width:640px){
   .test-nav-btn{ display:none; }
@@ -199,6 +199,9 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Allura&family=Raleway:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <body>
 
@@ -210,7 +213,7 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
     <a href="#programs">Programs</a>
     <a href="#how">How It Works</a>
     <a href="#faq">FAQ</a>
-    <a href="forms.html" style="font-family:Arial,sans-serif;font-size:13px;color:#6a5a48;text-decoration:none;font-weight:600;">New Client Forms</a>
+    <a href="forms.html" style="font-family:'Raleway',sans-serif;font-size:13px;color:#6a5a48;text-decoration:none;font-weight:600;">New Client Forms</a>
     <a href="https://everydaystrong.github.io/everydaystrong/everyday-strong.html" class="nav-cta">Member Login</a>
   </div>
   <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
@@ -224,7 +227,7 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
   <a href="#how" onclick="toggleMenu()">How It Works</a>
   <a href="#faq" onclick="toggleMenu()">FAQ</a>
   <a href="forms.html" onclick="toggleMenu()" style="color:#3a2a1a;font-weight:700;">New Client Forms</a>
-  <a href="https://everydaystrong.github.io/everydaystrong/everyday-strong.html" style="color:#a0522d;font-weight:700;">Member Login →</a>
+  <a href="https://everydaystrong.github.io/everydaystrong/everyday-strong.html" style="color:#a76a5b;font-weight:700;">Member Login →</a>
 </div>
 
 <!-- HERO -->
@@ -249,19 +252,19 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
 <section style="background:#3a2a1a;padding:5rem 1.5rem;text-align:center;">
   <div class="container">
     <div class="section-label" style="color:#e8c0a0;">Real Results</div>
-    <h2 style="font-family:Georgia,serif;font-size:clamp(26px,4vw,40px);color:#fff;margin-bottom:1rem;">My own transformation</h2>
-    <p style="font-family:Arial,sans-serif;font-size:15px;color:rgba(255,255,255,0.7);margin-bottom:2.5rem;max-width:500px;margin-left:auto;margin-right:auto;">80 pounds down. Real life. Real progress. This is why I do what I do.</p>
+    <h2 style="font-family:'Raleway',sans-serif;font-size:clamp(26px,4vw,40px);color:#fff;margin-bottom:1rem;">My own transformation</h2>
+    <p style="font-family:'Raleway',sans-serif;font-size:15px;color:rgba(255,255,255,0.7);margin-bottom:2.5rem;max-width:500px;margin-left:auto;margin-right:auto;">80 pounds down. Real life. Real progress. This is why I do what I do.</p>
     <div style="display:flex;flex-direction:column;gap:1.2rem;max-width:480px;margin:0 auto 2.5rem;">
       <div>
         <img src="media/transformation-front.jpeg" alt="Heather front view transformation" style="width:100%;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.4);display:block;" />
-        <p style="font-family:Arial,sans-serif;font-size:12px;color:rgba(255,255,255,0.6);margin-top:0.6rem;">Front view</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:12px;color:rgba(255,255,255,0.6);margin-top:0.6rem;">Front view</p>
       </div>
       <div>
         <img src="media/transformation-side.jpeg" alt="Heather side view transformation" style="width:100%;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.4);display:block;" />
-        <p style="font-family:Arial,sans-serif;font-size:12px;color:rgba(255,255,255,0.6);margin-top:0.6rem;">Side view</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:12px;color:rgba(255,255,255,0.6);margin-top:0.6rem;">Side view</p>
       </div>
     </div>
-    <p style="font-family:Arial,sans-serif;font-size:14px;color:rgba(255,255,255,0.7);margin-bottom:2rem;">6 years of consistency 💪</p>
+    <p style="font-family:'Raleway',sans-serif;font-size:14px;color:rgba(255,255,255,0.7);margin-bottom:2rem;">6 years of consistency 💪</p>
     <div style="display:flex;justify-content:center;">
       <video
         controls
@@ -287,34 +290,34 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
       <div id="testimonials-grid" style="display:flex;gap:1.5rem;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:1rem;scroll-snap-type:x mandatory;align-items:flex-start;">
         <!-- Testimonials load from Firebase, fallback shown below -->
         <div id="test-placeholder-1" style="background:#fff;border-radius:16px;padding:1.8rem;border:0.5px solid #e8ddd2;box-shadow:0 4px 24px rgba(60,30,10,0.08);width:88vw;max-width:480px;flex-shrink:0;scroll-snap-align:start;word-wrap:break-word;overflow-wrap:break-word;height:auto;">
-          <div style="font-size:28px;color:#a0522d;margin-bottom:1rem;letter-spacing:3px;">★★★★★</div>
-          <p style="font-family:Arial,sans-serif;font-size:14.5px;color:#3a2a1a;line-height:1.75;font-style:normal;margin-bottom:1.2rem;word-wrap:break-word;overflow-wrap:break-word;text-align:left;">&ldquo;Working with Heather has been such an amazing experience. She is incredibly patient, encouraging, and always knows how to make me feel like I am doing a great job, even when I am struggling. She is truly my personal cheerleader. Every workout is fast-paced, engaging, and different, so I never get bored. As a busy mother of three, it is hard to stay focused on fitness, but her workouts kept my attention and made me actually look forward to exercising. She has given me so much confidence and motivation to keep going. One of the biggest differences has been her attention to proper form. Her clear explanations helped me realize my neck pain was being caused by incorrect technique, and once I made those adjustments, I noticed a huge improvement. If you are looking for a trainer who is knowledgeable, supportive, motivating, and genuinely invested in your success, I cannot recommend Heather enough!&rdquo;</p>
-          <p style="font-family:Arial,sans-serif;font-size:15px;font-weight:700;color:#a0522d;margin-top:1rem;">— Holly H.</p>
+          <div style="font-size:28px;color:#a76a5b;margin-bottom:1rem;letter-spacing:3px;">★★★★★</div>
+          <p style="font-family:'Raleway',sans-serif;font-size:14.5px;color:#3a2a1a;line-height:1.75;font-style:normal;margin-bottom:1.2rem;word-wrap:break-word;overflow-wrap:break-word;text-align:left;">&ldquo;Working with Heather has been such an amazing experience. She is incredibly patient, encouraging, and always knows how to make me feel like I am doing a great job, even when I am struggling. She is truly my personal cheerleader. Every workout is fast-paced, engaging, and different, so I never get bored. As a busy mother of three, it is hard to stay focused on fitness, but her workouts kept my attention and made me actually look forward to exercising. She has given me so much confidence and motivation to keep going. One of the biggest differences has been her attention to proper form. Her clear explanations helped me realize my neck pain was being caused by incorrect technique, and once I made those adjustments, I noticed a huge improvement. If you are looking for a trainer who is knowledgeable, supportive, motivating, and genuinely invested in your success, I cannot recommend Heather enough!&rdquo;</p>
+          <p style="font-family:'Raleway',sans-serif;font-size:15px;font-weight:700;color:#a76a5b;margin-top:1rem;">— Holly H.</p>
         </div>
       </div>
       <button class="test-nav-btn next" id="test-next" onclick="scrollTestimonials(1)" aria-label="Next testimonial">›</button>
     </div>
     <div id="testimonials-dots"></div>
-    <p id="test-swipe-hint" style="font-family:Arial,sans-serif;font-size:12px;color:#9a8a7a;text-align:center;margin-top:0.5rem;">← Swipe to see more →</p>
-    <p style="font-family:Arial,sans-serif;font-size:13px;color:#9a8a7a;text-align:center;margin-top:1rem;">Ready to write your own story? <a href="forms.html" style="color:#a0522d;font-weight:700;">Start your 7 day trial →</a></p>
+    <p id="test-swipe-hint" style="font-family:'Raleway',sans-serif;font-size:12px;color:#9a8a7a;text-align:center;margin-top:0.5rem;">← Swipe to see more →</p>
+    <p style="font-family:'Raleway',sans-serif;font-size:13px;color:#9a8a7a;text-align:center;margin-top:1rem;">Ready to write your own story? <a href="forms.html" style="color:#a76a5b;font-weight:700;">Start your 7 day trial →</a></p>
 
     <!-- SUBMIT TESTIMONIAL -->
     <div style="max-width:780px;margin:2.5rem auto 0;background:#fff;border-radius:16px;padding:2rem;border:0.5px solid #e8ddd2;box-shadow:0 4px 24px rgba(60,30,10,0.06);">
-      <h3 style="font-family:Georgia,serif;font-size:20px;color:#3a2a1a;margin-bottom:0.4rem;">Are you an Everyday Strong member?</h3>
-      <p style="font-family:Arial,sans-serif;font-size:14px;color:#6a5a48;margin-bottom:1.2rem;">We would love to hear about your experience! Share your story below.</p>
+      <h3 style="font-family:'Raleway',sans-serif;font-size:20px;color:#3a2a1a;margin-bottom:0.4rem;">Are you an Everyday Strong member?</h3>
+      <p style="font-family:'Raleway',sans-serif;font-size:14px;color:#6a5a48;margin-bottom:1.2rem;">We would love to hear about your experience! Share your story below.</p>
       <div id="test-submit-ok" style="display:none;background:#eaf6f0;border-radius:10px;padding:1rem;text-align:center;margin-bottom:1rem;">
-        <p style="font-family:Arial,sans-serif;font-size:15px;color:#1a7a4a;font-weight:700;">Thank you! 🎉</p>
-        <p style="font-family:Arial,sans-serif;font-size:13px;color:#3a6a4a;">Your testimonial has been submitted and will appear once approved.</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:15px;color:#1a7a4a;font-weight:700;">Thank you! 🎉</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:13px;color:#3a6a4a;">Your testimonial has been submitted and will appear once approved.</p>
       </div>
       <div id="test-submit-form">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
           <div>
-            <label style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#7a6a5a;display:block;margin-bottom:5px;">Your Name</label>
-            <input type="text" id="pub-test-name" placeholder="e.g. Holly H." style="width:100%;padding:10px 14px;border:1.5px solid #d8cfc6;border-radius:9px;font-size:14px;background:#f9f6f2;color:#3a2a1a;outline:none;font-family:Arial,sans-serif;" />
+            <label style="font-family:'Raleway',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#7a6a5a;display:block;margin-bottom:5px;">Your Name</label>
+            <input type="text" id="pub-test-name" placeholder="e.g. Holly H." style="width:100%;padding:10px 14px;border:1.5px solid #d8cfc6;border-radius:9px;font-size:14px;background:#f9f6f2;color:#3a2a1a;outline:none;font-family:'Raleway',sans-serif;" />
           </div>
           <div>
-            <label style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#7a6a5a;display:block;margin-bottom:5px;">Star Rating</label>
-            <select id="pub-test-stars" style="width:100%;padding:10px 14px;border:1.5px solid #d8cfc6;border-radius:9px;font-size:14px;background:#f9f6f2;color:#3a2a1a;outline:none;font-family:Arial,sans-serif;">
+            <label style="font-family:'Raleway',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#7a6a5a;display:block;margin-bottom:5px;">Star Rating</label>
+            <select id="pub-test-stars" style="width:100%;padding:10px 14px;border:1.5px solid #d8cfc6;border-radius:9px;font-size:14px;background:#f9f6f2;color:#3a2a1a;outline:none;font-family:'Raleway',sans-serif;">
               <option value="5">★★★★★</option>
               <option value="4">★★★★</option>
               <option value="3">★★★</option>
@@ -322,11 +325,11 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
           </div>
         </div>
         <div style="margin-bottom:1rem;">
-          <label style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#7a6a5a;display:block;margin-bottom:5px;">Your Experience</label>
-          <textarea id="pub-test-quote" placeholder="Share what your experience with Everyday Strong has been like..." style="width:100%;padding:10px 14px;border:1.5px solid #d8cfc6;border-radius:9px;font-size:14px;background:#f9f6f2;color:#3a2a1a;outline:none;resize:vertical;min-height:100px;font-family:Arial,sans-serif;"></textarea>
+          <label style="font-family:'Raleway',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#7a6a5a;display:block;margin-bottom:5px;">Your Experience</label>
+          <textarea id="pub-test-quote" placeholder="Share what your experience with Everyday Strong has been like..." style="width:100%;padding:10px 14px;border:1.5px solid #d8cfc6;border-radius:9px;font-size:14px;background:#f9f6f2;color:#3a2a1a;outline:none;resize:vertical;min-height:100px;font-family:'Raleway',sans-serif;"></textarea>
         </div>
-        <button onclick="submitPublicTestimonial()" style="width:100%;padding:13px;background:#a0522d;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:Georgia,serif;">Submit My Testimonial</button>
-        <p style="font-family:Arial,sans-serif;font-size:11px;color:#9a8a7a;text-align:center;margin-top:8px;">Testimonials are reviewed before being published.</p>
+        <button onclick="submitPublicTestimonial()" style="width:100%;padding:13px;background:#a76a5b;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Raleway',sans-serif;">Submit My Testimonial</button>
+        <p style="font-family:'Raleway',sans-serif;font-size:11px;color:#9a8a7a;text-align:center;margin-top:8px;">Testimonials are reviewed before being published.</p>
       </div>
     </div>
   </div>
@@ -350,8 +353,8 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
         </div>
       </div>
       <div class="about-quote">
-        <h3 style="font-size:22px;line-height:1.5;font-family:Georgia,serif;margin-bottom:1.2rem;">Ready to get started? Reach out to claim your 7 day trial — full app access included!</h3>
-        <a href="mailto:Everydaystrongteam@gmail.com" class="btn-primary" style="background:#fff;color:#a0522d;">Email Us →</a>
+        <h3 style="font-size:22px;line-height:1.5;font-family:'Raleway',sans-serif;margin-bottom:1.2rem;">Ready to get started? Reach out to claim your 7 day trial — full app access included!</h3>
+        <a href="mailto:Everydaystrongteam@gmail.com" class="btn-primary" style="background:#fff;color:#a76a5b;">Email Us →</a>
       </div>
     </div>
   </div>
@@ -404,7 +407,7 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
           <div class="prog-detail">Optional 1 on 1 Fundamentals class $40</div>
           <div class="prog-detail">Contact: Everydaystrongteam@gmail.com</div>
         </div>
-        <p style="font-family:Arial,sans-serif;font-size:12px;color:#9a8a7a;line-height:1.6;margin-top:0.8rem;padding-top:0.8rem;border-top:0.5px solid #e8ddd2;">💡 The Fundamentals class is a private one-on-one session where we go through proper form and technique together before you jump into group classes — a great option if you're brand new to strength training or just want extra confidence heading in. You can request it on the intake form.</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:12px;color:#9a8a7a;line-height:1.6;margin-top:0.8rem;padding-top:0.8rem;border-top:0.5px solid #e8ddd2;">💡 The Fundamentals class is a private one-on-one session where we go through proper form and technique together before you jump into group classes — a great option if you're brand new to strength training or just want extra confidence heading in. You can request it on the intake form.</p>
         <div style="margin-top:1.2rem;">
           <a href="forms.html" class="btn-primary" style="display:block;text-align:center;font-size:14px;padding:11px;">Complete New Client Forms →</a>
         </div>
@@ -418,7 +421,7 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
   <div class="container">
     <div class="section-label">See It In Action</div>
     <h2 class="section-title" style="font-size:clamp(26px,4vw,38px);">A peek at my coaching style</h2>
-    <p style="font-family:Arial,sans-serif;font-size:15px;color:#6a5a48;line-height:1.7;margin-bottom:1.5rem;max-width:560px;">Wondering what a class actually feels like? Here's a quick core form walkthrough — the same kind of clear, step-by-step coaching you'll get in every session.</p>
+    <p style="font-family:'Raleway',sans-serif;font-size:15px;color:#6a5a48;line-height:1.7;margin-bottom:1.5rem;max-width:560px;">Wondering what a class actually feels like? Here's a quick core form walkthrough — the same kind of clear, step-by-step coaching you'll get in every session.</p>
     <div style="max-width:640px;border-radius:14px;overflow:hidden;box-shadow:0 8px 30px rgba(60,30,10,0.12);">
       <video controls playsinline preload="metadata" poster="media/core-form-poster.jpeg" style="width:100%;display:block;">
         <source src="media/core-form-walkthrough.mp4" type="video/mp4">
@@ -469,32 +472,32 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
       <div style="text-align:center;padding:1.5rem;background:#faf6f2;border-radius:12px;border:0.5px solid #e8ddd2;">
         <div style="font-size:32px;margin-bottom:0.8rem;">🎥</div>
         <h3 style="font-size:16px;color:#3a2a1a;margin-bottom:0.4rem;">Workout Library</h3>
-        <p style="font-family:Arial,sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">On demand videos organized by program watch anytime, anywhere</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">On demand videos organized by program watch anytime, anywhere</p>
       </div>
       <div style="text-align:center;padding:1.5rem;background:#faf6f2;border-radius:12px;border:0.5px solid #e8ddd2;">
         <div style="font-size:32px;margin-bottom:0.8rem;">🔥</div>
         <h3 style="font-size:16px;color:#3a2a1a;margin-bottom:0.4rem;">Streak Tracking</h3>
-        <p style="font-family:Arial,sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Track your consistency with daily workout streaks and completion history</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Track your consistency with daily workout streaks and completion history</p>
       </div>
       <div style="text-align:center;padding:1.5rem;background:#faf6f2;border-radius:12px;border:0.5px solid #e8ddd2;">
         <div style="font-size:32px;margin-bottom:0.8rem;">🏘️</div>
         <h3 style="font-size:16px;color:#3a2a1a;margin-bottom:0.4rem;">Community</h3>
-        <p style="font-family:Arial,sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Share wins, ask questions, and cheer each other on in the private member community</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Share wins, ask questions, and cheer each other on in the private member community</p>
       </div>
       <div style="text-align:center;padding:1.5rem;background:#faf6f2;border-radius:12px;border:0.5px solid #e8ddd2;">
         <div style="font-size:32px;margin-bottom:0.8rem;">📋</div>
         <h3 style="font-size:16px;color:#3a2a1a;margin-bottom:0.4rem;">Weekly Check ins</h3>
-        <p style="font-family:Arial,sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Private weekly check ins sent directly to me so I can support your progress</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Private weekly check ins sent directly to me so I can support your progress</p>
       </div>
       <div style="text-align:center;padding:1.5rem;background:#faf6f2;border-radius:12px;border:0.5px solid #e8ddd2;">
         <div style="font-size:32px;margin-bottom:0.8rem;">📸</div>
         <h3 style="font-size:16px;color:#3a2a1a;margin-bottom:0.4rem;">Progress Photos</h3>
-        <p style="font-family:Arial,sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Log progress photos privately or share with the community for accountability</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Log progress photos privately or share with the community for accountability</p>
       </div>
       <div style="text-align:center;padding:1.5rem;background:#faf6f2;border-radius:12px;border:0.5px solid #e8ddd2;">
         <div style="font-size:32px;margin-bottom:0.8rem;">💌</div>
         <h3 style="font-size:16px;color:#3a2a1a;margin-bottom:0.4rem;">Direct Messaging</h3>
-        <p style="font-family:Arial,sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Message me directly through the app with questions or updates anytime</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Message me directly through the app with questions or updates anytime</p>
       </div>
     </div>
   </div>
@@ -563,21 +566,21 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
         <img src="media/heather-with-boys.jpeg" alt="Heather with her boys" style="width:100%;border-radius:16px;object-fit:cover;aspect-ratio:3/4;box-shadow:0 8px 30px rgba(60,30,10,0.12);" />
       </div>
       <div>
-        <p style="font-family:Arial,sans-serif;font-size:16px;color:#5a4a38;line-height:1.8;margin-bottom:1rem;">I'm a mom of two boys (14 and 8), and like many of the people I work with, I've had to learn how to balance health, family, work, and everything in between.</p>
-        <p style="font-family:Arial,sans-serif;font-size:16px;color:#5a4a38;line-height:1.8;margin-bottom:1rem;">Over the past six years, I've lost 80 pounds, and that journey has taught me that progress isn't perfect. It's full of ups, downs, restarts, and learning along the way. I'm human too, and I believe fitness should be a safe, supportive place where people feel understood, not judged.</p>
-        <p style="font-family:Arial,sans-serif;font-size:16px;color:#5a4a38;line-height:1.8;margin-bottom:1.5rem;">My goal with Everyday Strong is to create a space where real people can show up as they are, build strength, and work toward becoming stronger in a way that fits their everyday life.</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:16px;color:#5a4a38;line-height:1.8;margin-bottom:1rem;">I'm a mom of two boys (14 and 8), and like many of the people I work with, I've had to learn how to balance health, family, work, and everything in between.</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:16px;color:#5a4a38;line-height:1.8;margin-bottom:1rem;">Over the past six years, I've lost 80 pounds, and that journey has taught me that progress isn't perfect. It's full of ups, downs, restarts, and learning along the way. I'm human too, and I believe fitness should be a safe, supportive place where people feel understood, not judged.</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:16px;color:#5a4a38;line-height:1.8;margin-bottom:1.5rem;">My goal with Everyday Strong is to create a space where real people can show up as they are, build strength, and work toward becoming stronger in a way that fits their everyday life.</p>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-top:1.5rem;">
           <div style="background:#faf6f2;border-radius:10px;padding:0.8rem 1.2rem;border:0.5px solid #e8ddd2;text-align:center;">
-            <div style="font-size:22px;font-weight:700;color:#a0522d;">80 lbs</div>
-            <div style="font-family:Arial,sans-serif;font-size:11px;color:#9a8a7a;text-transform:uppercase;letter-spacing:0.5px;">Lost on my journey</div>
+            <div style="font-size:22px;font-weight:700;color:#a76a5b;">80 lbs</div>
+            <div style="font-family:'Raleway',sans-serif;font-size:11px;color:#9a8a7a;text-transform:uppercase;letter-spacing:0.5px;">Lost on my journey</div>
           </div>
           <div style="background:#faf6f2;border-radius:10px;padding:0.8rem 1.2rem;border:0.5px solid #e8ddd2;text-align:center;">
-            <div style="font-size:22px;font-weight:700;color:#a0522d;">6 years</div>
-            <div style="font-family:Arial,sans-serif;font-size:11px;color:#9a8a7a;text-transform:uppercase;letter-spacing:0.5px;">On my fitness journey</div>
+            <div style="font-size:22px;font-weight:700;color:#a76a5b;">6 years</div>
+            <div style="font-family:'Raleway',sans-serif;font-size:11px;color:#9a8a7a;text-transform:uppercase;letter-spacing:0.5px;">On my fitness journey</div>
           </div>
           <div style="background:#faf6f2;border-radius:10px;padding:0.8rem 1.2rem;border:0.5px solid #e8ddd2;text-align:center;">
-            <div style="font-size:22px;font-weight:700;color:#a0522d;">Mom of 2</div>
-            <div style="font-family:Arial,sans-serif;font-size:11px;color:#9a8a7a;text-transform:uppercase;letter-spacing:0.5px;">Keeping it real</div>
+            <div style="font-size:22px;font-weight:700;color:#a76a5b;">Mom of 2</div>
+            <div style="font-family:'Raleway',sans-serif;font-size:11px;color:#9a8a7a;text-transform:uppercase;letter-spacing:0.5px;">Keeping it real</div>
           </div>
         </div>
       </div>
@@ -592,46 +595,46 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
             Your browser doesn't support embedded video. <a href="media/training-with-son.mp4">Download the video</a> instead.
           </video>
         </div>
-        <p style="font-family:Arial,sans-serif;font-size:11px;color:#9a8a7a;margin-top:6px;">Real class, real life — my son jumping in 💪</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:11px;color:#9a8a7a;margin-top:6px;">Real class, real life — my son jumping in 💪</p>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;">
         <div style="position:relative;border-radius:12px;overflow:hidden;">
           <img src="media/in-action-whole-crew.jpeg" style="width:100%;aspect-ratio:1;object-fit:cover;object-position:center top;display:block;" />
-          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:Arial,sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">The whole crew</p></div>
+          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:'Raleway',sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">The whole crew</p></div>
         </div>
         <div style="position:relative;border-radius:12px;overflow:hidden;">
           <img src="media/in-action-keeping-it-real.jpeg" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" />
-          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:Arial,sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">Keeping it real 😄</p></div>
+          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:'Raleway',sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">Keeping it real 😄</p></div>
         </div>
         <div style="position:relative;border-radius:12px;overflow:hidden;">
           <img src="media/in-action-kids-join-in.jpeg" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" />
-          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:Arial,sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">Kids join in too 😄</p></div>
+          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:'Raleway',sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">Kids join in too 😄</p></div>
         </div>
         <div style="position:relative;border-radius:12px;overflow:hidden;">
           <img src="media/in-action-train-anywhere.jpeg" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" />
-          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:Arial,sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">Train anywhere 💪</p></div>
+          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:'Raleway',sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">Train anywhere 💪</p></div>
         </div>
         <div style="position:relative;border-radius:12px;overflow:hidden;">
           <img src="media/in-action-home-gym-vibes.jpeg" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" />
-          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:Arial,sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">Home gym vibes 🏋️</p></div>
+          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:'Raleway',sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">Home gym vibes 🏋️</p></div>
         </div>
         <div style="position:relative;border-radius:12px;overflow:hidden;">       <img src="media/in-action-never-dull-moment.jpeg" style="width:100%;aspect-ratio:1;object-fit:cover;object-position:center 70%;display:block;" />
-          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:Arial,sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">Never a dull moment 😂</p></div>
+          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:'Raleway',sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">Never a dull moment 😂</p></div>
         </div>
         <div style="position:relative;border-radius:12px;overflow:hidden;">
           <img src="media/in-action-abs-consistency.jpeg" style="width:100%;aspect-ratio:1;object-fit:cover;object-position:center 70%;display:block;" />
-          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:Arial,sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">No gym membership, just consistency 💪</p></div>
+          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:'Raleway',sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">No gym membership, just consistency 💪</p></div>
         </div>
         <div style="position:relative;border-radius:12px;overflow:hidden;">
           <img src="media/in-action-backyard-dumbbell.jpeg" style="width:100%;aspect-ratio:1;object-fit:cover;object-position:center 35%;display:block;" />
-          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:Arial,sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">Showing up for my kids, weights and all</p></div>
+          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:0.6rem 0.8rem;"><p style="font-family:'Raleway',sans-serif;font-size:11px;color:#fff;font-weight:600;margin:0;">Showing up for my kids, weights and all</p></div>
         </div>
       </div>
     </div>
 
-    <div style="margin-top:2.5rem;background:linear-gradient(135deg,#a0522d,#8b4513);border-radius:14px;padding:2rem;color:#fff;max-width:600px;">
-      <p style="font-family:Georgia,serif;font-size:18px;line-height:1.6;font-style:italic;">"Fitness should be a safe, supportive place where people feel understood, not judged. You can show up as you are."</p>
-      <p style="font-family:Arial,sans-serif;font-size:13px;margin-top:0.8rem;opacity:0.8;">— Heather, Everyday Strong</p>
+    <div style="margin-top:2.5rem;background:linear-gradient(135deg,#a76a5b,#8b4a3d);border-radius:14px;padding:2rem;color:#fff;max-width:600px;">
+      <p style="font-family:'Raleway',sans-serif;font-size:18px;line-height:1.6;font-style:italic;">"Fitness should be a safe, supportive place where people feel understood, not judged. You can show up as you are."</p>
+      <p style="font-family:'Raleway',sans-serif;font-size:13px;margin-top:0.8rem;opacity:0.8;">— Heather, Everyday Strong</p>
     </div>
   </div>
 </section>
@@ -641,23 +644,23 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
 <!-- CLASS SCHEDULE -->
 <section style="background:#3a2a1a;padding:3rem 1.5rem;text-align:center;">
   <div class="container">
-    <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#e8c0a0;margin-bottom:0.8rem;">Live Class Schedule</div>
-    <h2 style="font-family:Georgia,serif;font-size:clamp(24px,3vw,36px);color:#fff;margin-bottom:2rem;">Join us every week</h2>
+    <div style="font-family:'Raleway',sans-serif;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#e8c0a0;margin-bottom:0.8rem;">Live Class Schedule</div>
+    <h2 style="font-family:'Raleway',sans-serif;font-size:clamp(24px,3vw,36px);color:#fff;margin-bottom:2rem;">Join us every week</h2>
     <div style="display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;">
       <div style="background:rgba(255,255,255,0.08);border-radius:14px;padding:1.8rem 2.5rem;border:0.5px solid rgba(255,255,255,0.15);">
         <div style="font-size:28px;margin-bottom:0.5rem;">📅</div>
-        <div style="font-family:Georgia,serif;font-size:22px;color:#fff;margin-bottom:0.3rem;">Monday</div>
-        <div style="font-family:Arial,sans-serif;font-size:18px;font-weight:700;color:#e8c0a0;">6:30 PM</div>
-        <div style="font-family:Arial,sans-serif;font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;">Virtual via Zoom</div>
+        <div style="font-family:'Raleway',sans-serif;font-size:22px;color:#fff;margin-bottom:0.3rem;">Monday</div>
+        <div style="font-family:'Raleway',sans-serif;font-size:18px;font-weight:700;color:#e8c0a0;">6:30 PM</div>
+        <div style="font-family:'Raleway',sans-serif;font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;">Virtual via Zoom</div>
       </div>
       <div style="background:rgba(255,255,255,0.08);border-radius:14px;padding:1.8rem 2.5rem;border:0.5px solid rgba(255,255,255,0.15);">
         <div style="font-size:28px;margin-bottom:0.5rem;">📅</div>
-        <div style="font-family:Georgia,serif;font-size:22px;color:#fff;margin-bottom:0.3rem;">Wednesday</div>
-        <div style="font-family:Arial,sans-serif;font-size:18px;font-weight:700;color:#e8c0a0;">6:30 PM</div>
-        <div style="font-family:Arial,sans-serif;font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;">Virtual via Zoom</div>
+        <div style="font-family:'Raleway',sans-serif;font-size:22px;color:#fff;margin-bottom:0.3rem;">Wednesday</div>
+        <div style="font-family:'Raleway',sans-serif;font-size:18px;font-weight:700;color:#e8c0a0;">6:30 PM</div>
+        <div style="font-family:'Raleway',sans-serif;font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;">Virtual via Zoom</div>
       </div>
     </div>
-    <p style="font-family:Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);margin-top:1.5rem;">Missed a class? Recordings are posted to your member dashboard.</p>
+    <p style="font-family:'Raleway',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);margin-top:1.5rem;">Missed a class? Recordings are posted to your member dashboard.</p>
     <a href="forms.html" class="btn-primary" style="margin-top:1.5rem;display:inline-block;">Reserve Your Spot</a>
   </div>
 </section>
@@ -665,8 +668,8 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
 <section style="background:#faf6f2;padding:3rem 1.5rem;text-align:center;">
   <div class="container">
     <div style="font-size:32px;margin-bottom:0.8rem;">📲</div>
-    <h2 style="font-family:Georgia,serif;font-size:26px;color:#3a2a1a;margin-bottom:0.6rem;">Follow Along</h2>
-    <p style="font-family:Arial,sans-serif;font-size:15px;color:#6a5a48;margin-bottom:1.5rem;">Workout tips, motivation, and a peek behind the scenes of Everyday Strong.</p>
+    <h2 style="font-family:'Raleway',sans-serif;font-size:26px;color:#3a2a1a;margin-bottom:0.6rem;">Follow Along</h2>
+    <p style="font-family:'Raleway',sans-serif;font-size:15px;color:#6a5a48;margin-bottom:1.5rem;">Workout tips, motivation, and a peek behind the scenes of Everyday Strong.</p>
     <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
       <a href="https://instagram.com/everydaystrong13" target="_blank" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;background:#c13584;">
         <span style="font-size:18px;">📸</span> Instagram @everydaystrong13
@@ -687,21 +690,21 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
       <div style="background:#fff;border-radius:12px;padding:1.5rem;border:0.5px solid #e8ddd2;text-align:center;">
         <div style="font-size:30px;margin-bottom:0.8rem;">📋</div>
         <h3 style="font-size:16px;color:#3a2a1a;margin-bottom:0.4rem;">Intake Form</h3>
-        <p style="font-family:Arial,sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Tell us about your fitness background and goals</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Tell us about your fitness background and goals</p>
       </div>
       <div style="background:#fff;border-radius:12px;padding:1.5rem;border:0.5px solid #e8ddd2;text-align:center;">
         <div style="font-size:30px;margin-bottom:0.8rem;">📄</div>
         <h3 style="font-size:16px;color:#3a2a1a;margin-bottom:0.4rem;">Client Agreement</h3>
-        <p style="font-family:Arial,sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Review and sign our policies and expectations</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Review and sign our policies and expectations</p>
       </div>
       <div style="background:#fff;border-radius:12px;padding:1.5rem;border:0.5px solid #e8ddd2;text-align:center;">
         <div style="font-size:30px;margin-bottom:0.8rem;">✍️</div>
         <h3 style="font-size:16px;color:#3a2a1a;margin-bottom:0.4rem;">Waiver</h3>
-        <p style="font-family:Arial,sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Complete the release of liability before your first session</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:13px;color:#6a5a48;line-height:1.5;">Complete the release of liability before your first session</p>
       </div>
     </div>
     <a href="forms.html" class="btn-primary" style="font-size:16px;padding:16px 44px;">Complete New Client Forms →</a>
-    <p style="font-family:Arial,sans-serif;font-size:13px;color:#9a8a7a;margin-top:1rem;">Takes about 5 minutes · Legally binding electronic signatures accepted</p>
+    <p style="font-family:'Raleway',sans-serif;font-size:13px;color:#9a8a7a;margin-top:1rem;">Takes about 5 minutes · Legally binding electronic signatures accepted</p>
   </div>
 </section>
 <!-- CTA -->
@@ -712,7 +715,7 @@ footer a{color:rgba(255,255,255,0.5);text-decoration:none;}
     <a href="forms.html" class="btn-primary" style="font-size:16px;padding:16px 40px;">Start Your 7 Day Trial</a>
     <p class="cta-email">Or email me at <a href="mailto:Everydaystrongteam@gmail.com">Everydaystrongteam@gmail.com</a></p>
     <br/><br/>
-    <a href="https://everydaystrong.github.io/everydaystrong/everyday-strong.html" style="font-family:Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-decoration:none;">Already a member? Log in →</a>
+    <a href="https://everydaystrong.github.io/everydaystrong/everyday-strong.html" style="font-family:'Raleway',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-decoration:none;">Already a member? Log in →</a>
   </div>
 </section>
 
@@ -749,7 +752,7 @@ try {
       '<div class="prog-detail">Optional 1 on 1 Fundamentals class $40</div>'+
       '<div class="prog-detail">Contact: Everydaystrongteam@gmail.com</div>'+
     '</div>'+
-    '<p style="font-family:Arial,sans-serif;font-size:12px;color:#9a8a7a;line-height:1.6;margin-top:0.8rem;padding-top:0.8rem;border-top:0.5px solid #e8ddd2;">💡 The Fundamentals class is a private one-on-one session where we go through proper form and technique together before you jump into group classes — a great option if you\'re brand new to strength training or just want extra confidence heading in. You can request it on the intake form.</p>'+
+    '<p style="font-family:Raleway,sans-serif;font-size:12px;color:#9a8a7a;line-height:1.6;margin-top:0.8rem;padding-top:0.8rem;border-top:0.5px solid #e8ddd2;">💡 The Fundamentals class is a private one-on-one session where we go through proper form and technique together before you jump into group classes — a great option if you\'re brand new to strength training or just want extra confidence heading in. You can request it on the intake form.</p>'+
     '<div style="margin-top:1.2rem;">'+
       '<a href="forms.html" class="btn-primary" style="display:block;text-align:center;font-size:14px;padding:11px;">Complete New Client Forms →</a>'+
     '</div>'+
@@ -815,13 +818,13 @@ try {
       var card=document.createElement("div");
       card.style.cssText="background:#faf6f2;border-radius:16px;padding:1.8rem;border:0.5px solid #e8ddd2;box-shadow:0 4px 24px rgba(60,30,10,0.08);width:88vw;max-width:480px;flex-shrink:0;scroll-snap-align:start;word-wrap:break-word;overflow-wrap:break-word;";
       var starsEl=document.createElement("div");
-      starsEl.style.cssText="font-size:22px;color:#a0522d;margin-bottom:0.8rem;";
+      starsEl.style.cssText="font-size:22px;color:#a76a5b;margin-bottom:0.8rem;";
       starsEl.textContent=stars;
       var quoteEl=document.createElement("p");
-      quoteEl.style.cssText="font-family:Arial,sans-serif;font-size:15px;color:#5a4a38;line-height:1.7;font-style:italic;margin-bottom:1rem;";
+      quoteEl.style.cssText="font-family:'Raleway',sans-serif;font-size:15px;color:#5a4a38;line-height:1.7;font-style:italic;margin-bottom:1rem;";
       quoteEl.textContent="“"+t.quote+"”";
       var nameEl=document.createElement("p");
-      nameEl.style.cssText="font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:#a0522d;";
+      nameEl.style.cssText="font-family:'Raleway',sans-serif;font-size:13px;font-weight:700;color:#a76a5b;";
       nameEl.textContent=t.name;
       card.appendChild(starsEl);
       card.appendChild(quoteEl);
@@ -850,8 +853,8 @@ try {
       if(p.caption||p.name){
         var info=document.createElement("div");
         info.style.cssText="padding:10px 12px;";
-        if(p.caption) info.innerHTML="<p style='font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:#3a2a1a;'>"+p.caption+"</p>";
-        if(p.name) info.innerHTML+="<p style='font-family:Arial,sans-serif;font-size:12px;color:#9a8a7a;'>"+p.name+"</p>";
+        if(p.caption) info.innerHTML="<p style='font-family:'Raleway',sans-serif;font-size:13px;font-weight:700;color:#3a2a1a;'>"+p.caption+"</p>";
+        if(p.name) info.innerHTML+="<p style='font-family:'Raleway',sans-serif;font-size:12px;color:#9a8a7a;'>"+p.name+"</p>";
         card.appendChild(info);
       }
       grid.appendChild(card);
@@ -964,6 +967,6 @@ document.addEventListener("click",function(e){
   }
 });
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-06-testimonial-notify</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-09-color-a76a5b-confirmed</p>
 </body>
 </html>
