@@ -53,16 +53,16 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 .section-sub{font-size:13px;color:var(--sub);margin-bottom:1rem;}
 
 /* STREAK */
-.streak-bar{background:var(--card);border-radius:10px;border:0.5px solid var(--border);padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:12px;}
+.streak-bar{background:linear-gradient(135deg,#f5e6dd,#f0d9c8);border-radius:10px;border:none;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:12px;}
 .streak-num{font-size:28px;font-weight:700;color:var(--accent);}
 .streak-label{font-size:13px;color:var(--sub);}
 .streak-fire{font-size:24px;}
 
 /* NAV DROPDOWN */
 .portal-nav-wrap{position:relative;margin-bottom:1.4rem;}
-.portal-nav-select{width:100%;appearance:none;-webkit-appearance:none;background:var(--card) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23a76a5b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>') no-repeat right 14px center/16px 16px;border:1.5px solid var(--border);border-radius:10px;padding:13px 40px 13px 16px;font-size:15px;font-weight:600;color:var(--text);font-family:'Raleway',sans-serif;cursor:pointer;}
+.portal-nav-select{width:100%;appearance:none;-webkit-appearance:none;background:var(--accent) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>') no-repeat right 16px center/18px 18px;border:none;border-radius:10px;padding:14px 44px 14px 18px;font-size:15px;font-weight:700;color:#fff;font-family:'Raleway',sans-serif;cursor:pointer;box-shadow:0 2px 6px rgba(167,106,91,0.3);}
 .portal-nav-select:focus{outline:none;border-color:var(--accent);}
-.nav-dropdown-dot{position:absolute;top:9px;right:38px;width:8px;height:8px;background:#c05040;border-radius:50%;pointer-events:none;}
+.nav-dropdown-dot{position:absolute;top:10px;right:42px;width:9px;height:9px;background:#fff;border:2px solid #c05040;border-radius:50%;pointer-events:none;}
 
 /* ANNOUNCEMENTS */
 .announce-card{background:var(--card);border-radius:11px;border:0.5px solid var(--border);overflow:hidden;margin-bottom:10px;}
@@ -403,7 +403,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 
     <div class="portal-nav-wrap">
       <select class="portal-nav-select" id="portal-nav-select" onchange="switchPortalTab(this.value,null)">
-        <option value="all">🏋️ Programs</option>
+        <option value="all">🏋️ Workouts</option>
         <option value="fav">⭐ Favorites</option>
         <option value="done">✅ Completed</option>
         <option value="comm">🏘️ Community</option>
@@ -423,7 +423,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <div class="cat-grid" id="cat-grid"></div>
       </div>
       <div id="vid-view" style="display:none;">
-        <button class="back-btn" id="back-btn">← Back to Programs</button>
+        <button class="back-btn" id="back-btn">← Back to Workouts</button>
         <p class="section-title" id="vid-title">Videos</p>
         <p class="section-sub" id="vid-sub"></p>
         <div id="focus-filters" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
@@ -5134,6 +5134,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-09-remove-tagline</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-09-visual-hierarchy-workouts</p>
 </body>
 </html>
