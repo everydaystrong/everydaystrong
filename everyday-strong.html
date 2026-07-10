@@ -179,8 +179,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 .tab-content{display:none;}
 .tab-content.on{display:block;}
 .admin-card{background:var(--card);border-radius:11px;padding:1.4rem 1.3rem;border:0.5px solid var(--border);margin-bottom:1.1rem;}
-.admin-card h3{color:var(--accent);font-family:'Raleway',sans-serif;padding-bottom:10px;margin-bottom:10px;border-bottom:2px solid var(--border);}
-.admin-card h3{font-size:14px;color:var(--text);margin-bottom:1rem;font-weight:700;}
+.admin-card h3{color:var(--accent);font-family:'Raleway',sans-serif;font-size:15px;font-weight:700;padding-bottom:12px;margin-bottom:12px;border-bottom:3px solid var(--accent);}
 .form-row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
 .form-label{font-size:11px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:0.8px;}
 .form-input{padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--inp);color:var(--text);outline:none;width:100%;}
@@ -1421,7 +1420,7 @@ if(isDark) document.getElementById("dark-btn").textContent="Light";
 
 // PORTAL TABS
 function switchPortalTab(name,btn){
-  if(name==="all"){ hasNewAnn=false; updateNavDot(); }
+  if(name==="all"){ clearNewAnnouncementsBadge(); }
   document.querySelectorAll(".portal-tab").forEach(function(t){ t.style.display="none"; });
   document.getElementById("tab-"+name).style.display="block";
   var sel = document.getElementById("portal-nav-select");
@@ -2013,12 +2012,19 @@ function clearNewMessagesBadge(){
 }
 
 function checkNewAnnouncements(){
-  if(!DB) return;
+  if(!DB || !currentUser) return;
+  var lastCheck = parseInt(localStorage.getItem("esAnnLastCheck_"+sk(currentUser))||"0");
   DB.ref("announcements").orderByChild("ts").limitToLast(10).once("value",function(snap){
     hasNewAnn = false;
-    if(snap.exists()) snap.forEach(function(c){ if(!c.val().archived) hasNewAnn = true; });
+    if(snap.exists()) snap.forEach(function(c){ var a=c.val(); if(!a.archived && a.ts>lastCheck) hasNewAnn = true; });
     updateNavDot();
   });
+}
+function clearNewAnnouncementsBadge(){
+  if(!currentUser) return;
+  localStorage.setItem("esAnnLastCheck_"+sk(currentUser), String(Date.now()));
+  hasNewAnn = false;
+  updateNavDot();
 }
 
 function loadAnnouncements(){
@@ -5113,6 +5119,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-09-remove-new-video-system</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-09-fix-ann-dot-thicker-lines</p>
 </body>
 </html>
