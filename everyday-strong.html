@@ -18,12 +18,12 @@
 <style>
 :root{
   --bg:#f5f0eb;--card:#fff;--border:#ddd0c6;--text:#3a2a1a;--sub:#9a8a7a;
-  --accent:#a76a5b;--accent2:#8b4a3d;--bar:#a76a5b;--hdr:#fff;--hdrtxt:#3a2a1a;
+  --accent:#a76a5b;--accent2:#8b4a3d;--bar:#a76a5b;--hdr:#f5f0eb;--hdrtxt:#3a2a1a;
   --admbg:#3a2a1a;--inp:#f9f6f2;--new-badge:#e8f5e9;--new-txt:#2e7d32;
 }
 body.dark{
   --bg:#1a1a1a;--card:#2a2a2a;--border:#444;--text:#f0ebe4;--sub:#a0908a;
-  --accent:#c9917d;--accent2:#d4a591;--bar:#3a2a1a;--hdr:#2a2a2a;--hdrtxt:#f0ebe4;
+  --accent:#c9917d;--accent2:#d4a591;--bar:#3a2a1a;--hdr:#1a1a1a;--hdrtxt:#f0ebe4;
   --admbg:#111;--inp:#333;--new-badge:#1a3a1a;--new-txt:#6ac06a;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -60,9 +60,9 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 
 /* NAV DROPDOWN */
 .portal-nav-wrap{position:relative;margin-bottom:1.4rem;}
-.portal-nav-select{width:100%;appearance:none;-webkit-appearance:none;background:var(--accent) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>') no-repeat right 16px center/18px 18px;border:none;border-radius:10px;padding:14px 44px 14px 18px;font-size:15px;font-weight:700;color:#fff;font-family:'Raleway',sans-serif;cursor:pointer;box-shadow:0 2px 6px rgba(167,106,91,0.3);}
+.portal-nav-select{width:100%;appearance:none;-webkit-appearance:none;background:var(--card) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23a76a5b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>') no-repeat right 16px center/18px 18px;border:1.5px solid var(--accent);border-radius:10px;padding:14px 44px 14px 18px;font-size:15px;font-weight:700;color:var(--accent);font-family:'Raleway',sans-serif;cursor:pointer;}
 .portal-nav-select:focus{outline:none;border-color:var(--accent);}
-.nav-dropdown-dot{position:absolute;top:10px;right:42px;width:9px;height:9px;background:#fff;border:2px solid #c05040;border-radius:50%;pointer-events:none;}
+.nav-dropdown-dot{position:absolute;top:11px;right:42px;width:8px;height:8px;background:#c05040;border-radius:50%;pointer-events:none;}
 
 /* ANNOUNCEMENTS */
 .announce-card{background:var(--card);border-radius:11px;border:0.5px solid var(--border);overflow:hidden;margin-bottom:10px;}
@@ -448,11 +448,11 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
       <div class="admin-card" style="margin-bottom:1rem;">
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;" id="comm-cats">
           <button class="comm-cat-btn on" data-cat="all" onclick="setCommCat(this.dataset.cat,this)">All</button>
-          <button class="comm-cat-btn" data-cat="win" onclick="setCommCat(this.dataset.cat,this)">🏆 Wins</button>
-          <button class="comm-cat-btn" data-cat="checkin" onclick="setCommCat(this.dataset.cat,this)">💪 Check-in</button>
-          <button class="comm-cat-btn" data-cat="question" onclick="setCommCat(this.dataset.cat,this)">❓ Question</button>
-          <button class="comm-cat-btn" data-cat="general" onclick="setCommCat(this.dataset.cat,this)">💬 General</button>
-          <button class="comm-cat-btn" data-cat="announcement" onclick="setCommCat(this.dataset.cat,this)">📣 Instructor</button>
+          <button class="comm-cat-btn" data-cat="win" onclick="setCommCat(this.dataset.cat,this)">Wins</button>
+          <button class="comm-cat-btn" data-cat="checkin" onclick="setCommCat(this.dataset.cat,this)">Check-in</button>
+          <button class="comm-cat-btn" data-cat="question" onclick="setCommCat(this.dataset.cat,this)">Question</button>
+          <button class="comm-cat-btn" data-cat="general" onclick="setCommCat(this.dataset.cat,this)">General</button>
+          <button class="comm-cat-btn" data-cat="announcement" onclick="setCommCat(this.dataset.cat,this)">Instructor</button>
         </div>
         <div id="comm-feed"><div class="empty-state"><p>Loading...</p></div></div>
       </div>
@@ -463,10 +463,10 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <div class="ok-msg" id="ok-comm">Posted!</div>
         <label class="form-label" style="display:block;margin-bottom:6px;">Category</label>
         <select class="form-select" id="comm-cat-sel" style="margin-bottom:10px;">
-          <option value="win">🏆 Win</option>
-          <option value="checkin">💪 Check-in</option>
-          <option value="question">❓ Question</option>
-          <option value="general">💬 General</option>
+          <option value="win">Win</option>
+          <option value="checkin">Check-in</option>
+          <option value="question">Question</option>
+          <option value="general">General</option>
         </select>
         <textarea class="form-textarea" id="comm-text" placeholder="Share something with the community..."></textarea>
         <div style="margin-bottom:10px;">
@@ -525,10 +525,10 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <div class="form-row">
           <span class="form-label">Meal</span>
           <select class="form-select" id="food-meal">
-            <option value="Breakfast">🌅 Breakfast</option>
-            <option value="Lunch">☀️ Lunch</option>
-            <option value="Dinner">🌙 Dinner</option>
-            <option value="Snack">🍎 Snack</option>
+            <option value="Breakfast">Breakfast</option>
+            <option value="Lunch">Lunch</option>
+            <option value="Dinner">Dinner</option>
+            <option value="Snack">Snack</option>
           </select>
         </div>
         <div class="form-row">
@@ -646,14 +646,14 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <p style="font-size:12px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Filter Recipes</p>
         <div style="display:flex;gap:6px;flex-wrap:wrap;" id="recipe-filters">
           <button class="comm-cat-btn on" data-filter="all" onclick="filterRecipes('all',this)">All</button>
-          <button class="comm-cat-btn" data-filter="breakfast" onclick="filterRecipes('breakfast',this)">🌅 Breakfast</button>
-          <button class="comm-cat-btn" data-filter="lunch" onclick="filterRecipes('lunch',this)">☀️ Lunch</button>
-          <button class="comm-cat-btn" data-filter="dinner" onclick="filterRecipes('dinner',this)">🌙 Dinner</button>
-          <button class="comm-cat-btn" data-filter="snack" onclick="filterRecipes('snack',this)">🍎 Snacks</button>
-          <button class="comm-cat-btn" data-filter="dairyfree" onclick="filterRecipes('dairyfree',this)">🥛 Dairy Free</button>
-          <button class="comm-cat-btn" data-filter="glutenfree" onclick="filterRecipes('glutenfree',this)">🌾 Gluten Free</button>
-          <button class="comm-cat-btn" data-filter="highprotein" onclick="filterRecipes('highprotein',this)">💪 High Protein</button>
-          <button class="comm-cat-btn" data-filter="quickeasy" onclick="filterRecipes('quickeasy',this)">⚡ Quick & Easy</button>
+          <button class="comm-cat-btn" data-filter="breakfast" onclick="filterRecipes('breakfast',this)">Breakfast</button>
+          <button class="comm-cat-btn" data-filter="lunch" onclick="filterRecipes('lunch',this)">Lunch</button>
+          <button class="comm-cat-btn" data-filter="dinner" onclick="filterRecipes('dinner',this)">Dinner</button>
+          <button class="comm-cat-btn" data-filter="snack" onclick="filterRecipes('snack',this)">Snacks</button>
+          <button class="comm-cat-btn" data-filter="dairyfree" onclick="filterRecipes('dairyfree',this)">Dairy Free</button>
+          <button class="comm-cat-btn" data-filter="glutenfree" onclick="filterRecipes('glutenfree',this)">Gluten Free</button>
+          <button class="comm-cat-btn" data-filter="highprotein" onclick="filterRecipes('highprotein',this)">High Protein</button>
+          <button class="comm-cat-btn" data-filter="quickeasy" onclick="filterRecipes('quickeasy',this)">Quick & Easy</button>
         </div>
       </div>
 
@@ -1020,10 +1020,10 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <div class="form-row">
           <span class="form-label">Category</span>
           <select class="form-select" id="rec-cat">
-            <option value="breakfast">🌅 Breakfast</option>
-            <option value="lunch">☀️ Lunch</option>
-            <option value="dinner">🌙 Dinner</option>
-            <option value="snack">🍎 Snack</option>
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
+            <option value="snack">Snack</option>
           </select>
         </div>
         <div class="form-row">
@@ -1204,9 +1204,9 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <label class="form-label" style="display:block;margin-bottom:6px;">Category</label>
         <select class="form-select" id="admin-comm-cat" style="margin-bottom:10px;">
           <option value="announcement">📣 Announcement</option>
-          <option value="win">🏆 Win</option>
-          <option value="checkin">💪 Check-in</option>
-          <option value="general">💬 General</option>
+          <option value="win">Win</option>
+          <option value="checkin">Check-in</option>
+          <option value="general">General</option>
         </select>
         <textarea class="form-textarea" id="admin-comm-text" placeholder="Post something to the community..."></textarea>
         <div style="margin-bottom:10px;">
@@ -1386,7 +1386,7 @@ function isClientBlocked(cd){
   if(cd.customExpiresAt && Date.now()>cd.customExpiresAt) return true;
   return false;
 }
-function isNew(ts){ return ts && (Date.now()-ts) < 7*24*60*60*1000; }
+function isNew(v){ return v.ts && (Date.now()-v.ts) < 7*24*60*60*1000 && !myViewedVideos[v._k]; }
 
 function canAccess(tag){
   if(currentAccess==="ALL") return true;
@@ -1713,6 +1713,7 @@ function openPopularCategory(){
 // so admin can see them and they sync across a client's devices. Kept as an
 // in-memory cache for fast synchronous rendering, loaded once at login.
 var myFavorites = {};
+var myViewedVideos = {};
 var myCompleted = {};
 
 function loadMyUserData(callback){
@@ -1721,7 +1722,10 @@ function loadMyUserData(callback){
     myFavorites = snap.exists() ? snap.val() : {};
     DB.ref("userdata/"+currentUserKey+"/completed").once("value", function(snap2){
       myCompleted = snap2.exists() ? snap2.val() : {};
-      if(callback) callback();
+      DB.ref("userdata/"+currentUserKey+"/viewedVideos").once("value", function(snap3){
+        myViewedVideos = snap3.exists() ? snap3.val() : {};
+        if(callback) callback();
+      });
     });
   });
 }
@@ -1807,13 +1811,13 @@ function buildVideoCard(v){
   h+="<div class='video-thumb' onclick='openVideo(\""+ex(v.url)+"\",\""+v._k+"\")'>";
   h+=th+"<div class='play-overlay'></div>";
   if(isDone) h+="<span class='completed-badge'>✓ Done</span>";
-  if(isNew(v.ts)) h+="<span class='new-badge'>NEW</span>";
+  if(isNew(v)) h+="<span class='new-badge'>NEW</span>";
   h+="</div>";
   h+="<div class='video-info'><div class='video-title'>"+ex(v.title)+"</div>";
   h+="<div class='video-actions'>";
   h+="<button class='vact-btn "+(isFav?"active":"")+"' onclick='toggleFav(\""+v._k+"\")' title='Favorite'>"+(isFav?"⭐":"☆")+"</button>";
   h+="<button class='vact-btn "+(isDone?"active":"")+"' onclick='toggleDone(\""+v._k+"\")' title='Mark complete'>"+(isDone?"✅":"○ Done")+"</button>";
-  h+="<button class='vact-btn' onclick='toggleComments(\""+v._k+"\")' title='Comments'>💬</button>";
+  h+="<button class='vact-btn' onclick='toggleComments(\""+v._k+"\")' title='Comments'>Comments</button>";
   h+="</div>";
   h+="<div class='note-box' id='nb-"+v._k+"'>";
   h+="<div id='comments-list-"+v._k+"' style='margin-bottom:8px;'></div>";
@@ -1831,6 +1835,11 @@ function openVideo(url, videoKey){
   // Only count real client views — not your own admin preview/comment-review clicks
   if(videoKey && DB && !previewingAsClient){
     DB.ref("videoViews/"+videoKey).transaction(function(cur){ return (cur||0)+1; });
+    if(!myViewedVideos[videoKey] && currentUserKey){
+      myViewedVideos[videoKey] = true;
+      DB.ref("userdata/"+currentUserKey+"/viewedVideos/"+videoKey).set(true);
+      refreshCard(videoKey);
+    }
   }
 }
 function closeVideoModal(){
@@ -1996,6 +2005,10 @@ var hasNewMsg = false;
 function updateNavDot(){
   var dot = document.getElementById("nav-dropdown-dot");
   if(dot) dot.style.display = (hasNewAnn || hasNewMsg) ? "inline-block" : "none";
+  var allOpt = document.querySelector('#portal-nav-select option[value="all"]');
+  var msgOpt = document.querySelector('#portal-nav-select option[value="msg"]');
+  if(allOpt) allOpt.textContent = hasNewAnn ? "\u25CF Workouts" : "Workouts";
+  if(msgOpt) msgOpt.textContent = hasNewMsg ? "\u25CF Messages" : "Messages";
 }
 
 function checkNewMessages(){
@@ -2806,7 +2819,7 @@ function loadCommunity(){
     items.reverse();
     if(activeCommCat !== "all") items = items.filter(function(p){ return p.cat === activeCommCat; });
     if(!items.length){ el.innerHTML="<div class=\"empty-state\"><p>No posts in this category yet.</p></div>"; return; }
-    var catLabels={win:"🏆 Win",checkin:"💪 Check-in",question:"❓ Question",general:"💬 General",announcement:"📣 Announcement"};
+    var catLabels={win:"Win",checkin:"Check-in",question:"Question",general:"General",announcement:"Announcement"};
     var html="";
     items.forEach(function(p){
       var lk=p.likes||{}, lc=Object.keys(lk).length, liked=lk[sk(currentUser)]?true:false;
@@ -2851,7 +2864,7 @@ function loadCommunity(){
 
       var replyBtn=document.createElement("button");
       replyBtn.className="comm-reply-btn";
-      replyBtn.textContent="💬 Reply";
+      replyBtn.textContent="Reply";
       replyBtn.setAttribute("data-key",p._k);
       replyBtn.onclick=function(){ togCommReply(this.getAttribute("data-key"),this); };
       acts.appendChild(replyBtn);
@@ -2921,8 +2934,8 @@ function commLike(key, liked){
 
 function togCommReply(key, btn){
   var box=document.getElementById("cr-"+key);
-  if(box.style.display==="block"){ box.style.display="none"; btn.textContent="💬 Reply"; }
-  else{ box.style.display="block"; btn.textContent="💬 Hide"; loadCommReplies(key); }
+  if(box.style.display==="block"){ box.style.display="none"; btn.textContent="Reply"; }
+  else{ box.style.display="block"; btn.textContent="Hide"; loadCommReplies(key); }
 }
 
 function loadCommReplies(key){
@@ -3000,12 +3013,12 @@ function loadFood(){
     var items=[];
     snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); });
     items.sort(function(a,b){ return b.ts-a.ts; });
-    var mealIcons={Breakfast:"🌅",Lunch:"☀️",Dinner:"🌙",Snack:"🍎"};
+    
     var h="";
     items.forEach(function(f){
       h+="<div style='background:var(--card);border-radius:10px;border:0.5px solid var(--border);margin-bottom:10px;overflow:hidden;'>";
       h+="<div style='padding:10px 14px;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;'>";
-      h+="<span style='font-size:14px;font-weight:700;color:var(--text);'>"+(mealIcons[f.meal]||"🍽️")+" "+ex(f.meal)+"</span>";
+      h+="<span style='font-size:14px;font-weight:700;color:var(--text);'>"+ex(f.meal)+"</span>";
       h+="<span style='font-size:11px;color:var(--sub);'>"+ex(f.date)+"</span></div>";
       if(f.img) h+="<img src='"+ex(f.img)+"' style='width:100%;max-height:200px;object-fit:cover;display:block;' onerror=\"this.style.display='none'\" />";
       h+="<div style='padding:10px 14px;font-size:14px;color:var(--text);'>"+ex(f.desc)+"</div>";
@@ -3346,7 +3359,7 @@ function loadAdminCheckins(){
       h+="<div style='margin-top:8px;font-size:13px;color:var(--text);'>";
       h+="<p><strong style='color:var(--accent);'>✅ Went well:</strong> "+ex(ci.good)+"</p>";
       if(ci.hard) h+="<p style='margin-top:4px;'><strong style='color:var(--accent);'>💪 Challenging:</strong> "+ex(ci.hard)+"</p>";
-      if(ci.q) h+="<p style='margin-top:4px;'><strong style='color:var(--accent);'>❓ Question:</strong> "+ex(ci.q)+"</p>";
+      if(ci.q) h+="<p style='margin-top:4px;'><strong style='color:var(--accent);'>Question:</strong> "+ex(ci.q)+"</p>";
       h+="</div>";
       var cvisLabel=ci.visibility==="self"?"🔐 Only client":ci.visibility==="community"?"🌐 Community":"🔒 Client & Heather"; h+="<div style='font-size:11px;color:var(--sub);margin-top:4px;'>"+cvisLabel+"</div>";
       if(!ci.read){ h+="<button class='action-btn sec' style='font-size:11px;padding:4px 10px;margin-top:8px;' onclick='markCiRead(\""+ci._k+"\")'>Mark as read</button>"; }
@@ -4539,7 +4552,7 @@ function loadRecipes(){
 
 function renderRecipes(){
   var el = document.getElementById("recipes-list");
-  var catLabels={breakfast:"🌅 Breakfast",lunch:"☀️ Lunch",dinner:"🌙 Dinner",snack:"🍎 Snack"};
+  var catLabels={breakfast:"Breakfast",lunch:"Lunch",dinner:"Dinner",snack:"Snack"};
   var filtered = allRecipes.filter(function(r){
     if(activeRecipeFilter==="all") return true;
     if(activeRecipeFilter===r.cat) return true;
@@ -5134,6 +5147,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-09-cleaner-less-emoji</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-09-lighter-nav-unified-bg</p>
 </body>
 </html>
