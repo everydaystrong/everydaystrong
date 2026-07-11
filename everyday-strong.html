@@ -75,7 +75,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:0.9rem;}
 .cat-card{background:var(--card);border-radius:14px;border:0.5px solid var(--border);overflow:hidden;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;-webkit-tap-highlight-color:transparent;box-shadow:0 1px 3px rgba(58,42,26,0.06);}
 .cat-card:active{transform:scale(0.97);}
-.cat-img{width:100%;aspect-ratio:16/9;object-fit:cover;background:#e8ddd2;display:block;}
+.cat-img{width:100%;aspect-ratio:4/3;object-fit:cover;background:#e8ddd2;display:block;}
 .cat-img-placeholder{width:100%;aspect-ratio:4/3;background:radial-gradient(circle at 30% 25%, #a76a5b, #8b4a3d 75%);display:flex;align-items:center;justify-content:center;font-size:34px;position:relative;overflow:hidden;}
 .cat-img-placeholder::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,0.06) 0 2px,transparent 2px 14px);}
 .cat-img-placeholder span{position:relative;z-index:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2));}
@@ -5139,6 +5139,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-10-cat-photo-ext-fix</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-10-cat-tile-aspect-fix</p>
 </body>
 </html>
