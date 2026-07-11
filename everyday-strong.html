@@ -257,6 +257,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
       </div>
     </div>
     <div class="form-row"><span class="form-label">Release Date (optional)</span><input type="date" class="form-input" id="edit-release" /><span style="font-size:11px;color:var(--sub);margin-top:3px;">Leave blank to show immediately. Set a future date to schedule.</span></div>
+    <div class="form-row"><label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;"><input type="checkbox" id="edit-held" style="width:18px;height:18px;" /> Hold — don't post yet (no date needed)</label></div>
     <div class="form-row"><span class="form-label">Category Image URL (optional)</span><input class="form-input" id="edit-catimg" placeholder="https://... image for this category card" style="text-transform:none;" /></div>
     <button class="action-btn" onclick="saveEdit()" style="width:100%;margin-top:4px;">Save Changes</button>
   </div>
@@ -749,6 +750,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
           <p class="tip">A video can have multiple focus tags — e.g. both "Lower Body" and "Core."</p>
         </div>
         <div class="form-row"><span class="form-label">Release Date (optional)</span><input type="date" class="form-input" id="v-release" /><span style="font-size:11px;color:var(--sub);margin-top:3px;">Leave blank to show immediately. Set a future date to schedule.</span></div>
+        <div class="form-row"><label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;"><input type="checkbox" id="v-held" style="width:18px;height:18px;" /> Hold — don't post yet (no date needed)</label></div>
         <button class="action-btn" id="add-video-btn">Save Video</button>
       </div>
       <div class="admin-card">
@@ -1393,6 +1395,7 @@ function canAccess(tag){
 }
 
 function isReleased(v){
+  if(v.held) return false;
   if(!v.releaseDate) return true;
   return new Date(v.releaseDate) <= new Date();
 }
@@ -2231,6 +2234,7 @@ function openEdit(key){
     editFocusSelected.forEach(function(f){ if(allFocusTags.indexOf(f)===-1) allFocusTags.push(f); });
     renderFocusChips("edit");
     document.getElementById("edit-release").value=v.releaseDate||"";
+    document.getElementById("edit-held").checked=!!v.held;
     document.getElementById("edit-catimg").value=v.catImg||"";
     document.getElementById("edit-modal").classList.add("open");
   });
@@ -2247,9 +2251,10 @@ function saveEdit(){
   var u=document.getElementById("edit-url").value.trim();
   var tg=document.getElementById("edit-tag").value.trim();
   var rd=document.getElementById("edit-release").value;
+  var held=document.getElementById("edit-held").checked;
   var ci=document.getElementById("edit-catimg").value.trim();
   if(!t||!u){ alert("Please enter a title and link."); return; }
-  DB.ref("videos/"+key).update({title:t,url:u,tag:tg,focus:editFocusSelected.length?editFocusSelected:null,releaseDate:rd||null,catImg:ci||null},function(e){
+  DB.ref("videos/"+key).update({title:t,url:u,tag:tg,focus:editFocusSelected.length?editFocusSelected:null,releaseDate:rd||null,held:held||null,catImg:ci||null},function(e){
     if(!e){ closeEdit(); showOk("ok-video","Video updated!"); }
   });
 }
@@ -2415,7 +2420,7 @@ function loadAdmVideos(){
           h+="<div class='admin-vid-group-body' style='display:none;padding-top:4px;'>";
           items.forEach(function(item){
             var v=item.v, key=item.key;
-            var rd=v.releaseDate?(" <span style='font-size:11px;color:var(--sub);'>"+v.releaseDate+"</span>"):"";
+            var rd=v.held?" <span style='font-size:11px;color:#a8677a;font-weight:600;'>● On Hold</span>":(v.releaseDate?(" <span style='font-size:11px;color:var(--sub);'>"+v.releaseDate+"</span>"):"");
             var views=viewCounts[key]||0;
             var viewsHtml=" <span style='font-size:11px;color:var(--sub);'>· 👁️ "+views+" view"+(views!==1?"s":"")+"</span>";
             h+="<div class='list-item'><div class='list-item-left'>"+ex(v.title)+rd+viewsHtml+"</div><div style='display:flex;gap:6px;'><button class='edit-btn' onclick='openEdit(\""+key+"\")'>Edit</button><button class='del-btn' onclick='delVideo(\""+key+"\")'>✕</button></div></div>";
@@ -2445,13 +2450,14 @@ function addVideo(){
   var u=document.getElementById("v-url").value.trim();
   var tg=document.getElementById("v-tag").value.trim();
   var rd=document.getElementById("v-release").value;
+  var held=document.getElementById("v-held").checked;
   if(!t||!u){ alert("Please enter a title and video link."); return; }
   if(!tg){ alert("Please select or enter a program/category."); return; }
   if(!DB){ alert("Database not connected."); return; }
   DB.ref("videos").orderByChild("tag").equalTo(tg).once("value",function(snap){
     var maxOrder=0;
     if(snap.exists()) snap.forEach(function(c){ var o=c.val().order||0; if(o>maxOrder) maxOrder=o; });
-    DB.ref("videos").push({title:t,url:u,tag:tg,focus:vFocusSelected.length?vFocusSelected:null,order:maxOrder+1,releaseDate:rd||null,ts:Date.now()},function(e){
+    DB.ref("videos").push({title:t,url:u,tag:tg,focus:vFocusSelected.length?vFocusSelected:null,order:maxOrder+1,releaseDate:rd||null,held:held||null,ts:Date.now()},function(e){
       if(!e){
         document.getElementById("v-title").value="";
         document.getElementById("v-url").value="";
@@ -2461,6 +2467,7 @@ function addVideo(){
         vFocusSelected = [];
         renderFocusChips("v");
         document.getElementById("v-release").value="";
+        document.getElementById("v-held").checked=false;
         showOk("ok-video","Video saved!");
         populateProgramDatalist();
       }
@@ -5139,6 +5146,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-10-cat-tile-aspect-fix</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-10-video-hold-toggle</p>
 </body>
 </html>
