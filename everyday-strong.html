@@ -1580,14 +1580,14 @@ function getStandaloneNames(){
   });
   return standaloneNames;
 }
-// Falls back to an uploaded stock photo (media/live-classes.jpg, etc.) when a
+// Falls back to an uploaded stock photo (media/live-classes.jpeg, etc.) when a
 // category has no per-video catImg set — matched loosely by name so it works
 // regardless of exact capitalization or wording Heather uses for the tag.
 function getDefaultCatImg(catName){
   var n=(catName||"").toLowerCase();
-  if(n.indexOf("live")!==-1) return "media/live-classes.jpg";
-  if(n.indexOf("found")!==-1) return "media/foundations.jpg";
-  if(n.indexOf("reset")!==-1) return "media/reset-build.jpg";
+  if(n.indexOf("live")!==-1) return "media/live-classes.jpeg";
+  if(n.indexOf("found")!==-1) return "media/foundations.jpeg";
+  if(n.indexOf("reset")!==-1) return "media/reset-build.jpeg";
   return null;
 }
 function renderCategories(){
@@ -5139,6 +5139,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-10-header-fixes-cat-photos</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-10-cat-photo-ext-fix</p>
 </body>
 </html>
