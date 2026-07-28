@@ -3792,14 +3792,15 @@ function loadAdminComments(){
 function initMessageBadge(){
   if(!DB) return;
   DB.ref("messages").on("value", function(snap){
-    var lastCheck = parseInt(localStorage.getItem(MSG_LAST_CHECK_KEY)||"0");
     var hasNew = false;
     if(snap.exists()){
       snap.forEach(function(thread){
+        var latest = null, latestTs = -1;
         thread.forEach(function(m){
           var v = m.val();
-          if(v && v.fromClient && v.ts > lastCheck) hasNew = true;
+          if(v && v.ts > latestTs){ latest = v; latestTs = v.ts; }
         });
+        if(latest && latest.fromClient) hasNew = true; // client sent the last message — awaiting your reply
       });
     }
     var dot = document.getElementById("msg-tab-dot");
@@ -3807,9 +3808,9 @@ function initMessageBadge(){
   });
 }
 function clearMessageBadge(){
-  localStorage.setItem(MSG_LAST_CHECK_KEY, String(Date.now()));
-  var dot = document.getElementById("msg-tab-dot");
-  if(dot) dot.style.display = "none";
+  // The dot now reflects real unread state (client has the last word in a thread),
+  // so it clears itself once you reply — nothing to do here but keep this as a
+  // safe no-op in case other code still calls it.
 }
 
 var currentAdminThreadKey = null;
@@ -4132,8 +4133,10 @@ function loadDashboard(){
     snap.forEach(function(c){
       var msgs=[]; c.forEach(function(m){ msgs.push(m.val()); });
       msgs.sort(function(a,b){ return b.ts-a.ts; });
-      var unread=msgs.filter(function(m){ return m.fromClient; });
-      if(unread.length) threads.push({name:c.key, latest:unread[0], count:unread.length});
+      if(!msgs.length || !msgs[0].fromClient) return;
+      var waitingCount=0;
+      for(var i=0;i<msgs.length;i++){ if(msgs[i].fromClient) waitingCount++; else break; }
+      threads.push({name:c.key, latest:msgs[0], count:waitingCount});
     });
     threads.sort(function(a,b){ return b.latest.ts-a.latest.ts; });
     el.innerHTML="";
@@ -5588,6 +5591,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-dashboard-upgrades</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-fix-message-badge</p>
 </body>
 </html>
