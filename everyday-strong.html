@@ -788,6 +788,27 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <button class="action-btn" id="bulk-add-btn" style="width:100%;margin-top:8px;display:none;">Add All to Dashboard</button>
       </div>
       <div class="admin-card">
+        <h3>Bulk Tag Equipment (Existing Videos)</h3>
+        <p class="tip" style="margin-bottom:10px;">Select videos below, choose an equipment tag, then apply it to all selected at once. This adds the tag on top of whatever's already there — it won't remove existing tags.</p>
+        <div class="form-row"><span class="form-label">Filter by Category</span>
+          <select class="form-select" id="bt-cat-filter" onchange="renderBulkTagList()" style="margin-bottom:8px;">
+            <option value="">All Categories</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button type="button" class="action-btn" style="flex:1;" onclick="bulkTagSelectAll()">Select All</button>
+          <button type="button" class="action-btn" style="flex:1;" onclick="bulkTagSelectNone()">Clear Selection</button>
+        </div>
+        <div id="bt-video-list" style="max-height:320px;overflow-y:auto;border:0.5px solid var(--border);border-radius:8px;margin-bottom:12px;"><p class="tip" style="padding:10px;">Loading videos...</p></div>
+        <div class="form-row"><span class="form-label">Equipment tag to apply</span>
+          <div id="bt-equip-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;"></div>
+          <input class="form-input" id="bt-equip-new" placeholder="Or type a new equipment tag…" style="text-transform:none;" />
+        </div>
+        <div class="ok-msg" id="ok-bulk-tag">Tags applied!</div>
+        <p id="bt-selected-count" class="tip" style="margin-bottom:6px;">0 videos selected.</p>
+        <button class="action-btn" id="bulk-tag-apply-btn" style="width:100%;">Apply Tag to Selected</button>
+      </div>
+      <div class="admin-card">
         <h3>Category Display Settings</h3>
         <p class="tip" style="margin-bottom:10px;">By default, if a client can see more than one category, they're combined into one "Live Classes" tile — this makes sense for Monday + Wednesday classes. But standalone programs like Foundations or a Bodyweight Program shouldn't get lumped in. Check any category that should always show as its own separate tile, never combined.</p>
         <div id="cat-settings-list"><p class="tip">Loading categories...</p></div>
@@ -2141,12 +2162,12 @@ function loadAnnouncements(){
 function doAdmin(){
   var p=prompt("Instructor password:");
   if(p===null) return;
-  if(p===adminPass){ loadDashboard(); loadTrialTracker(); loadUnpaidDashboard(); loadAdmVideos(); populateProgramDatalist(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); initCommentsBadge(); sp("pg-admin"); }
+  if(p===adminPass){ loadDashboard(); loadTrialTracker(); loadUnpaidDashboard(); loadAdmVideos(); populateProgramDatalist(); loadBulkTagVideos(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); initCommentsBadge(); sp("pg-admin"); }
   else alert("Incorrect password. Please try again.");
 }
 
 document.getElementById("atab-dashboard").onclick=function(){ setAdmTab("dashboard",this); loadDashboard(); };
-document.getElementById("atab-videos").onclick=function(){ setAdmTab("videos",this); loadAdmVideos(); populateProgramDatalist(); };
+document.getElementById("atab-videos").onclick=function(){ setAdmTab("videos",this); loadAdmVideos(); populateProgramDatalist(); loadBulkTagVideos(); };
 document.getElementById("atab-clients").onclick=function(){ setAdmTab("clients",this); loadClients(); };
 document.getElementById("atab-submissions").onclick=function(){ setAdmTab("submissions",this); clearSubmissionsBadge(); };
 document.getElementById("atab-announce").onclick=function(){ setAdmTab("announce",this); };
@@ -2666,6 +2687,115 @@ function submitBulkVideos(){
   });
 }
 
+// BULK TAG EQUIPMENT (existing videos)
+var bulkTagVideoData = [];
+var bulkTagSelectedKeys = {};
+var bulkTagSelectedEquip = null;
+
+function loadBulkTagVideos(){
+  if(!DB) return;
+  DB.ref("videos").once("value", function(snap){
+    bulkTagVideoData = [];
+    var cats = {};
+    if(snap.exists()) snap.forEach(function(c){
+      var v = c.val();
+      bulkTagVideoData.push({key:c.key, title:v.title||"(untitled)", tag:v.tag||"Uncategorized", equipment:normalizeFocus(v.equipment)});
+      cats[v.tag||"Uncategorized"] = true;
+    });
+    var sel = document.getElementById("bt-cat-filter");
+    var prevVal = sel.value;
+    sel.innerHTML = '<option value="">All Categories</option>' + Object.keys(cats).sort().map(function(c){
+      return "<option value='"+ex(c).replace(/'/g,"&#39;")+"'>"+ex(c)+"</option>";
+    }).join("");
+    sel.value = prevVal;
+    renderBulkTagChips();
+    renderBulkTagList();
+  });
+}
+
+function renderBulkTagChips(){
+  var wrap = document.getElementById("bt-equip-chips");
+  if(!allEquipTags.length){ wrap.innerHTML = "<p class='tip' style='margin:0;'>No equipment tags yet — type one below to create it.</p>"; return; }
+  wrap.innerHTML = allEquipTags.map(function(e){
+    var on = bulkTagSelectedEquip===e;
+    return "<button type='button' class='focus-chip"+(on?" on":"")+"' onclick='setBulkTagEquip(\""+ex(e).replace(/"/g,"&quot;")+"\")'>"+ex(e)+"</button>";
+  }).join("");
+}
+
+function setBulkTagEquip(tag){
+  bulkTagSelectedEquip = bulkTagSelectedEquip===tag ? null : tag;
+  document.getElementById("bt-equip-new").value = "";
+  renderBulkTagChips();
+}
+
+function renderBulkTagList(){
+  var wrap = document.getElementById("bt-video-list");
+  var filterCat = document.getElementById("bt-cat-filter").value;
+  var vids = filterCat ? bulkTagVideoData.filter(function(v){ return v.tag===filterCat; }) : bulkTagVideoData;
+  if(!vids.length){ wrap.innerHTML = "<p class='tip' style='padding:10px;'>No videos found.</p>"; return; }
+  wrap.innerHTML = vids.map(function(v){
+    var checked = bulkTagSelectedKeys[v.key] ? "checked" : "";
+    var equipTxt = v.equipment.length ? " <span style='font-size:11px;color:var(--sub);'>· "+ex(v.equipment.join(", "))+"</span>" : "";
+    return "<label style='display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:0.5px solid var(--border);font-size:13px;cursor:pointer;'>"+
+      "<input type='checkbox' style='width:17px;height:17px;flex-shrink:0;' "+checked+" onchange='toggleBulkTagKey(\""+v.key+"\")' />"+
+      "<span><strong>"+ex(v.title)+"</strong> <span style='color:var(--sub);'>· "+ex(v.tag)+"</span>"+equipTxt+"</span></label>";
+  }).join("");
+  updateBulkTagCount();
+}
+
+function toggleBulkTagKey(key){
+  if(bulkTagSelectedKeys[key]) delete bulkTagSelectedKeys[key];
+  else bulkTagSelectedKeys[key] = true;
+  updateBulkTagCount();
+}
+
+function bulkTagSelectAll(){
+  var filterCat = document.getElementById("bt-cat-filter").value;
+  var vids = filterCat ? bulkTagVideoData.filter(function(v){ return v.tag===filterCat; }) : bulkTagVideoData;
+  vids.forEach(function(v){ bulkTagSelectedKeys[v.key] = true; });
+  renderBulkTagList();
+}
+
+function bulkTagSelectNone(){
+  bulkTagSelectedKeys = {};
+  renderBulkTagList();
+}
+
+function updateBulkTagCount(){
+  var n = Object.keys(bulkTagSelectedKeys).length;
+  document.getElementById("bt-selected-count").textContent = n+" video"+(n!==1?"s":"")+" selected.";
+}
+
+function applyBulkTag(){
+  if(!DB){ alert("Database not connected."); return; }
+  var typedTag = document.getElementById("bt-equip-new").value.trim();
+  var tag = typedTag || bulkTagSelectedEquip;
+  var keys = Object.keys(bulkTagSelectedKeys);
+  if(!tag){ alert("Choose an existing equipment tag or type a new one."); return; }
+  if(!keys.length){ alert("Select at least one video first."); return; }
+  var btn = document.getElementById("bulk-tag-apply-btn");
+  btn.disabled = true; btn.textContent = "Applying...";
+  var remaining = keys.length, failed = 0;
+  keys.forEach(function(key){
+    var entry = bulkTagVideoData.filter(function(v){ return v.key===key; })[0];
+    var current = entry ? entry.equipment.slice() : [];
+    if(current.indexOf(tag)===-1) current.push(tag);
+    DB.ref("videos/"+key).update({equipment:current}, function(e){
+      if(e) failed++;
+      remaining--;
+      if(remaining===0){
+        btn.disabled = false; btn.textContent = "Apply Tag to Selected";
+        showOk("ok-bulk-tag", failed ? (keys.length-failed)+" tagged, "+failed+" failed." : keys.length+" video"+(keys.length!==1?"s":"")+" tagged with \""+tag+"\"!");
+        document.getElementById("bt-equip-new").value = "";
+        bulkTagSelectedEquip = null;
+        bulkTagSelectedKeys = {};
+        populateProgramDatalist();
+        loadBulkTagVideos();
+        loadAdmVideos();
+      }
+    });
+  });
+}
 
 function loadReorderList(){
   var cat=document.getElementById("reorder-cat").value;
@@ -5215,6 +5345,8 @@ document.getElementById("exit-btn").onclick=function(){ sp("pg-login"); };
 document.getElementById("add-video-btn").onclick=addVideo;
 document.getElementById("bulk-preview-btn").onclick=previewBulkVideos;
 document.getElementById("bulk-add-btn").onclick=submitBulkVideos;
+document.getElementById("bulk-tag-apply-btn").onclick=applyBulkTag;
+document.getElementById("bt-equip-new").addEventListener("input",function(){ if(this.value.trim()){ bulkTagSelectedEquip=null; renderBulkTagChips(); } });
 document.getElementById("gen-btn").onclick=genCode;
 document.getElementById("add-code-btn").onclick=addCode;
 document.getElementById("add-ann-btn").onclick=addAnn;
@@ -5254,6 +5386,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-10-bulk-add-equipment</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-10-bulk-tag-equipment</p>
 </body>
 </html>
