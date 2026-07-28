@@ -662,6 +662,27 @@ footer a{color:rgba(255,255,255,0.7);text-decoration:none;font-weight:600;}
     </div>
     <p style="font-family:'Raleway',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);margin-top:1.5rem;">Missed a class? Recordings are posted to your member dashboard.</p>
     <a href="forms.html" class="btn-primary" style="margin-top:1.5rem;display:inline-block;">Reserve Your Spot</a>
+
+    <!-- JOIN WAITLIST -->
+    <div style="max-width:520px;margin:2.5rem auto 0;background:rgba(255,255,255,0.08);border-radius:14px;padding:1.8rem;border:0.5px solid rgba(255,255,255,0.15);text-align:left;">
+      <h3 style="font-family:'Raleway',sans-serif;font-size:17px;color:#fff;margin-bottom:0.4rem;text-align:center;">Class full? Join the waitlist</h3>
+      <p style="font-family:'Raleway',sans-serif;font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:1.2rem;text-align:center;">We will reach out as soon as a spot opens up.</p>
+      <div id="waitlist-submit-ok" style="display:none;background:rgba(255,255,255,0.12);border-radius:10px;padding:1rem;text-align:center;margin-bottom:1rem;">
+        <p style="font-family:'Raleway',sans-serif;font-size:14px;color:#fff;font-weight:700;">You're on the list! 🎉</p>
+      </div>
+      <div id="waitlist-submit-form">
+        <div style="margin-bottom:0.8rem;">
+          <input type="text" id="wl-name" placeholder="Your Name" style="width:100%;padding:10px 14px;border:1.5px solid rgba(255,255,255,0.2);border-radius:9px;font-size:14px;background:rgba(255,255,255,0.05);color:#fff;outline:none;font-family:'Raleway',sans-serif;" />
+        </div>
+        <div style="margin-bottom:0.8rem;">
+          <input type="text" id="wl-contact" placeholder="Email or Phone" style="width:100%;padding:10px 14px;border:1.5px solid rgba(255,255,255,0.2);border-radius:9px;font-size:14px;background:rgba(255,255,255,0.05);color:#fff;outline:none;font-family:'Raleway',sans-serif;" />
+        </div>
+        <div style="margin-bottom:1rem;">
+          <input type="text" id="wl-note" placeholder="Note (optional — which class, etc.)" style="width:100%;padding:10px 14px;border:1.5px solid rgba(255,255,255,0.2);border-radius:9px;font-size:14px;background:rgba(255,255,255,0.05);color:#fff;outline:none;font-family:'Raleway',sans-serif;" />
+        </div>
+        <button onclick="submitWaitlist()" style="width:100%;padding:12px;background:#e8c0a0;color:#4a2b23;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Raleway',sans-serif;">Join the Waitlist</button>
+      </div>
+    </div>
   </div>
 </section>
 <!-- SOCIAL -->
@@ -948,6 +969,37 @@ function submitPublicTestimonial(){
   }
 }
 
+function submitWaitlist(){
+  var name = document.getElementById("wl-name").value.trim();
+  var contact = document.getElementById("wl-contact").value.trim();
+  var note = document.getElementById("wl-note").value.trim();
+  if(!name){ alert("Please enter your name."); return; }
+  if(!contact){ alert("Please enter an email or phone number so we can reach you."); return; }
+  try {
+    landingDB.ref("waitlist").push({
+      name:name, contact:contact, note:note||null, ts:Date.now()
+    }, function(e){
+      if(!e){
+        document.getElementById("waitlist-submit-form").style.display="none";
+        document.getElementById("waitlist-submit-ok").style.display="block";
+        try {
+          emailjs.send("service_svquk8m", "template_yfxtkhj", {
+            to_email: "Everydaystrongteam@gmail.com",
+            subject: "New waitlist signup — "+name,
+            message: name+" joined the class waitlist.\n\nContact: "+contact+(note?"\nNote: "+note:""),
+            client_name: "Everyday Strong Website",
+            client_email: "Everydaystrongteam@gmail.com"
+          });
+        } catch(err){}
+      } else {
+        alert("Something went wrong. Please try again or email us at Everydaystrongteam@gmail.com");
+      }
+    });
+  } catch(e){
+    alert("Something went wrong. Please email us at Everydaystrongteam@gmail.com");
+  }
+}
+
 function toggleMenu(){
   var m=document.getElementById("mobile-menu");
   m.classList.toggle("open");
@@ -967,6 +1019,6 @@ document.addEventListener("click",function(e){
   }
 });
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-09-fix-green-and-email-cta</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-join-waitlist</p>
 </body>
 </html>

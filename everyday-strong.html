@@ -316,6 +316,17 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
   </div>
 </div>
 
+<!-- STREAK MILESTONE -->
+<div class="modal-overlay" id="streak-milestone-modal">
+  <div class="modal" style="text-align:center;">
+    <button class="modal-close" onclick="closeStreakMilestone()">✕</button>
+    <div style="font-size:48px;margin-bottom:0.5rem;">🔥</div>
+    <h3 id="streak-milestone-title" style="margin-bottom:0.5rem;">Streak Milestone!</h3>
+    <p id="streak-milestone-text" style="color:var(--sub);font-size:14px;margin-bottom:1rem;"></p>
+    <button class="action-btn" onclick="closeStreakMilestone()" style="width:100%;">Keep It Up!</button>
+  </div>
+</div>
+
 <!-- EDIT SUBMISSION -->
 <div class="modal-overlay" id="edit-submission-modal">
   <div class="modal">
@@ -356,6 +367,10 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     <div class="form-row" style="margin-top:10px;">
       <span class="form-label">Group / Tag (optional)</span>
       <input class="form-input" id="ec-group" style="text-transform:none;" placeholder="e.g. LO Community" />
+    </div>
+    <div class="form-row" style="margin-top:10px;">
+      <span class="form-label">Referred By (optional)</span>
+      <input class="form-input" id="ec-referredby" style="text-transform:none;" placeholder="e.g. Sarah M." />
     </div>
     <button class="action-btn" onclick="saveCodeEdit()" style="width:100%;margin-top:10px;">Save Changes</button>
     <button class="action-btn sec" id="ec-pause-btn" onclick="togglePauseEditingClient()" style="width:100%;margin-top:8px;">⏸️ Pause Access</button>
@@ -427,7 +442,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     <div id="tab-all" class="portal-tab">
       <div id="cat-view">
         <div class="equip-search-wrap" style="margin-bottom:1.2rem;">
-          <input class="inp" id="equip-search-input" placeholder="Search by equipment (e.g. dumbbells, bands, none)" oninput="onEquipSearchInput()" />
+          <input class="inp" id="equip-search-input" placeholder="Search by title, category, or equipment (e.g. dumbbells, bands, none)" oninput="onEquipSearchInput()" />
           <div id="equip-search-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
         </div>
         <div id="equip-search-results" style="display:none;">
@@ -741,6 +756,29 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <h3>Recent Community Posts</h3>
         <div id="dash-community"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
       </div>
+      <div class="admin-card">
+        <h3>Payment Reminders Due</h3>
+        <div id="dash-paydue"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+      <div class="admin-card">
+        <h3>At Risk — Inactive Clients</h3>
+        <p class="tip" style="margin-bottom:8px;">Active clients with no login in 10+ days.</p>
+        <div id="dash-atrisk"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+      <div class="admin-card">
+        <h3>Weekly Summary</h3>
+        <p class="tip" style="margin-bottom:8px;">One tap to email yourself this week's stats.</p>
+        <button class="action-btn" id="send-weekly-summary-btn" style="width:100%;">Email Me This Week's Summary</button>
+        <div class="ok-msg" id="ok-weekly-summary" style="margin-top:8px;"></div>
+      </div>
+      <div class="admin-card">
+        <h3>Referrals</h3>
+        <div id="dash-referrals"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+      <div class="admin-card">
+        <h3>Class Waitlist</h3>
+        <div id="dash-waitlist"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
     </div>
     <div class="tab-content" id="atc-videos">
       <div class="admin-card">
@@ -865,6 +903,11 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
             <span class="form-label">Group / Tag (optional)</span>
             <input class="form-input" id="c-group" style="text-transform:none;" placeholder="e.g. LO Community" />
             <p class="tip" style="margin-top:4px;">For marking clients from a specific partnership or referral group. Shows as a badge and is filterable.</p>
+          </div>
+          <div class="form-row" style="margin-top:10px;">
+            <span class="form-label">Referred By (optional)</span>
+            <input class="form-input" id="c-referredby" style="text-transform:none;" placeholder="e.g. Sarah M." />
+            <p class="tip" style="margin-top:4px;">Name of the existing client who referred them, if any. Powers the Referrals dashboard card.</p>
           </div>
           <button class="action-btn" id="add-code-btn" style="margin-top:10px;">Create Code</button>
         </div>
@@ -1552,6 +1595,7 @@ function doLogin(){
       if(!found.access||found.access==="ALL"){ currentAccess="ALL"; }
       else if(Array.isArray(found.access)){ currentAccess=found.access; }
       else{ currentAccess=[found.access]; }
+      DB.ref("codes/"+fkey).update({lastLogin: Date.now()});
       err.style.display="none";
       document.getElementById("welcome-bar").textContent="Welcome, "+found.name+"! Ready to get strong?";
       showTrialBanner(found);
@@ -1592,7 +1636,24 @@ function loadStreak(){
       document.getElementById("streak-num").textContent=streak;
       document.getElementById("streak-detail").textContent=streak===1?"Keep it up!":"You're on fire!";
     }
+    checkStreakMilestone(streak);
   });
+}
+
+var streakMilestones = [7,14,30,60,100];
+function checkStreakMilestone(streak){
+  if(!DB||!currentUserKey) return;
+  if(streakMilestones.indexOf(streak)===-1) return;
+  DB.ref("userdata/"+currentUserKey+"/celebratedMilestones/"+streak).once("value", function(snap){
+    if(snap.exists()) return; // already celebrated this milestone
+    DB.ref("userdata/"+currentUserKey+"/celebratedMilestones/"+streak).set(true);
+    document.getElementById("streak-milestone-title").textContent=streak+" Day Streak!";
+    document.getElementById("streak-milestone-text").textContent="You've worked out "+streak+" days in a row. That's real consistency — keep going!";
+    document.getElementById("streak-milestone-modal").classList.add("open");
+  });
+}
+function closeStreakMilestone(){
+  document.getElementById("streak-milestone-modal").classList.remove("open");
 }
 
 // LOAD VIDEOS
@@ -1667,7 +1728,10 @@ function runEquipSearch(){
   var vids = allVideos.filter(function(v){
     var eq = normalizeFocus(v.equipment);
     if(currentEquipSearchTag) return eq.indexOf(currentEquipSearchTag)!==-1;
-    return eq.some(function(e){ return e.toLowerCase().indexOf(q)!==-1; });
+    var eqMatch = eq.some(function(e){ return e.toLowerCase().indexOf(q)!==-1; });
+    var titleMatch = (v.title||"").toLowerCase().indexOf(q)!==-1;
+    var tagMatch = (v.tag||"").toLowerCase().indexOf(q)!==-1;
+    return eqMatch || titleMatch || tagMatch;
   });
   document.getElementById("equip-search-sub").textContent = vids.length+" video"+(vids.length!==1?"s":"")+" matching"+(currentEquipSearchTag?" \""+currentEquipSearchTag+"\"":(q?" \""+q+"\"":""));
   document.getElementById("equip-search-grid").innerHTML = renderVideoCards(vids);
@@ -2162,11 +2226,11 @@ function loadAnnouncements(){
 function doAdmin(){
   var p=prompt("Instructor password:");
   if(p===null) return;
-  if(p===adminPass){ loadDashboard(); loadTrialTracker(); loadUnpaidDashboard(); loadAdmVideos(); populateProgramDatalist(); loadBulkTagVideos(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); initCommentsBadge(); sp("pg-admin"); }
+  if(p===adminPass){ loadDashboard(); loadTrialTracker(); loadUnpaidDashboard(); loadPaymentReminders(); loadAtRiskClients(); loadReferrals(); loadClassWaitlist(); loadAdmVideos(); populateProgramDatalist(); loadBulkTagVideos(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); initCommentsBadge(); sp("pg-admin"); }
   else alert("Incorrect password. Please try again.");
 }
 
-document.getElementById("atab-dashboard").onclick=function(){ setAdmTab("dashboard",this); loadDashboard(); };
+document.getElementById("atab-dashboard").onclick=function(){ setAdmTab("dashboard",this); loadDashboard(); loadPaymentReminders(); loadAtRiskClients(); loadReferrals(); loadClassWaitlist(); };
 document.getElementById("atab-videos").onclick=function(){ setAdmTab("videos",this); loadAdmVideos(); populateProgramDatalist(); loadBulkTagVideos(); };
 document.getElementById("atab-clients").onclick=function(){ setAdmTab("clients",this); loadClients(); };
 document.getElementById("atab-submissions").onclick=function(){ setAdmTab("submissions",this); clearSubmissionsBadge(); };
@@ -2213,6 +2277,7 @@ function editCode(key){
     document.getElementById("ec-trial").checked = !!cd.trial;
     document.getElementById("ec-expdate").value = cd.customExpiresAt ? new Date(cd.customExpiresAt).toISOString().slice(0,10) : "";
     document.getElementById("ec-group").value = cd.group || "";
+    document.getElementById("ec-referredby").value = cd.referredBy || "";
     var isAll = cd.access==="ALL" || !cd.access;
     document.getElementById("ec-access-type").value = isAll ? "ALL" : "PROGRAMS";
     document.getElementById("ec-program-picker").style.display = isAll ? "none" : "block";
@@ -2282,10 +2347,11 @@ function saveCodeEdit(){
   var expDateVal = document.getElementById("ec-expdate").value;
   var customExpiresAt = expDateVal ? new Date(expDateVal+"T23:59:59").getTime() : null;
   var group = document.getElementById("ec-group").value.trim();
+  var referredBy = document.getElementById("ec-referredby").value.trim();
   DB.ref("codes/"+editingCodeKey).once("value", function(snap){
     var existing = snap.val() || {};
     var expiresAt = isTrial ? (existing.expiresAt || (Date.now()+7*24*60*60*1000)) : null;
-    DB.ref("codes/"+editingCodeKey).update({name:n, code:c, access:access, trial:isTrial, expiresAt:expiresAt, customExpiresAt:customExpiresAt, group:group||null}, function(e){
+    DB.ref("codes/"+editingCodeKey).update({name:n, code:c, access:access, trial:isTrial, expiresAt:expiresAt, customExpiresAt:customExpiresAt, group:group||null, referredBy:referredBy||null}, function(e){
       if(!e){ closeEditCode(); }
       else{ alert("Something went wrong saving. Please try again."); }
     });
@@ -2857,9 +2923,10 @@ function addCode(){
   // cut someone off partway through their last valid day.
   var customExpiresAt = expDateVal ? new Date(expDateVal+"T23:59:59").getTime() : null;
   var group = document.getElementById("c-group").value.trim();
+  var referredBy = document.getElementById("c-referredby").value.trim();
   DB.ref("codes").orderByChild("code").equalTo(c).once("value",function(snap){
     if(snap.exists()){ alert("That code already exists."); return; }
-    DB.ref("codes").push({name:n,code:c,access:access,trial:isTrial||false,expiresAt:expiresAt,customExpiresAt:customExpiresAt,group:group||null,inactive:false},function(e){
+    DB.ref("codes").push({name:n,code:c,access:access,trial:isTrial||false,expiresAt:expiresAt,customExpiresAt:customExpiresAt,group:group||null,referredBy:referredBy||null,ts:Date.now(),inactive:false},function(e){
       if(!e){
         var label=isTrial?" (7-day trial)":"";
         showOk("ok-code","Code for "+n+": "+c+label);
@@ -2869,6 +2936,7 @@ function addCode(){
         document.getElementById("c-trial").checked=false;
         document.getElementById("c-expdate").value="";
         document.getElementById("c-group").value="";
+        document.getElementById("c-referredby").value="";
         document.getElementById("program-picker").style.display="none";
       }
     });
@@ -3872,6 +3940,140 @@ function loadUnpaidDashboard(){
   });
 }
 
+// PAYMENT REMINDERS DUE
+function loadPaymentReminders(){
+  if(!DB) return;
+  DB.ref("codes").once("value", function(csnap){
+    var clients = {};
+    if(csnap.exists()) csnap.forEach(function(c){ clients[c.key] = c.val(); });
+    DB.ref("payments").once("value", function(psnap){
+      var el = document.getElementById("dash-paydue");
+      if(!el) return;
+      var due = [];
+      var soon = Date.now() + 7*24*60*60*1000;
+      if(psnap.exists()) psnap.forEach(function(c){
+        var cd = clients[c.key];
+        if(!cd || isClientBlocked(cd)) return;
+        var latest = null, latestTs = -1;
+        c.forEach(function(p){ var v=p.val(); if(v.ts && v.ts>latestTs){ latest=v; latestTs=v.ts; } });
+        if(latest && latest.nextDue){
+          var dueMs = new Date(latest.nextDue+"T00:00:00").getTime();
+          if(dueMs <= soon) due.push({name:cd.name, key:c.key, nextDue:latest.nextDue, overdue: dueMs < Date.now()});
+        }
+      });
+      if(!due.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No payments due soon.</p>"; return; }
+      due.sort(function(a,b){ return new Date(a.nextDue)-new Date(b.nextDue); });
+      el.innerHTML = due.map(function(d){
+        var color = d.overdue ? "#c05040" : "#e8a020";
+        var label = d.overdue ? "Overdue" : "Due "+d.nextDue;
+        var nameEsc = ex(d.name).replace(/"/g,"&quot;");
+        return "<div style='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);gap:8px;'>"+
+          "<div style='cursor:pointer;' onclick='openClientProfile(\""+nameEsc+"\")'><strong style='font-size:14px;color:var(--text);'>"+ex(d.name)+"</strong></div>"+
+          "<div style='display:flex;align-items:center;gap:6px;'>"+
+          "<span style='background:"+color+";color:#fff;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600;white-space:nowrap;'>"+label+"</span>"+
+          "<button class='action-btn sec' style='width:auto;margin:0;font-size:11px;padding:5px 10px;' onclick='sendPaymentReminder(\""+d.key+"\",\""+nameEsc+"\")'>Remind</button>"+
+          "</div></div>";
+      }).join("");
+    });
+  });
+}
+function sendPaymentReminder(clientKey, name){
+  notifyClientIfOk(clientKey, "Payment reminder", "Hi "+name+"! Just a friendly reminder that your next payment is coming due. Let me know if you have any questions!");
+  notifyHeather("Payment reminder sent", "Sent a payment reminder to "+name+".");
+}
+
+// AT RISK — INACTIVE CLIENTS
+function loadAtRiskClients(){
+  if(!DB) return;
+  DB.ref("codes").once("value", function(snap){
+    var el = document.getElementById("dash-atrisk");
+    if(!el) return;
+    var cutoff = Date.now() - 10*24*60*60*1000;
+    var atRisk = [];
+    if(snap.exists()) snap.forEach(function(c){
+      var cd = c.val();
+      if(isClientBlocked(cd) || cd.trial) return;
+      var last = cd.lastLogin || cd.ts;
+      if(last && last < cutoff){
+        var days = Math.floor((Date.now()-last)/(24*60*60*1000));
+        atRisk.push({name:cd.name, days:days});
+      }
+    });
+    if(!atRisk.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Everyone's been active recently!</p>"; return; }
+    atRisk.sort(function(a,b){ return b.days-a.days; });
+    el.innerHTML = atRisk.map(function(a){
+      var nameEsc = ex(a.name).replace(/"/g,"&quot;");
+      return "<div style='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;' onclick='openClientProfile(\""+nameEsc+"\")'>"+
+        "<strong style='font-size:14px;color:var(--text);'>"+ex(a.name)+"</strong>"+
+        "<span style='background:#e8a020;color:#fff;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600;white-space:nowrap;'>"+a.days+" days inactive</span></div>";
+    }).join("");
+  });
+}
+
+// WEEKLY SUMMARY — one tap email to Heather
+function sendWeeklySummary(){
+  if(!DB) return;
+  var weekAgo = Date.now() - 7*24*60*60*1000;
+  DB.ref("codes").once("value", function(snap){
+    var total=0, active=0, trial=0, newSignups=0;
+    if(snap.exists()) snap.forEach(function(c){
+      var cd=c.val(); total++;
+      if(!isClientBlocked(cd)) active++;
+      if(cd.trial && cd.expiresAt && Date.now()<=cd.expiresAt) trial++;
+      if(cd.ts && cd.ts>=weekAgo) newSignups++;
+    });
+    DB.ref("checkins").orderByChild("ts").startAt(weekAgo).once("value", function(cisnap){
+      var newci = cisnap.exists()?cisnap.numChildren():0;
+      DB.ref("community").orderByChild("ts").startAt(weekAgo).once("value", function(csnap){
+        var cposts = csnap.exists()?csnap.numChildren():0;
+        var msg = "Weekly summary:\n\nActive members: "+active+"\nTrials: "+trial+"\nNew signups this week: "+newSignups+"\nCheck ins this week: "+newci+"\nCommunity posts this week: "+cposts;
+        notifyHeather("Your weekly Everyday Strong summary", msg);
+        showOk("ok-weekly-summary","Summary sent to your inbox!");
+      });
+    });
+  });
+}
+
+// REFERRALS
+function loadReferrals(){
+  if(!DB) return;
+  DB.ref("codes").on("value", function(snap){
+    var el = document.getElementById("dash-referrals");
+    if(!el) return;
+    var counts = {};
+    if(snap.exists()) snap.forEach(function(c){
+      var cd = c.val();
+      if(cd.referredBy) counts[cd.referredBy] = (counts[cd.referredBy]||0)+1;
+    });
+    var names = Object.keys(counts);
+    if(!names.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No referrals tracked yet.</p>"; return; }
+    names.sort(function(a,b){ return counts[b]-counts[a]; });
+    el.innerHTML = names.map(function(n){
+      return "<div style='display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border);font-size:13px;'>"+
+        "<strong>"+ex(n)+"</strong><span style='color:var(--sub);'>"+counts[n]+" referral"+(counts[n]!==1?"s":"")+"</span></div>";
+    }).join("");
+  });
+}
+
+// CLASS WAITLIST (admin view — client-facing join form lives on index.html)
+function loadClassWaitlist(){
+  if(!DB) return;
+  DB.ref("waitlist").orderByChild("ts").on("value", function(snap){
+    var el = document.getElementById("dash-waitlist");
+    if(!el) return;
+    if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No one on the waitlist.</p>"; return; }
+    var items=[]; snap.forEach(function(c){ var v=c.val(); v._k=c.key; items.push(v); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    el.innerHTML = items.map(function(w){
+      return "<div style='padding:8px 0;border-bottom:0.5px solid var(--border);font-size:13px;'>"+
+        "<strong>"+ex(w.name)+"</strong> <span style='color:var(--sub);font-size:11px;'>"+ago2fn(w.ts)+"</span><br/>"+
+        "<span style='color:var(--sub);'>"+ex(w.contact||"")+"</span>"+
+        (w.note?"<br/><span style='font-size:12px;color:var(--sub);'>"+ex(w.note)+"</span>":"")+
+        "</div>";
+    }).join("");
+  });
+}
+
 // DASHBOARD
 function loadDashboard(){
   if(!DB) return;
@@ -3936,7 +4138,6 @@ function loadDashboard(){
     threads.sort(function(a,b){ return b.latest.ts-a.latest.ts; });
     el.innerHTML="";
     if(!threads.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No unread messages.</p>"; return; }
-    var h="";
     threads.slice(0,5).forEach(function(t){
       var row=document.createElement("div");
       row.style.cssText="padding:8px 0;border-bottom:0.5px solid var(--border);font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;";
@@ -3945,7 +4146,6 @@ function loadDashboard(){
       row.innerHTML="<div><strong>"+ex(t.latest.from||t.name)+"</strong><br/><span style='font-size:12px;color:var(--sub);'>"+ex((t.latest.text||"").substring(0,50))+"</span></div><span style='background:#c05040;color:#fff;font-size:10px;padding:2px 7px;border-radius:8px;white-space:nowrap;'>"+t.count+" new</span>";
       el.appendChild(row);
     });
-    el.innerHTML=h;
   });
 
   // Recent community
@@ -5349,6 +5549,7 @@ document.getElementById("bulk-tag-apply-btn").onclick=applyBulkTag;
 document.getElementById("bt-equip-new").addEventListener("input",function(){ if(this.value.trim()){ bulkTagSelectedEquip=null; renderBulkTagChips(); } });
 document.getElementById("gen-btn").onclick=genCode;
 document.getElementById("add-code-btn").onclick=addCode;
+document.getElementById("send-weekly-summary-btn").onclick=sendWeeklySummary;
 document.getElementById("add-ann-btn").onclick=addAnn;
 document.getElementById("back-btn").onclick=goBack;
 document.getElementById("comm-post-btn").onclick=postToComm;
@@ -5374,6 +5575,7 @@ document.getElementById("install-modal").onclick = function(e){ if(e.target===th
 document.getElementById("edit-submission-modal").onclick = function(e){ if(e.target===this) closeEditSubmission(); };
 document.getElementById("edit-code-modal").onclick = function(e){ if(e.target===this) closeEditCode(); };
 document.getElementById("video-modal").onclick = function(e){ if(e.target===this) closeVideoModal(); };
+document.getElementById("streak-milestone-modal").onclick = function(e){ if(e.target===this) closeStreakMilestone(); };
 document.getElementById("photo-lightbox").onclick = function(e){ if(e.target===this) closePhotoLightbox(); };
 document.getElementById("admin-comm-post-btn").onclick=postAdminToComm;
 document.getElementById("checkin-btn").onclick=submitCheckin;
@@ -5386,6 +5588,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-10-bulk-tag-equipment</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-dashboard-upgrades</p>
 </body>
 </html>
