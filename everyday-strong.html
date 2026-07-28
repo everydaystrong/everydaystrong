@@ -256,6 +256,13 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <button type="button" class="action-btn" style="padding:0 16px;white-space:nowrap;" onclick="addNewFocusTag('edit')">+ Add</button>
       </div>
     </div>
+    <div class="form-row"><span class="form-label">Equipment (optional — tap all that apply)</span>
+      <div id="edit-equip-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input class="form-input" id="edit-equip-new" placeholder="Add a new equipment tag…" style="text-transform:none;flex:1;" />
+        <button type="button" class="action-btn" style="padding:0 16px;white-space:nowrap;" onclick="addNewEquipTag('edit')">+ Add</button>
+      </div>
+    </div>
     <div class="form-row"><span class="form-label">Release Date (optional)</span><input type="date" class="form-input" id="edit-release" /><span style="font-size:11px;color:var(--sub);margin-top:3px;">Leave blank to show immediately. Set a future date to schedule.</span></div>
     <div class="form-row"><label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;"><input type="checkbox" id="edit-held" style="width:18px;height:18px;" /> Hold — don't post yet (no date needed)</label></div>
     <div class="form-row"><span class="form-label">Category Image URL (optional)</span><input class="form-input" id="edit-catimg" placeholder="https://... image for this category card" style="text-transform:none;" /></div>
@@ -419,6 +426,14 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     <!-- PROGRAMS TAB -->
     <div id="tab-all" class="portal-tab">
       <div id="cat-view">
+        <div class="equip-search-wrap" style="margin-bottom:1.2rem;">
+          <input class="inp" id="equip-search-input" placeholder="Search by equipment (e.g. dumbbells, bands, none)" oninput="onEquipSearchInput()" />
+          <div id="equip-search-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
+        </div>
+        <div id="equip-search-results" style="display:none;">
+          <p class="section-sub" id="equip-search-sub"></p>
+          <div class="video-grid" id="equip-search-grid"></div>
+        </div>
         <div class="cat-grid" id="cat-grid"></div>
       </div>
       <div id="vid-view" style="display:none;">
@@ -749,14 +764,22 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
           </div>
           <p class="tip">A video can have multiple focus tags — e.g. both "Lower Body" and "Core."</p>
         </div>
+        <div class="form-row"><span class="form-label">Equipment (optional — tap all that apply)</span>
+          <div id="v-equip-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;"></div>
+          <div style="display:flex;gap:8px;">
+            <input class="form-input" id="v-equip-new" placeholder="Add a new equipment tag…" style="text-transform:none;flex:1;" />
+            <button type="button" class="action-btn" style="padding:0 16px;white-space:nowrap;" onclick="addNewEquipTag('v')">+ Add</button>
+          </div>
+          <p class="tip">e.g. "Dumbbells," "Resistance Band," or "No Equipment."</p>
+        </div>
         <div class="form-row"><span class="form-label">Release Date (optional)</span><input type="date" class="form-input" id="v-release" /><span style="font-size:11px;color:var(--sub);margin-top:3px;">Leave blank to show immediately. Set a future date to schedule.</span></div>
         <div class="form-row"><label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;"><input type="checkbox" id="v-held" style="width:18px;height:18px;" /> Hold — don't post yet (no date needed)</label></div>
         <button class="action-btn" id="add-video-btn">Save Video</button>
       </div>
       <div class="admin-card">
         <h3>Bulk Add Videos</h3>
-        <p class="tip" style="margin-bottom:10px;">Paste multiple videos at once, one per line, in this format:<br><b>Title | YouTube Link | Category | Focus tags (comma separated, optional)</b></p>
-        <p class="tip" style="margin-bottom:10px;">Example:<br><span style="font-family:monospace;font-size:11px;">Week 1 Lower Body | https://youtu.be/abc123 | Monday Classes | Lower Body<br>Full Body Core | https://youtu.be/def456 | Wednesday Classes | Full Body, Core</span></p>
+        <p class="tip" style="margin-bottom:10px;">Paste multiple videos at once, one per line, in this format:<br><b>Title | YouTube Link | Category | Focus tags (comma separated, optional) | Equipment (comma separated, optional)</b></p>
+        <p class="tip" style="margin-bottom:10px;">Example:<br><span style="font-family:monospace;font-size:11px;">Week 1 Lower Body | https://youtu.be/abc123 | Monday Classes | Lower Body | Dumbbells<br>Full Body Core | https://youtu.be/def456 | Wednesday Classes | Full Body, Core | No Equipment</span></p>
         <textarea class="form-input" id="bulk-video-input" rows="10" placeholder="Paste your list here, one video per line..." style="text-transform:none;font-family:monospace;font-size:12px;width:100%;resize:vertical;"></textarea>
         <div id="bulk-preview" style="margin-top:10px;"></div>
         <div class="ok-msg" id="ok-bulk">Videos added!</div>
@@ -1593,7 +1616,47 @@ function getDefaultCatImg(catName){
   if(n.indexOf("reset")!==-1) return "media/reset-build.jpeg";
   return null;
 }
+
+// EQUIPMENT SEARCH — lets a client find videos by what equipment they have,
+// across every category at once, either by tapping a chip or typing.
+var currentEquipSearchTag = null;
+function renderEquipSearchChips(){
+  var wrap = document.getElementById("equip-search-chips");
+  if(!wrap) return;
+  var tags = {};
+  allVideos.forEach(function(v){ normalizeFocus(v.equipment).forEach(function(e){ tags[e]=true; }); });
+  var keys = Object.keys(tags).sort();
+  if(!keys.length){ wrap.innerHTML=""; return; }
+  wrap.innerHTML = keys.map(function(e){
+    var on = currentEquipSearchTag===e;
+    return "<button type='button' class='focus-chip"+(on?" on":"")+"' onclick='setEquipSearchChip(\""+ex(e).replace(/"/g,"&quot;")+"\")'>"+ex(e)+"</button>";
+  }).join("");
+}
+function setEquipSearchChip(tag){
+  currentEquipSearchTag = currentEquipSearchTag===tag ? null : tag;
+  runEquipSearch();
+}
+function onEquipSearchInput(){ runEquipSearch(); }
+function runEquipSearch(){
+  var q = document.getElementById("equip-search-input").value.trim().toLowerCase();
+  var resultsEl = document.getElementById("equip-search-results");
+  var gridEl = document.getElementById("cat-grid");
+  renderEquipSearchChips();
+  if(!q && !currentEquipSearchTag){ resultsEl.style.display="none"; gridEl.style.display=""; return; }
+  var vids = allVideos.filter(function(v){
+    var eq = normalizeFocus(v.equipment);
+    if(currentEquipSearchTag) return eq.indexOf(currentEquipSearchTag)!==-1;
+    return eq.some(function(e){ return e.toLowerCase().indexOf(q)!==-1; });
+  });
+  document.getElementById("equip-search-sub").textContent = vids.length+" video"+(vids.length!==1?"s":"")+" matching"+(currentEquipSearchTag?" \""+currentEquipSearchTag+"\"":(q?" \""+q+"\"":""));
+  document.getElementById("equip-search-grid").innerHTML = renderVideoCards(vids);
+  resultsEl.style.display="block";
+  gridEl.style.display="none";
+}
+
 function renderCategories(){
+  var equipInput=document.getElementById("equip-search-input");
+  if(equipInput && (equipInput.value.trim()||currentEquipSearchTag)) runEquipSearch(); else renderEquipSearchChips();
   var grid=document.getElementById("cat-grid");
   var cats={};
   allVideos.forEach(function(v){
@@ -2233,6 +2296,9 @@ function openEdit(key){
     editFocusSelected = normalizeFocus(v.focus);
     editFocusSelected.forEach(function(f){ if(allFocusTags.indexOf(f)===-1) allFocusTags.push(f); });
     renderFocusChips("edit");
+    editEquipSelected = normalizeFocus(v.equipment);
+    editEquipSelected.forEach(function(e){ if(allEquipTags.indexOf(e)===-1) allEquipTags.push(e); });
+    renderEquipChips("edit");
     document.getElementById("edit-release").value=v.releaseDate||"";
     document.getElementById("edit-held").checked=!!v.held;
     document.getElementById("edit-catimg").value=v.catImg||"";
@@ -2243,6 +2309,7 @@ function openEdit(key){
 function closeEdit(){
   document.getElementById("edit-modal").classList.remove("open");
   editFocusSelected = [];
+  editEquipSelected = [];
 }
 
 function saveEdit(){
@@ -2254,7 +2321,7 @@ function saveEdit(){
   var held=document.getElementById("edit-held").checked;
   var ci=document.getElementById("edit-catimg").value.trim();
   if(!t||!u){ alert("Please enter a title and link."); return; }
-  DB.ref("videos/"+key).update({title:t,url:u,tag:tg,focus:editFocusSelected.length?editFocusSelected:null,releaseDate:rd||null,held:held||null,catImg:ci||null},function(e){
+  DB.ref("videos/"+key).update({title:t,url:u,tag:tg,focus:editFocusSelected.length?editFocusSelected:null,equipment:editEquipSelected.length?editEquipSelected:null,releaseDate:rd||null,held:held||null,catImg:ci||null},function(e){
     if(!e){ closeEdit(); showOk("ok-video","Video updated!"); }
   });
 }
@@ -2263,10 +2330,11 @@ function saveEdit(){
 function populateProgramDatalist(){
   if(!DB) return;
   DB.ref("videos").once("value", function(snap){
-    var cats = {}, focuses = {};
+    var cats = {}, focuses = {}, equips = {};
     if(snap.exists()) snap.forEach(function(c){
       var t=c.val().tag; if(t) cats[t]=true;
       normalizeFocus(c.val().focus).forEach(function(f){ focuses[f]=true; });
+      normalizeFocus(c.val().equipment).forEach(function(e){ equips[e]=true; });
     });
     var sel = document.getElementById("v-tag-select");
     if(sel){
@@ -2283,6 +2351,9 @@ function populateProgramDatalist(){
     allFocusTags = Object.keys(focuses).sort();
     renderFocusChips("v");
     renderFocusChips("edit");
+    allEquipTags = Object.keys(equips).sort();
+    renderEquipChips("v");
+    renderEquipChips("edit");
     renderCategorySettingsList(Object.keys(cats).sort());
 
     var annSel = document.getElementById("a-program");
@@ -2351,6 +2422,9 @@ function handleTagSelect(){
 var allFocusTags = [];
 var vFocusSelected = [];
 var editFocusSelected = [];
+var allEquipTags = [];
+var vEquipSelected = [];
+var editEquipSelected = [];
 
 function normalizeFocus(f){
   if(!f) return [];
@@ -2386,6 +2460,36 @@ function addNewFocusTag(which){
   input.value = "";
   renderFocusChips("v");
   renderFocusChips("edit");
+}
+
+function renderEquipChips(which){
+  var wrap = document.getElementById(which+"-equip-chips");
+  if(!wrap) return;
+  var selected = which==="v" ? vEquipSelected : editEquipSelected;
+  if(!allEquipTags.length){ wrap.innerHTML = "<p class='tip' style='margin:0;'>No equipment tags yet — add one below.</p>"; return; }
+  wrap.innerHTML = allEquipTags.map(function(e){
+    var on = selected.indexOf(e)!==-1;
+    return "<button type='button' class='focus-chip"+(on?" on":"")+"' onclick='toggleEquipTag(\""+which+"\",\""+ex(e).replace(/"/g,"&quot;")+"\")'>"+ex(e)+"</button>";
+  }).join("");
+}
+
+function toggleEquipTag(which, tag){
+  var arr = which==="v" ? vEquipSelected : editEquipSelected;
+  var idx = arr.indexOf(tag);
+  if(idx===-1) arr.push(tag); else arr.splice(idx,1);
+  renderEquipChips(which);
+}
+
+function addNewEquipTag(which){
+  var input = document.getElementById(which+"-equip-new");
+  var tag = input.value.trim();
+  if(!tag) return;
+  if(allEquipTags.indexOf(tag)===-1) allEquipTags.push(tag);
+  var arr = which==="v" ? vEquipSelected : editEquipSelected;
+  if(arr.indexOf(tag)===-1) arr.push(tag);
+  input.value = "";
+  renderEquipChips("v");
+  renderEquipChips("edit");
 }
 
 function loadAdmVideos(){
@@ -2457,7 +2561,7 @@ function addVideo(){
   DB.ref("videos").orderByChild("tag").equalTo(tg).once("value",function(snap){
     var maxOrder=0;
     if(snap.exists()) snap.forEach(function(c){ var o=c.val().order||0; if(o>maxOrder) maxOrder=o; });
-    DB.ref("videos").push({title:t,url:u,tag:tg,focus:vFocusSelected.length?vFocusSelected:null,order:maxOrder+1,releaseDate:rd||null,held:held||null,ts:Date.now()},function(e){
+    DB.ref("videos").push({title:t,url:u,tag:tg,focus:vFocusSelected.length?vFocusSelected:null,equipment:vEquipSelected.length?vEquipSelected:null,order:maxOrder+1,releaseDate:rd||null,held:held||null,ts:Date.now()},function(e){
       if(!e){
         document.getElementById("v-title").value="";
         document.getElementById("v-url").value="";
@@ -2466,6 +2570,8 @@ function addVideo(){
         document.getElementById("v-tag-select").value="";
         vFocusSelected = [];
         renderFocusChips("v");
+        vEquipSelected = [];
+        renderEquipChips("v");
         document.getElementById("v-release").value="";
         document.getElementById("v-held").checked=false;
         showOk("ok-video","Video saved!");
@@ -2491,8 +2597,10 @@ function parseBulkVideoLines(){
     var tag = parts[2]||"";
     var focusRaw = parts[3]||"";
     var focus = focusRaw ? focusRaw.split(",").map(function(f){ return f.trim(); }).filter(Boolean) : [];
+    var equipRaw = parts[4]||"";
+    var equipment = equipRaw ? equipRaw.split(",").map(function(e){ return e.trim(); }).filter(Boolean) : [];
     var valid = !!(title && url && tag);
-    results.push({raw:line, title:title, url:url, tag:tag, focus:focus, valid:valid});
+    results.push({raw:line, title:title, url:url, tag:tag, focus:focus, equipment:equipment, valid:valid});
   });
   return results;
 }
@@ -2513,7 +2621,7 @@ function previewBulkVideos(){
     var bg = v.valid ? "transparent" : "rgba(200,50,50,0.12)";
     h += "<div style='padding:8px 10px;border-bottom:0.5px solid var(--border);background:"+bg+";font-size:12px;'>";
     if(v.valid){
-      h += "<strong>"+ex(v.title)+"</strong><br><span style='color:var(--sub);'>"+ex(v.tag)+(v.focus.length?" · "+ex(v.focus.join(", ")):"")+"</span>";
+      h += "<strong>"+ex(v.title)+"</strong><br><span style='color:var(--sub);'>"+ex(v.tag)+(v.focus.length?" · "+ex(v.focus.join(", ")):"")+(v.equipment.length?" · Equipment: "+ex(v.equipment.join(", ")):"")+"</span>";
     } else {
       h += "<strong style='color:#b03020;'>Couldn't parse line "+(i+1)+":</strong><br><span style='color:var(--sub);'>"+ex(v.raw)+"</span>";
     }
@@ -2539,6 +2647,7 @@ function submitBulkVideos(){
     DB.ref("videos").push({
       title: v.title, url: v.url, tag: v.tag,
       focus: v.focus.length ? v.focus : null,
+      equipment: v.equipment.length ? v.equipment : null,
       order: baseTs + i, releaseDate: null, ts: baseTs + i
     }, function(e){
       if(e) failed++;
@@ -2810,7 +2919,6 @@ document.getElementById("pass-btn").onclick=function(){
   var cur=document.getElementById("pass-cur").value,nw=document.getElementById("pass-new").value.trim(),cf=document.getElementById("pass-cf").value.trim();
   if(cur!==adminPass){ alert("Current password is incorrect."); return; }
   if(!nw||nw!==cf){ alert("Passwords don't match."); return; }
-  if(nw.length<6){ alert("Must be at least 6 characters."); return; }
   adminPass=nw; if(DB) DB.ref("adminPass").set(nw);
   document.getElementById("pass-cur").value=""; document.getElementById("pass-new").value=""; document.getElementById("pass-cf").value="";
   showOk("ok-pass","Password updated!");
@@ -5146,6 +5254,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-10-video-hold-toggle</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-10-bulk-add-equipment</p>
 </body>
 </html>
