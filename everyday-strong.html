@@ -2869,7 +2869,7 @@ function loadBulkTagVideos(){
     var cats = {};
     if(snap.exists()) snap.forEach(function(c){
       var v = c.val();
-      bulkTagVideoData.push({key:c.key, title:v.title||"(untitled)", tag:v.tag||"Uncategorized", equipment:normalizeFocus(v.equipment)});
+      bulkTagVideoData.push({key:c.key, title:v.title||"(untitled)", tag:v.tag||"Uncategorized", equipment:normalizeFocus(v.equipment), url:v.url||""});
       cats[v.tag||"Uncategorized"] = true;
     });
     var sel = document.getElementById("bt-cat-filter");
@@ -2903,20 +2903,25 @@ function renderBulkTagList(){
   var filterCat = document.getElementById("bt-cat-filter").value;
   var vids = filterCat ? bulkTagVideoData.filter(function(v){ return v.tag===filterCat; }) : bulkTagVideoData;
   if(!vids.length){ wrap.innerHTML = "<p class='tip' style='padding:10px;'>No videos found.</p>"; return; }
-  wrap.innerHTML = vids.map(function(v){
-    var checked = bulkTagSelectedKeys[v.key] ? "checked" : "";
-    var equipTxt = v.equipment.length ? " <span style='font-size:11px;color:var(--sub);'>· "+ex(v.equipment.join(", "))+"</span>" : "";
-    return "<label style='display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:0.5px solid var(--border);font-size:13px;cursor:pointer;'>"+
-      "<input type='checkbox' style='width:17px;height:17px;flex-shrink:0;' "+checked+" onchange='toggleBulkTagKey(\""+v.key+"\")' />"+
-      "<span><strong>"+ex(v.title)+"</strong> <span style='color:var(--sub);'>· "+ex(v.tag)+"</span>"+equipTxt+"</span></label>";
-  }).join("");
+  wrap.innerHTML = "<div class='video-grid' style='padding:10px;'>"+vids.map(function(v){
+    var checked = !!bulkTagSelectedKeys[v.key];
+    var ytId = getYTId(v.url);
+    var th = ytId ? "<img src='https://img.youtube.com/vi/"+ytId+"/mqdefault.jpg' onerror=\"this.style.display='none'\" />" : "";
+    var equipTxt = v.equipment.length ? "<div style='font-size:11px;color:var(--sub);margin-top:2px;'>"+ex(v.equipment.join(", "))+"</div>" : "";
+    var borderStyle = checked ? "border:2px solid var(--accent);" : "";
+    return "<div class='video-card bt-card' data-key='"+v.key+"' style='"+borderStyle+"cursor:pointer;' onclick='toggleBulkTagKey(\""+v.key+"\")'>"+
+      "<input type='checkbox' "+(checked?"checked":"")+" style='position:absolute;top:8px;left:8px;width:22px;height:22px;z-index:2;' onclick='event.stopPropagation();toggleBulkTagKey(\""+v.key+"\")' />"+
+      "<div class='video-thumb' style='cursor:pointer;' onclick='event.stopPropagation();openVideo(\""+ex(v.url).replace(/"/g,"&quot;")+"\",null)'>"+th+"<div class='play-overlay'></div></div>"+
+      "<div class='video-info'><div class='video-title'>"+ex(v.title)+"</div><div style='font-size:11px;color:var(--sub);'>"+ex(v.tag)+"</div>"+equipTxt+"</div>"+
+      "</div>";
+  }).join("")+"</div>";
   updateBulkTagCount();
 }
 
 function toggleBulkTagKey(key){
   if(bulkTagSelectedKeys[key]) delete bulkTagSelectedKeys[key];
   else bulkTagSelectedKeys[key] = true;
-  updateBulkTagCount();
+  renderBulkTagList();
 }
 
 function bulkTagSelectAll(){
@@ -5716,6 +5721,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-video-grid-dupes</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-bulktag-grid-checkboxes</p>
 </body>
 </html>
