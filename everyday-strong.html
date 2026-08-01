@@ -736,7 +736,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 
     <div class="tab-content on" id="atc-dashboard">
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1rem;margin-bottom:1.2rem;" id="dash-stats"></div>
-      <div class="admin-card">
+      <div class="admin-card" id="trial-tracker-card">
         <h3>Trial Tracker</h3>
         <div id="dash-trials"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
       </div>
@@ -4218,11 +4218,11 @@ function loadDashboard(){
         DB.ref("checkins").orderByChild("ts").startAt(weekAgo).once("value",function(cisnap){
           var newci=cisnap.exists()?cisnap.numChildren():0;
           statsEl.innerHTML=
-            "<div class='stat-card'><div class='stat-num'>"+active+"</div><div class='stat-label'>Active Members</div></div>"+
-            "<div class='stat-card'><div class='stat-num'>"+trial+"</div><div class='stat-label'>Trials</div></div>"+
-            "<div class='stat-card'><div class='stat-num'>"+vcount+"</div><div class='stat-label'>Videos</div></div>"+
-            "<div class='stat-card'><div class='stat-num'>"+newci+"</div><div class='stat-label'>Check ins (7 days)</div></div>"+
-            "<div class='stat-card'><div class='stat-num'>"+cposts+"</div><div class='stat-label'>Posts (7 days)</div></div>";
+            "<div class='stat-card' style='cursor:pointer;' onclick='document.getElementById(\"atab-clients\").click();'><div class='stat-num'>"+active+"</div><div class='stat-label'>Active Members</div></div>"+
+            "<div class='stat-card' style='cursor:pointer;' onclick='document.getElementById(\"trial-tracker-card\").scrollIntoView({behavior:\"smooth\",block:\"start\"});'><div class='stat-num'>"+trial+"</div><div class='stat-label'>Trials</div></div>"+
+            "<div class='stat-card' style='cursor:pointer;' onclick='document.getElementById(\"atab-videos\").click();'><div class='stat-num'>"+vcount+"</div><div class='stat-label'>Videos</div></div>"+
+            "<div class='stat-card' style='cursor:pointer;' onclick='document.getElementById(\"atab-checkins\").click();'><div class='stat-num'>"+newci+"</div><div class='stat-label'>Check ins (7 days)</div></div>"+
+            "<div class='stat-card' style='cursor:pointer;' onclick='document.getElementById(\"atab-community\").click();'><div class='stat-num'>"+cposts+"</div><div class='stat-label'>Posts (7 days)</div></div>";
         });
       });
     });
@@ -5721,6 +5721,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-bulktag-grid-checkboxes</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-clickable-stat-cards</p>
 </body>
 </html>
