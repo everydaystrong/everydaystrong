@@ -860,6 +860,14 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
       </div>
       <div class="admin-card">
         <h3>All Videos (<span id="video-count">0</span>)</h3>
+        <div id="dupe-alert-bar" style="display:none;background:#fdeceb;border:1px solid #e8a89f;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:#a13a2e;">
+          <span id="dupe-alert-text"></span>
+          <button class="action-btn sec" id="dupe-filter-btn" onclick="toggleAdmDupeFilter()" style="width:auto;margin:8px 0 0;font-size:12px;padding:6px 12px;">Show Only Duplicates</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <button class="action-btn" id="adm-vid-view-list-btn" onclick="setAdmVidViewMode('list')" style="width:auto;margin:0;font-size:12px;padding:7px 14px;">☰ List</button>
+          <button class="action-btn sec" id="adm-vid-view-grid-btn" onclick="setAdmVidViewMode('grid')" style="width:auto;margin:0;font-size:12px;padding:7px 14px;">▦ Grid (like clients see)</button>
+        </div>
         <div id="video-list"></div>
       </div>
     </div>
@@ -2162,38 +2170,52 @@ function updateNavDot(){
   if(msgOpt) msgOpt.textContent = hasNewMsg ? "\u25CF Messages" : "Messages";
 }
 
+var clientMsgLastCheckTs = 0;
+var cachedClientMessages = [];
+
 function checkNewMessages(){
-  if(!DB||!currentUser) return;
-  DB.ref("messages/"+sk(currentUser)).orderByChild("ts").limitToLast(10).on("value",function(snap){
-    var lastCheck = parseInt(localStorage.getItem("esMsgLastCheck_"+sk(currentUser))||"0");
-    hasNewMsg = false;
-    if(snap.exists()) snap.forEach(function(c){ var m=c.val(); if(!m.fromClient && m.ts>lastCheck) hasNewMsg=true; });
-    updateNavDot();
+  if(!DB||!currentUserKey) return;
+  DB.ref("userdata/"+currentUserKey+"/lastMsgCheck").on("value", function(metaSnap){
+    clientMsgLastCheckTs = metaSnap.val() || 0;
+    updateHasNewMsg();
+  });
+  DB.ref("messages/"+currentUserKey).orderByChild("ts").limitToLast(10).on("value",function(snap){
+    cachedClientMessages = [];
+    if(snap.exists()) snap.forEach(function(c){ cachedClientMessages.push(c.val()); });
+    updateHasNewMsg();
   });
 }
+function updateHasNewMsg(){
+  hasNewMsg = cachedClientMessages.some(function(m){ return !m.fromClient && m.ts>clientMsgLastCheckTs; });
+  updateNavDot();
+}
 function clearNewMessagesBadge(){
-  if(!currentUser) return;
-  localStorage.setItem("esMsgLastCheck_"+sk(currentUser), String(Date.now()));
+  if(!currentUserKey||!DB) return;
+  var now = Date.now();
+  DB.ref("userdata/"+currentUserKey+"/lastMsgCheck").set(now);
+  clientMsgLastCheckTs = now;
   hasNewMsg = false;
   updateNavDot();
 }
 
 function checkNewAnnouncements(){
-  if(!DB || !currentUser) return;
-  var lastCheck = parseInt(localStorage.getItem("esAnnLastCheck_"+sk(currentUser))||"0");
-  DB.ref("announcements").orderByChild("ts").limitToLast(10).once("value",function(snap){
-    hasNewAnn = false;
-    if(snap.exists()) snap.forEach(function(c){ var a=c.val(); if(!a.archived && a.ts>lastCheck) hasNewAnn = true; });
-    // Clients land directly on the Workouts tab after login/preview, so if
-    // that's still the active tab when this resolves, there's nothing to
-    // flag — clear it immediately instead of leaving a stale dot.
-    if(hasNewAnn && currentPortalTab==="all"){ clearNewAnnouncementsBadge(); return; }
-    updateNavDot();
+  if(!DB || !currentUserKey) return;
+  DB.ref("userdata/"+currentUserKey+"/lastAnnCheck").once("value",function(metaSnap){
+    var lastCheck = metaSnap.val() || 0;
+    DB.ref("announcements").orderByChild("ts").limitToLast(10).once("value",function(snap){
+      hasNewAnn = false;
+      if(snap.exists()) snap.forEach(function(c){ var a=c.val(); if(!a.archived && a.ts>lastCheck) hasNewAnn = true; });
+      // Clients land directly on the Workouts tab after login/preview, so if
+      // that's still the active tab when this resolves, there's nothing to
+      // flag — clear it immediately instead of leaving a stale dot.
+      if(hasNewAnn && currentPortalTab==="all"){ clearNewAnnouncementsBadge(); return; }
+      updateNavDot();
+    });
   });
 }
 function clearNewAnnouncementsBadge(){
-  if(!currentUser) return;
-  localStorage.setItem("esAnnLastCheck_"+sk(currentUser), String(Date.now()));
+  if(!currentUserKey||!DB) return;
+  DB.ref("userdata/"+currentUserKey+"/lastAnnCheck").set(Date.now());
   hasNewAnn = false;
   updateNavDot();
 }
@@ -2579,6 +2601,15 @@ function addNewEquipTag(which){
   renderEquipChips("edit");
 }
 
+var admVideoViewMode = "list";
+var admVideoShowDupesOnly = false;
+var cachedAdmGrouped = {}, cachedAdmCats = [], cachedAdmViewCounts = {}, cachedAdmDupeKeys = {};
+
+function dedupeSig(url){
+  var yt = getYTId(url);
+  return yt ? ("yt:"+yt) : ("url:"+String(url||"").trim().toLowerCase());
+}
+
 function loadAdmVideos(){
   if(!DB) return;
   DB.ref("videoViews").on("value", function(viewSnap){
@@ -2586,41 +2617,38 @@ function loadAdmVideos(){
     if(viewSnap.exists()) viewSnap.forEach(function(c){ viewCounts[c.key] = c.val(); });
     DB.ref("videos").on("value",function(snap){
       var cnt=0,cats=[],grouped={};
+      var sigCounts = {};
       if(snap.exists()) snap.forEach(function(c){
         var v=c.val(); cnt++;
         var tag=v.tag||"Uncategorized";
         if(!grouped[tag]){ grouped[tag]=[]; cats.push(tag); }
         grouped[tag].push({key:c.key,v:v});
+        var sig = dedupeSig(v.url);
+        sigCounts[sig] = (sigCounts[sig]||0)+1;
+      });
+      var dupeKeys = {};
+      cats.forEach(function(tag){
+        grouped[tag].forEach(function(item){
+          if(sigCounts[dedupeSig(item.v.url)]>1) dupeKeys[item.key]=true;
+        });
       });
       // Sort each group by its order field so it matches client-side ordering
       cats.forEach(function(tag){
         grouped[tag].sort(function(a,b){ return (a.v.order||0)-(b.v.order||0); });
       });
       cats.sort();
-      var h="";
-      if(!cnt){
-        h="<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No videos yet.</p>";
-      } else {
-        cats.forEach(function(tag){
-          var items=grouped[tag];
-          h+="<div class='admin-vid-group' style='margin-bottom:10px;'>";
-          h+="<div class='admin-vid-group-header' onclick='toggleAdmVidGroup(this)' style='cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--inp);border-radius:8px;font-weight:600;font-size:13px;color:var(--text);'>";
-          h+="<span>"+ex(tag)+" <span style='font-weight:400;color:var(--sub);'>("+items.length+")</span></span>";
-          h+="<span class='admin-vid-group-arrow' style='transition:transform 0.15s;'>▸</span>";
-          h+="</div>";
-          h+="<div class='admin-vid-group-body' style='display:none;padding-top:4px;'>";
-          items.forEach(function(item){
-            var v=item.v, key=item.key;
-            var rd=v.held?" <span style='font-size:11px;color:#a8677a;font-weight:600;'>● On Hold</span>":(v.releaseDate?(" <span style='font-size:11px;color:var(--sub);'>"+v.releaseDate+"</span>"):"");
-            var views=viewCounts[key]||0;
-            var viewsHtml=" <span style='font-size:11px;color:var(--sub);'>· 👁️ "+views+" view"+(views!==1?"s":"")+"</span>";
-            h+="<div class='list-item'><div class='list-item-left'>"+ex(v.title)+rd+viewsHtml+"</div><div style='display:flex;gap:6px;'><button class='edit-btn' onclick='openEdit(\""+key+"\")'>Edit</button><button class='del-btn' onclick='delVideo(\""+key+"\")'>✕</button></div></div>";
-          });
-          h+="</div></div>";
-        });
-      }
+      cachedAdmGrouped = grouped; cachedAdmCats = cats; cachedAdmViewCounts = viewCounts; cachedAdmDupeKeys = dupeKeys;
       document.getElementById("video-count").textContent=cnt;
-      document.getElementById("video-list").innerHTML=h;
+      renderAdmVideoList();
+      var dupeCount = Object.keys(dupeKeys).length;
+      var bar = document.getElementById("dupe-alert-bar");
+      if(dupeCount>0){
+        bar.style.display="block";
+        document.getElementById("dupe-alert-text").textContent = "⚠️ Found "+dupeCount+" video"+(dupeCount!==1?"s":"")+" that appear to be duplicates (same video link used more than once).";
+      } else {
+        bar.style.display="none";
+        admVideoShowDupesOnly=false;
+      }
       var sel=document.getElementById("reorder-cat"),prev=sel.value;
       sel.innerHTML="<option value=''>-- Select a program --</option>";
       cats.forEach(function(c){ sel.innerHTML+="<option value='"+ex(c)+"'>"+ex(c)+"</option>"; });
@@ -2628,6 +2656,82 @@ function loadAdmVideos(){
     });
   });
 }
+
+function setAdmVidViewMode(mode){
+  admVideoViewMode = mode;
+  document.getElementById("adm-vid-view-list-btn").classList.toggle("sec", mode!=="list");
+  document.getElementById("adm-vid-view-grid-btn").classList.toggle("sec", mode!=="grid");
+  renderAdmVideoList();
+}
+function toggleAdmDupeFilter(){
+  admVideoShowDupesOnly = !admVideoShowDupesOnly;
+  document.getElementById("dupe-filter-btn").textContent = admVideoShowDupesOnly ? "Show All Videos" : "Show Only Duplicates";
+  renderAdmVideoList();
+}
+
+function renderAdmVideoList(){
+  var cats = cachedAdmCats, grouped = cachedAdmGrouped, viewCounts = cachedAdmViewCounts, dupeKeys = cachedAdmDupeKeys;
+  var h="";
+  var anyShown = false;
+  if(!cats.length){
+    h="<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No videos yet.</p>";
+  } else {
+    cats.forEach(function(tag){
+      var items=grouped[tag];
+      if(admVideoShowDupesOnly) items = items.filter(function(item){ return dupeKeys[item.key]; });
+      if(!items.length) return;
+      anyShown = true;
+      h+="<div class='admin-vid-group' style='margin-bottom:10px;'>";
+      h+="<div class='admin-vid-group-header' onclick='toggleAdmVidGroup(this)' style='cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--inp);border-radius:8px;font-weight:600;font-size:13px;color:var(--text);'>";
+      h+="<span>"+ex(tag)+" <span style='font-weight:400;color:var(--sub);'>("+items.length+")</span></span>";
+      h+="<span class='admin-vid-group-arrow' style='transform:rotate(90deg);transition:transform 0.15s;'>▸</span>";
+      h+="</div>";
+      h+="<div class='admin-vid-group-body' style='display:block;padding-top:4px;'>";
+      if(admVideoViewMode==="grid"){
+        h+="<div class='video-grid'>";
+        items.forEach(function(item){ h+=buildAdmVideoCard(item.key, item.v, viewCounts[item.key]||0, !!dupeKeys[item.key]); });
+        h+="</div>";
+      } else {
+        items.forEach(function(item){
+          var v=item.v, key=item.key;
+          var rd=v.held?" <span style='font-size:11px;color:#a8677a;font-weight:600;'>● On Hold</span>":(v.releaseDate?(" <span style='font-size:11px;color:var(--sub);'>"+v.releaseDate+"</span>"):"");
+          var views=viewCounts[key]||0;
+          var viewsHtml=" <span style='font-size:11px;color:var(--sub);'>· 👁️ "+views+" view"+(views!==1?"s":"")+"</span>";
+          var dupeHtml = dupeKeys[key] ? " <span style='font-size:11px;color:#c0392b;font-weight:700;'>⚠️ Duplicate</span>" : "";
+          var rowStyle = dupeKeys[key] ? "background:#fdeceb;border-radius:6px;" : "";
+          h+="<div class='list-item' style='"+rowStyle+"'><div class='list-item-left'>"+ex(v.title)+rd+viewsHtml+dupeHtml+"</div><div style='display:flex;gap:6px;'><button class='edit-btn' onclick='openEdit(\""+key+"\")'>Edit</button><button class='del-btn' onclick='delVideo(\""+key+"\")'>✕</button></div></div>";
+        });
+      }
+      h+="</div></div>";
+    });
+    if(!anyShown) h="<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No duplicates found in this view.</p>";
+  }
+  document.getElementById("video-list").innerHTML=h;
+  // Re-collapse groups back to the usual closed state after a full re-render,
+  // except keep them open while actively hunting for duplicates.
+  if(!admVideoShowDupesOnly){
+    document.querySelectorAll("#video-list .admin-vid-group-body").forEach(function(b){ b.style.display="none"; });
+    document.querySelectorAll("#video-list .admin-vid-group-arrow").forEach(function(a){ a.style.transform="rotate(0deg)"; });
+  }
+}
+
+function buildAdmVideoCard(key, v, views, isDupe){
+  var ytId=getYTId(v.url);
+  var th=ytId?"<img src='https://img.youtube.com/vi/"+ytId+"/mqdefault.jpg' onerror=\"this.style.display='none'\" />":"";
+  var borderStyle = isDupe ? "border:2px solid #c0392b;" : "";
+  var h="<div class='video-card' style='"+borderStyle+"'>";
+  h+="<div class='video-thumb'>"+th+"</div>";
+  h+="<div class='video-info'>";
+  if(isDupe) h+="<div style='font-size:11px;color:#c0392b;font-weight:700;margin-bottom:2px;'>⚠️ Duplicate</div>";
+  h+="<div class='video-title'>"+ex(v.title)+"</div>";
+  h+="<div style='font-size:11px;color:var(--sub);margin-bottom:6px;'>👁️ "+views+" view"+(views!==1?"s":"")+"</div>";
+  h+="<div class='video-actions'>";
+  h+="<button class='vact-btn' onclick='openEdit(\""+key+"\")' title='Edit'>Edit</button>";
+  h+="<button class='vact-btn' onclick='delVideo(\""+key+"\")' title='Delete'>✕ Delete</button>";
+  h+="</div></div></div>";
+  return h;
+}
+
 function toggleAdmVidGroup(headerEl){
   var body = headerEl.nextElementSibling;
   var arrow = headerEl.querySelector(".admin-vid-group-arrow");
@@ -3716,27 +3820,37 @@ function loadMessages(){
 
 // MESSAGE NOTIFICATION BADGE (only counts client-sent messages, ignores Heather's own replies)
 var MSG_LAST_CHECK_KEY = "es_admin_lastMsgCheck";
-var COMMENTS_LAST_CHECK_KEY = "es_admin_lastCommentsCheck";
+var commentsLastCheckTs = 0;
 
 function initCommentsBadge(){
   if(!DB) return;
+  DB.ref("adminMeta/commentsLastCheck").on("value", function(metaSnap){
+    commentsLastCheckTs = metaSnap.val() || 0;
+    updateCommentsBadgeDot();
+  });
   DB.ref("videoComments").on("value", function(snap){
-    var lastCheck = parseInt(localStorage.getItem(COMMENTS_LAST_CHECK_KEY)||"0");
-    var hasNew = false;
+    cachedAllComments = [];
     if(snap.exists()){
       snap.forEach(function(vidNode){
         vidNode.forEach(function(c){
           var v = c.val();
-          if(v && v.ts > lastCheck) hasNew = true;
+          if(v) cachedAllComments.push(v);
         });
       });
     }
-    var dot = document.getElementById("comments-tab-dot");
-    if(dot) dot.style.display = hasNew ? "inline-block" : "none";
+    updateCommentsBadgeDot();
   });
 }
+function updateCommentsBadgeDot(){
+  var hasNew = (cachedAllComments||[]).some(function(v){ return v.ts > commentsLastCheckTs; });
+  var dot = document.getElementById("comments-tab-dot");
+  if(dot) dot.style.display = hasNew ? "inline-block" : "none";
+}
 function clearCommentsBadge(){
-  localStorage.setItem(COMMENTS_LAST_CHECK_KEY, String(Date.now()));
+  if(!DB) return;
+  var now = Date.now();
+  DB.ref("adminMeta/commentsLastCheck").set(now);
+  commentsLastCheckTs = now;
   var dot = document.getElementById("comments-tab-dot");
   if(dot) dot.style.display = "none";
 }
@@ -4472,9 +4586,10 @@ var currentClientKey = null;
 var currentClientName = null;
 
 // NEW SUBMISSIONS FEED (every client_forms entry, across all keys, regardless of code status)
-var SUB_LAST_CHECK_KEY = "es_admin_lastSubCheck";
+var subLastCheckTs = 0;
 
 var cachedAllSubmissions = [];
+var cachedAllComments = [];
 var cachedCanonicalByNorm = {};
 var cachedMergeGroups = {};
 var cachedPreferredCodeByNorm = {};
@@ -4551,9 +4666,12 @@ function submitPhotoUpload(){
 
 function initSubmissionsBadge(){
   if(!DB) return;
+  DB.ref("adminMeta/subLastCheck").on("value", function(metaSnap){
+    subLastCheckTs = metaSnap.val() || 0;
+    updateSubmissionsBadgeDot();
+    renderSubmissionsList();
+  });
   DB.ref("client_forms").on("value", function(snap){
-    var lastCheck = parseInt(localStorage.getItem(SUB_LAST_CHECK_KEY)||"0");
-    var hasNew = false;
     var all = [];
     // Group entries by normalized name (not just storage key) so we can catch
     // cases where old data (or an edge case) split one person across multiple
@@ -4571,7 +4689,6 @@ function initSubmissionsBadge(){
             v._clientKey = key;
             v._entryKey = entry.key;
             all.push(v);
-            if(!v.deleted && v.ts > lastCheck) hasNew = true;
             var rawName = v.data && v.data.Name;
             if(rawName){
               var norm = sk(rawName);
@@ -4600,10 +4717,15 @@ function initSubmissionsBadge(){
     cachedCanonicalByNorm = canonicalByNorm;
     cachedMergeGroups = mergeGroups;
     cachedPreferredCodeByNorm = preferredCodeByNorm;
-    var dot = document.getElementById("sub-tab-dot");
-    if(dot) dot.style.display = hasNew ? "inline-block" : "none";
+    updateSubmissionsBadgeDot();
     renderSubmissionsList();
   });
+}
+
+function updateSubmissionsBadgeDot(){
+  var hasNew = cachedAllSubmissions.some(function(s){ return !s.deleted && s.ts > subLastCheckTs; });
+  var dot = document.getElementById("sub-tab-dot");
+  if(dot) dot.style.display = hasNew ? "inline-block" : "none";
 }
 
 function filterSubmissions(filter, btn){
@@ -4614,15 +4736,19 @@ function filterSubmissions(filter, btn){
 }
 
 function clearSubmissionsBadge(){
-  localStorage.setItem(SUB_LAST_CHECK_KEY, String(Date.now()));
+  if(!DB) return;
+  var now = Date.now();
+  DB.ref("adminMeta/subLastCheck").set(now);
+  subLastCheckTs = now;
   var dot = document.getElementById("sub-tab-dot");
   if(dot) dot.style.display = "none";
+  renderSubmissionsList();
 }
 
 function renderSubmissionsList(){
   var el = document.getElementById("submissions-list");
   if(!el) return;
-  var lastCheck = parseInt(localStorage.getItem(SUB_LAST_CHECK_KEY)||"0");
+  var lastCheck = subLastCheckTs;
   var items = cachedAllSubmissions.filter(function(s){
     if(submissionFilter==="deleted") return !!s.deleted;
     if(s.deleted) return false;
@@ -5513,7 +5639,6 @@ function loadAdminCommList(){
     var items=[]; snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.push(a); });
     items.reverse();
     el.innerHTML="";
-    var h="";
     items.forEach(function(p){
       var lc=Object.keys(p.likes||{}).length;
       var txt=(p.text||"").substring(0,50)+(p.text&&p.text.length>50?"...":"");
@@ -5591,6 +5716,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-fix-message-badge</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-video-grid-dupes</p>
 </body>
 </html>
