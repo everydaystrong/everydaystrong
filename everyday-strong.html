@@ -316,6 +316,18 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
   </div>
 </div>
 
+<!-- BULK EDIT VIDEO TAGS -->
+<div class="modal-overlay" id="bulk-edit-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeBulkEditModal()">✕</button>
+    <h3 id="bulk-edit-modal-title" style="margin-bottom:10px;">Edit Tags</h3>
+    <p class="tip" style="margin-bottom:10px;">This adds the tag on top of whatever's already there — it won't remove existing tags.</p>
+    <div id="bulk-edit-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
+    <input class="form-input" id="bulk-edit-new-tag" placeholder="Or type a new tag…" style="text-transform:none;margin-bottom:12px;" />
+    <button class="action-btn" id="bulk-edit-apply-btn" onclick="applyBulkEdit()" style="width:100%;">Apply to Selected</button>
+  </div>
+</div>
+
 <!-- STREAK MILESTONE -->
 <div class="modal-overlay" id="streak-milestone-modal">
   <div class="modal" style="text-align:center;">
@@ -781,8 +793,12 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
       </div>
     </div>
     <div class="tab-content" id="atc-videos">
-      <div class="admin-card">
-        <h3>Add a Workout Video</h3>
+      <div class="admin-card" style="padding:0;overflow:hidden;">
+        <div onclick="toggleAddVideoCard()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:1.2rem;">
+          <h3 style="margin:0;">＋ Add a Workout Video</h3>
+          <span id="add-video-arrow" style="transition:transform 0.15s;color:var(--sub);">▸</span>
+        </div>
+        <div id="add-video-body" style="display:none;padding:0 1.2rem 1.2rem;">
         <div class="ok-msg" id="ok-video">Video saved!</div>
         <div class="form-row"><span class="form-label">Video Title</span><input class="form-input" id="v-title" placeholder="e.g. Lower Body — Week 1" style="text-transform:none;" /></div>
         <div class="form-row"><span class="form-label">YouTube Link</span><input class="form-input" id="v-url" placeholder="https://youtube.com/watch?v=..." style="text-transform:none;" /></div>
@@ -813,43 +829,37 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <div class="form-row"><span class="form-label">Release Date (optional)</span><input type="date" class="form-input" id="v-release" /><span style="font-size:11px;color:var(--sub);margin-top:3px;">Leave blank to show immediately. Set a future date to schedule.</span></div>
         <div class="form-row"><label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;"><input type="checkbox" id="v-held" style="width:18px;height:18px;" /> Hold — don't post yet (no date needed)</label></div>
         <button class="action-btn" id="add-video-btn">Save Video</button>
+        </div>
       </div>
       <div class="admin-card">
-        <h3>Bulk Add Videos</h3>
-        <p class="tip" style="margin-bottom:10px;">Paste multiple videos at once, one per line, in this format:<br><b>Title | YouTube Link | Category | Focus tags (comma separated, optional) | Equipment (comma separated, optional)</b></p>
-        <p class="tip" style="margin-bottom:10px;">Example:<br><span style="font-family:monospace;font-size:11px;">Week 1 Lower Body | https://youtu.be/abc123 | Monday Classes | Lower Body | Dumbbells<br>Full Body Core | https://youtu.be/def456 | Wednesday Classes | Full Body, Core | No Equipment</span></p>
-        <textarea class="form-input" id="bulk-video-input" rows="10" placeholder="Paste your list here, one video per line..." style="text-transform:none;font-family:monospace;font-size:12px;width:100%;resize:vertical;"></textarea>
-        <div id="bulk-preview" style="margin-top:10px;"></div>
-        <div class="ok-msg" id="ok-bulk">Videos added!</div>
-        <div class="err" id="err-bulk" style="display:none;">Check the highlighted lines above — each needs a title, a link, and a category.</div>
-        <button class="action-btn" id="bulk-preview-btn" style="width:100%;margin-top:8px;">Preview</button>
-        <button class="action-btn" id="bulk-add-btn" style="width:100%;margin-top:8px;display:none;">Add All to Dashboard</button>
-      </div>
-      <div class="admin-card">
-        <h3>Bulk Tag Equipment (Existing Videos)</h3>
-        <p class="tip" style="margin-bottom:10px;">Select videos below, choose an equipment tag, then apply it to all selected at once. This adds the tag on top of whatever's already there — it won't remove existing tags.</p>
-        <div class="form-row"><span class="form-label">Filter by Category</span>
-          <select class="form-select" id="bt-cat-filter" onchange="renderBulkTagList()" style="margin-bottom:8px;">
-            <option value="">All Categories</option>
-          </select>
+        <h3>All Videos (<span id="video-count">0</span>)</h3>
+        <p class="tip" style="margin-bottom:10px;">Tap the 📌 next to a category to keep it as its own tile for clients instead of it getting merged into "Live Classes."</p>
+        <div id="dupe-alert-bar" style="display:none;background:#fdeceb;border:1px solid #e8a89f;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:#a13a2e;">
+          <span id="dupe-alert-text"></span>
+          <button class="action-btn sec" id="dupe-filter-btn" onclick="toggleAdmDupeFilter()" style="width:auto;margin:8px 0 0;font-size:12px;padding:6px 12px;">Show Only Duplicates</button>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
-          <button type="button" class="action-btn" style="flex:1;" onclick="bulkTagSelectAll()">Select All</button>
-          <button type="button" class="action-btn" style="flex:1;" onclick="bulkTagSelectNone()">Clear Selection</button>
+        <input class="form-input" id="adm-vid-search" placeholder="🔍 Search videos by title…" oninput="renderAdmVideoList()" style="text-transform:none;margin-bottom:10px;" />
+        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+          <button class="action-btn" id="adm-vid-view-list-btn" onclick="setAdmVidViewMode('list')" style="width:auto;margin:0;font-size:12px;padding:7px 14px;">☰ List</button>
+          <button class="action-btn sec" id="adm-vid-view-grid-btn" onclick="setAdmVidViewMode('grid')" style="width:auto;margin:0;font-size:12px;padding:7px 14px;">▦ Grid (like clients see)</button>
+          <button class="action-btn sec" id="adm-vid-select-btn" onclick="toggleAdmSelectMode()" style="width:auto;margin:0;font-size:12px;padding:7px 14px;">☑️ Select</button>
         </div>
-        <div id="bt-video-list" style="max-height:320px;overflow-y:auto;border:0.5px solid var(--border);border-radius:8px;margin-bottom:12px;"><p class="tip" style="padding:10px;">Loading videos...</p></div>
-        <div class="form-row"><span class="form-label">Equipment tag to apply</span>
-          <div id="bt-equip-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;"></div>
-          <input class="form-input" id="bt-equip-new" placeholder="Or type a new equipment tag…" style="text-transform:none;" />
+        <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+          <button class="action-btn sec" onclick="admVidExpandAll()" style="width:auto;margin:0;font-size:12px;padding:7px 14px;">Expand All</button>
+          <button class="action-btn sec" onclick="admVidCollapseAll()" style="width:auto;margin:0;font-size:12px;padding:7px 14px;">Collapse All</button>
         </div>
-        <div class="ok-msg" id="ok-bulk-tag">Tags applied!</div>
-        <p id="bt-selected-count" class="tip" style="margin-bottom:6px;">0 videos selected.</p>
-        <button class="action-btn" id="bulk-tag-apply-btn" style="width:100%;">Apply Tag to Selected</button>
-      </div>
-      <div class="admin-card">
-        <h3>Category Display Settings</h3>
-        <p class="tip" style="margin-bottom:10px;">By default, if a client can see more than one category, they're combined into one "Live Classes" tile — this makes sense for Monday + Wednesday classes. But standalone programs like Foundations or a Bodyweight Program shouldn't get lumped in. Check any category that should always show as its own separate tile, never combined.</p>
-        <div id="cat-settings-list"><p class="tip">Loading categories...</p></div>
+        <div id="adm-vid-select-bar" style="display:none;background:var(--inp);border-radius:9px;padding:10px 12px;margin-bottom:10px;">
+          <p id="adm-vid-select-count" style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">0 selected</p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="action-btn sec" onclick="admVidSelectAllVisible()" style="width:auto;margin:0;font-size:12px;padding:6px 12px;">Select All</button>
+            <button class="action-btn sec" onclick="admVidClearSelection()" style="width:auto;margin:0;font-size:12px;padding:6px 12px;">Clear</button>
+            <button class="action-btn sec" onclick="openBulkEditModal('focus')" style="width:auto;margin:0;font-size:12px;padding:6px 12px;">Edit Focus</button>
+            <button class="action-btn sec" onclick="openBulkEditModal('equipment')" style="width:auto;margin:0;font-size:12px;padding:6px 12px;">Edit Equipment</button>
+            <button class="action-btn" style="width:auto;margin:0;font-size:12px;padding:6px 12px;background:#c0392b;" onclick="deleteSelectedAdmVideos()">🗑 Delete Selected</button>
+          </div>
+        </div>
+        <div class="ok-msg" id="ok-adm-vid-bulk">Done!</div>
+        <div id="video-list"></div>
       </div>
       <div class="admin-card">
         <h3>Reorder Videos</h3>
@@ -858,20 +868,23 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         </select>
         <ul class="drag-list" id="reorder-list"></ul>
       </div>
-      <div class="admin-card">
-        <h3>All Videos (<span id="video-count">0</span>)</h3>
-        <div id="dupe-alert-bar" style="display:none;background:#fdeceb;border:1px solid #e8a89f;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:#a13a2e;">
-          <span id="dupe-alert-text"></span>
-          <button class="action-btn sec" id="dupe-filter-btn" onclick="toggleAdmDupeFilter()" style="width:auto;margin:8px 0 0;font-size:12px;padding:6px 12px;">Show Only Duplicates</button>
+      <div class="admin-card" style="padding:0;overflow:hidden;">
+        <div onclick="toggleBulkAddCard()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:1.2rem;">
+          <h3 style="margin:0;">Bulk Add Videos</h3>
+          <span id="bulk-add-arrow" style="transition:transform 0.15s;color:var(--sub);">▸</span>
         </div>
-        <div style="display:flex;gap:6px;margin-bottom:10px;">
-          <button class="action-btn" id="adm-vid-view-list-btn" onclick="setAdmVidViewMode('list')" style="width:auto;margin:0;font-size:12px;padding:7px 14px;">☰ List</button>
-          <button class="action-btn sec" id="adm-vid-view-grid-btn" onclick="setAdmVidViewMode('grid')" style="width:auto;margin:0;font-size:12px;padding:7px 14px;">▦ Grid (like clients see)</button>
+        <div id="bulk-add-body" style="display:none;padding:0 1.2rem 1.2rem;">
+        <p class="tip" style="margin-bottom:10px;">Paste multiple videos at once, one per line, in this format:<br><b>Title | YouTube Link | Category | Focus tags (comma separated, optional) | Equipment (comma separated, optional)</b></p>
+        <p class="tip" style="margin-bottom:10px;">Example:<br><span style="font-family:monospace;font-size:11px;">Week 1 Lower Body | https://youtu.be/abc123 | Monday Classes | Lower Body | Dumbbells<br>Full Body Core | https://youtu.be/def456 | Wednesday Classes | Full Body, Core | No Equipment</span></p>
+        <textarea class="form-input" id="bulk-video-input" rows="10" placeholder="Paste your list here, one video per line..." style="text-transform:none;font-family:monospace;font-size:12px;width:100%;resize:vertical;"></textarea>
+        <div id="bulk-preview" style="margin-top:10px;"></div>
+        <div class="ok-msg" id="ok-bulk">Videos added!</div>
+        <div class="err" id="err-bulk" style="display:none;">Check the highlighted lines above — each needs a title, a link, and a category.</div>
+        <button class="action-btn" id="bulk-preview-btn" style="width:100%;margin-top:8px;">Preview</button>
+        <button class="action-btn" id="bulk-add-btn" style="width:100%;margin-top:8px;display:none;">Add All to Dashboard</button>
         </div>
-        <div id="video-list"></div>
       </div>
     </div>
-
 
     <div class="tab-content" id="atc-clients">
       <div class="admin-card">
@@ -2248,12 +2261,12 @@ function loadAnnouncements(){
 function doAdmin(){
   var p=prompt("Instructor password:");
   if(p===null) return;
-  if(p===adminPass){ loadDashboard(); loadTrialTracker(); loadUnpaidDashboard(); loadPaymentReminders(); loadAtRiskClients(); loadReferrals(); loadClassWaitlist(); loadAdmVideos(); populateProgramDatalist(); loadBulkTagVideos(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); initCommentsBadge(); sp("pg-admin"); }
+  if(p===adminPass){ loadDashboard(); loadTrialTracker(); loadUnpaidDashboard(); loadPaymentReminders(); loadAtRiskClients(); loadReferrals(); loadClassWaitlist(); loadAdmVideos(); populateProgramDatalist(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); initCommentsBadge(); sp("pg-admin"); }
   else alert("Incorrect password. Please try again.");
 }
 
 document.getElementById("atab-dashboard").onclick=function(){ setAdmTab("dashboard",this); loadDashboard(); loadPaymentReminders(); loadAtRiskClients(); loadReferrals(); loadClassWaitlist(); };
-document.getElementById("atab-videos").onclick=function(){ setAdmTab("videos",this); loadAdmVideos(); populateProgramDatalist(); loadBulkTagVideos(); };
+document.getElementById("atab-videos").onclick=function(){ setAdmTab("videos",this); loadAdmVideos(); populateProgramDatalist(); };
 document.getElementById("atab-clients").onclick=function(){ setAdmTab("clients",this); loadClients(); };
 document.getElementById("atab-submissions").onclick=function(){ setAdmTab("submissions",this); clearSubmissionsBadge(); };
 document.getElementById("atab-announce").onclick=function(){ setAdmTab("announce",this); };
@@ -2463,7 +2476,6 @@ function populateProgramDatalist(){
     allEquipTags = Object.keys(equips).sort();
     renderEquipChips("v");
     renderEquipChips("edit");
-    renderCategorySettingsList(Object.keys(cats).sort());
 
     var annSel = document.getElementById("a-program");
     if(annSel){
@@ -2476,24 +2488,6 @@ function populateProgramDatalist(){
       });
       annSel.value = prevVal || "";
     }
-  });
-}
-
-function renderCategorySettingsList(categoryNames){
-  var el = document.getElementById("cat-settings-list");
-  if(!el) return;
-  if(!categoryNames.length){ el.innerHTML = "<p class='tip'>Add some videos with categories first.</p>"; return; }
-  DB.ref("category_settings").once("value", function(snap){
-    var settings = snap.exists() ? snap.val() : {};
-    // Match by name across ALL saved entries (not just the current key format)
-    // so this can't show stale/wrong state if a category was set standalone
-    // before a key-format change — the checkbox always reflects reality.
-    el.innerHTML = categoryNames.map(function(cat){
-      var isChecked = Object.keys(settings).some(function(k){
-        return settings[k] && settings[k].standalone && settings[k].name===cat;
-      });
-      return "<label class='program-check-item'><input type='checkbox' "+(isChecked?"checked":"")+" onchange='toggleCategoryStandalone(\""+ex(cat).replace(/"/g,"&quot;")+"\", this.checked)' /> "+ex(cat)+"</label>";
-    }).join("");
   });
 }
 
@@ -2601,64 +2595,92 @@ function addNewEquipTag(which){
   renderEquipChips("edit");
 }
 
-var admVideoViewMode = "list";
+var admVideoViewMode = localStorage.getItem("es_admin_vidview") || "list";
 var admVideoShowDupesOnly = false;
 var cachedAdmGrouped = {}, cachedAdmCats = [], cachedAdmViewCounts = {}, cachedAdmDupeKeys = {};
+var cachedCategorySettings = {};
+var admVidExpandedCats = {};
+var admSelectMode = false;
+var admSelectedKeys = {};
 
 function dedupeSig(url){
   var yt = getYTId(url);
   return yt ? ("yt:"+yt) : ("url:"+String(url||"").trim().toLowerCase());
 }
 
+var admVideoListenersAttached = false;
+var cachedAdmRawVideos = {};
+
 function loadAdmVideos(){
   if(!DB) return;
+  if(admVideoListenersAttached){
+    // Listeners are already live from an earlier call this session — just
+    // re-render with whatever's cached instead of stacking another listener
+    // on top (that was the bug: every tab click/login added a brand new
+    // listener without ever removing the old one, so updates got less and
+    // less reliable the longer a session ran).
+    rebuildAdmVideoCache();
+    return;
+  }
+  admVideoListenersAttached = true;
   DB.ref("videoViews").on("value", function(viewSnap){
-    var viewCounts = {};
-    if(viewSnap.exists()) viewSnap.forEach(function(c){ viewCounts[c.key] = c.val(); });
-    DB.ref("videos").on("value",function(snap){
-      var cnt=0,cats=[],grouped={};
-      var sigCounts = {};
-      if(snap.exists()) snap.forEach(function(c){
-        var v=c.val(); cnt++;
-        var tag=v.tag||"Uncategorized";
-        if(!grouped[tag]){ grouped[tag]=[]; cats.push(tag); }
-        grouped[tag].push({key:c.key,v:v});
-        var sig = dedupeSig(v.url);
-        sigCounts[sig] = (sigCounts[sig]||0)+1;
-      });
-      var dupeKeys = {};
-      cats.forEach(function(tag){
-        grouped[tag].forEach(function(item){
-          if(sigCounts[dedupeSig(item.v.url)]>1) dupeKeys[item.key]=true;
-        });
-      });
-      // Sort each group by its order field so it matches client-side ordering
-      cats.forEach(function(tag){
-        grouped[tag].sort(function(a,b){ return (a.v.order||0)-(b.v.order||0); });
-      });
-      cats.sort();
-      cachedAdmGrouped = grouped; cachedAdmCats = cats; cachedAdmViewCounts = viewCounts; cachedAdmDupeKeys = dupeKeys;
-      document.getElementById("video-count").textContent=cnt;
-      renderAdmVideoList();
-      var dupeCount = Object.keys(dupeKeys).length;
-      var bar = document.getElementById("dupe-alert-bar");
-      if(dupeCount>0){
-        bar.style.display="block";
-        document.getElementById("dupe-alert-text").textContent = "⚠️ Found "+dupeCount+" video"+(dupeCount!==1?"s":"")+" that appear to be duplicates (same video link used more than once).";
-      } else {
-        bar.style.display="none";
-        admVideoShowDupesOnly=false;
-      }
-      var sel=document.getElementById("reorder-cat"),prev=sel.value;
-      sel.innerHTML="<option value=''>-- Select a program --</option>";
-      cats.forEach(function(c){ sel.innerHTML+="<option value='"+ex(c)+"'>"+ex(c)+"</option>"; });
-      if(prev) sel.value=prev;
+    cachedAdmViewCounts = {};
+    if(viewSnap.exists()) viewSnap.forEach(function(c){ cachedAdmViewCounts[c.key] = c.val(); });
+    rebuildAdmVideoCache();
+  });
+  DB.ref("videos").on("value",function(snap){
+    cachedAdmRawVideos = snap.exists() ? snap.val() : {};
+    rebuildAdmVideoCache();
+  });
+  DB.ref("category_settings").on("value", function(snap){
+    cachedCategorySettings = snap.exists() ? snap.val() : {};
+    renderAdmVideoList();
+  });
+}
+
+function rebuildAdmVideoCache(){
+  var cnt=0,cats=[],grouped={};
+  var sigCounts = {};
+  Object.keys(cachedAdmRawVideos).forEach(function(key){
+    var v = cachedAdmRawVideos[key]; cnt++;
+    var tag=v.tag||"Uncategorized";
+    if(!grouped[tag]){ grouped[tag]=[]; cats.push(tag); }
+    grouped[tag].push({key:key,v:v});
+    var sig = dedupeSig(v.url);
+    sigCounts[sig] = (sigCounts[sig]||0)+1;
+  });
+  var dupeKeys = {};
+  cats.forEach(function(tag){
+    grouped[tag].forEach(function(item){
+      if(sigCounts[dedupeSig(item.v.url)]>1) dupeKeys[item.key]=true;
     });
   });
+  // Sort each group by its order field so it matches client-side ordering
+  cats.forEach(function(tag){
+    grouped[tag].sort(function(a,b){ return (a.v.order||0)-(b.v.order||0); });
+  });
+  cats.sort();
+  cachedAdmGrouped = grouped; cachedAdmCats = cats; cachedAdmDupeKeys = dupeKeys;
+  document.getElementById("video-count").textContent=cnt;
+  renderAdmVideoList();
+  var dupeCount = Object.keys(dupeKeys).length;
+  var bar = document.getElementById("dupe-alert-bar");
+  if(dupeCount>0){
+    bar.style.display="block";
+    document.getElementById("dupe-alert-text").textContent = "⚠️ Found "+dupeCount+" video"+(dupeCount!==1?"s":"")+" that appear to be duplicates (same video link used more than once).";
+  } else {
+    bar.style.display="none";
+    admVideoShowDupesOnly=false;
+  }
+  var sel=document.getElementById("reorder-cat"),prev=sel.value;
+  sel.innerHTML="<option value=''>-- Select a program --</option>";
+  cats.forEach(function(c){ sel.innerHTML+="<option value='"+ex(c)+"'>"+ex(c)+"</option>"; });
+  if(prev) sel.value=prev;
 }
 
 function setAdmVidViewMode(mode){
   admVideoViewMode = mode;
+  try{ localStorage.setItem("es_admin_vidview", mode); }catch(e){}
   document.getElementById("adm-vid-view-list-btn").classList.toggle("sec", mode!=="list");
   document.getElementById("adm-vid-view-grid-btn").classList.toggle("sec", mode!=="grid");
   renderAdmVideoList();
@@ -2669,8 +2691,122 @@ function toggleAdmDupeFilter(){
   renderAdmVideoList();
 }
 
+function toggleAdmSelectMode(){
+  admSelectMode = !admSelectMode;
+  if(!admSelectMode) admSelectedKeys = {};
+  document.getElementById("adm-vid-select-btn").textContent = admSelectMode ? "✕ Cancel Select" : "☑️ Select";
+  document.getElementById("adm-vid-select-bar").style.display = admSelectMode ? "block" : "none";
+  renderAdmVideoList();
+}
+function admVidUpdateSelectCount(){
+  var n = Object.keys(admSelectedKeys).length;
+  var el = document.getElementById("adm-vid-select-count");
+  if(el) el.textContent = n+" selected";
+}
+function admVidToggleSelect(key){
+  if(admSelectedKeys[key]) delete admSelectedKeys[key];
+  else admSelectedKeys[key] = true;
+  renderAdmVideoList();
+}
+function admVidVisibleItems(){
+  var q = (document.getElementById("adm-vid-search").value||"").trim().toLowerCase();
+  var out = [];
+  cachedAdmCats.forEach(function(tag){
+    var items = cachedAdmGrouped[tag];
+    if(admVideoShowDupesOnly) items = items.filter(function(item){ return cachedAdmDupeKeys[item.key]; });
+    if(q) items = items.filter(function(item){ return (item.v.title||"").toLowerCase().indexOf(q)!==-1; });
+    out = out.concat(items);
+  });
+  return out;
+}
+function admVidSelectAllVisible(){
+  admVidVisibleItems().forEach(function(item){ admSelectedKeys[item.key] = true; });
+  renderAdmVideoList();
+}
+function admVidClearSelection(){
+  admSelectedKeys = {};
+  renderAdmVideoList();
+}
+function deleteSelectedAdmVideos(){
+  if(!DB) return;
+  var keys = Object.keys(admSelectedKeys);
+  if(!keys.length){ alert("Select at least one video first."); return; }
+  if(!confirm("Delete "+keys.length+" video"+(keys.length!==1?"s":"")+"? This can't be undone.")) return;
+  var remaining = keys.length, failed = 0;
+  keys.forEach(function(key){
+    DB.ref("videos/"+key).remove(function(e){
+      if(e) failed++;
+      remaining--;
+      if(remaining===0){
+        admSelectedKeys = {};
+        showOk("ok-adm-vid-bulk", failed ? (keys.length-failed)+" deleted, "+failed+" failed." : keys.length+" video"+(keys.length!==1?"s":"")+" deleted.");
+      }
+    });
+  });
+}
+
+// BULK EDIT (Focus / Equipment tags on selected videos)
+var bulkEditMode = null;
+var bulkEditSelectedTag = null;
+function openBulkEditModal(mode){
+  var keys = Object.keys(admSelectedKeys);
+  if(!keys.length){ alert("Select at least one video first."); return; }
+  bulkEditMode = mode;
+  bulkEditSelectedTag = null;
+  document.getElementById("bulk-edit-modal-title").textContent = "Add "+(mode==="focus"?"Focus":"Equipment")+" Tag to "+keys.length+" Video"+(keys.length!==1?"s":"");
+  document.getElementById("bulk-edit-new-tag").value = "";
+  renderBulkEditChips();
+  document.getElementById("bulk-edit-modal").classList.add("open");
+}
+function closeBulkEditModal(){
+  document.getElementById("bulk-edit-modal").classList.remove("open");
+}
+function renderBulkEditChips(){
+  var wrap = document.getElementById("bulk-edit-chips");
+  var list = bulkEditMode==="focus" ? allFocusTags : allEquipTags;
+  if(!list.length){ wrap.innerHTML = "<p class='tip' style='margin:0;'>No tags yet — type one below to create it.</p>"; return; }
+  wrap.innerHTML = list.map(function(t){
+    var on = bulkEditSelectedTag===t;
+    return "<button type='button' class='focus-chip"+(on?" on":"")+"' onclick='setBulkEditTag(\""+ex(t).replace(/"/g,"&quot;")+"\")'>"+ex(t)+"</button>";
+  }).join("");
+}
+function setBulkEditTag(tag){
+  bulkEditSelectedTag = bulkEditSelectedTag===tag ? null : tag;
+  document.getElementById("bulk-edit-new-tag").value = "";
+  renderBulkEditChips();
+}
+function applyBulkEdit(){
+  if(!DB){ alert("Database not connected."); return; }
+  var typedTag = document.getElementById("bulk-edit-new-tag").value.trim();
+  var tag = typedTag || bulkEditSelectedTag;
+  var keys = Object.keys(admSelectedKeys);
+  if(!tag){ alert("Choose an existing tag or type a new one."); return; }
+  if(!keys.length){ alert("Select at least one video first."); return; }
+  var field = bulkEditMode==="focus" ? "focus" : "equipment";
+  var btn = document.getElementById("bulk-edit-apply-btn");
+  btn.disabled = true; btn.textContent = "Applying...";
+  var remaining = keys.length, failed = 0;
+  keys.forEach(function(key){
+    var v = cachedAdmRawVideos[key] || {};
+    var current = normalizeFocus(v[field]);
+    if(current.indexOf(tag)===-1) current.push(tag);
+    var updateObj = {}; updateObj[field] = current;
+    DB.ref("videos/"+key).update(updateObj, function(e){
+      if(e) failed++;
+      remaining--;
+      if(remaining===0){
+        btn.disabled = false; btn.textContent = "Apply to Selected";
+        closeBulkEditModal();
+        showOk("ok-adm-vid-bulk", failed ? (keys.length-failed)+" tagged, "+failed+" failed." : keys.length+" video"+(keys.length!==1?"s":"")+" tagged with \""+tag+"\"!");
+        populateProgramDatalist();
+      }
+    });
+  });
+}
+
 function renderAdmVideoList(){
   var cats = cachedAdmCats, grouped = cachedAdmGrouped, viewCounts = cachedAdmViewCounts, dupeKeys = cachedAdmDupeKeys;
+  var q = (document.getElementById("adm-vid-search")?document.getElementById("adm-vid-search").value:"").trim().toLowerCase();
   var h="";
   var anyShown = false;
   if(!cats.length){
@@ -2679,62 +2815,107 @@ function renderAdmVideoList(){
     cats.forEach(function(tag){
       var items=grouped[tag];
       if(admVideoShowDupesOnly) items = items.filter(function(item){ return dupeKeys[item.key]; });
+      if(q) items = items.filter(function(item){ return (item.v.title||"").toLowerCase().indexOf(q)!==-1; });
       if(!items.length) return;
       anyShown = true;
+      var isOpen = admVideoShowDupesOnly || !!q || !!admVidExpandedCats[tag];
+      var isPinned = Object.keys(cachedCategorySettings).some(function(k){
+        var e = cachedCategorySettings[k];
+        return e && e.standalone && e.name===tag;
+      });
+      var pinEsc = ex(tag).replace(/"/g,"&quot;");
       h+="<div class='admin-vid-group' style='margin-bottom:10px;'>";
-      h+="<div class='admin-vid-group-header' onclick='toggleAdmVidGroup(this)' style='cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--inp);border-radius:8px;font-weight:600;font-size:13px;color:var(--text);'>";
+      h+="<div class='admin-vid-group-header' data-cat=\""+ex(tag)+"\" onclick='toggleAdmVidGroup(this)' style='cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--inp);border-radius:8px;font-weight:600;font-size:13px;color:var(--text);'>";
       h+="<span>"+ex(tag)+" <span style='font-weight:400;color:var(--sub);'>("+items.length+")</span></span>";
-      h+="<span class='admin-vid-group-arrow' style='transform:rotate(90deg);transition:transform 0.15s;'>▸</span>";
-      h+="</div>";
-      h+="<div class='admin-vid-group-body' style='display:block;padding-top:4px;'>";
+      h+="<span style='display:flex;align-items:center;gap:10px;'>";
+      h+="<label onclick='event.stopPropagation();' style='display:flex;align-items:center;gap:3px;font-weight:400;font-size:16px;cursor:pointer;' title='Always show as its own tile for clients'><input type='checkbox' "+(isPinned?"checked":"")+" onchange='toggleCategoryStandalone(\""+pinEsc+"\", this.checked)' style='width:15px;height:15px;' />📌</label>";
+      h+="<span class='admin-vid-group-arrow' style='transform:rotate("+(isOpen?90:0)+"deg);transition:transform 0.15s;'>▸</span>";
+      h+="</span></div>";
+      h+="<div class='admin-vid-group-body' style='display:"+(isOpen?"block":"none")+";padding-top:4px;'>";
       if(admVideoViewMode==="grid"){
         h+="<div class='video-grid'>";
         items.forEach(function(item){ h+=buildAdmVideoCard(item.key, item.v, viewCounts[item.key]||0, !!dupeKeys[item.key]); });
         h+="</div>";
       } else {
-        items.forEach(function(item){
-          var v=item.v, key=item.key;
-          var rd=v.held?" <span style='font-size:11px;color:#a8677a;font-weight:600;'>● On Hold</span>":(v.releaseDate?(" <span style='font-size:11px;color:var(--sub);'>"+v.releaseDate+"</span>"):"");
-          var views=viewCounts[key]||0;
-          var viewsHtml=" <span style='font-size:11px;color:var(--sub);'>· 👁️ "+views+" view"+(views!==1?"s":"")+"</span>";
-          var dupeHtml = dupeKeys[key] ? " <span style='font-size:11px;color:#c0392b;font-weight:700;'>⚠️ Duplicate</span>" : "";
-          var rowStyle = dupeKeys[key] ? "background:#fdeceb;border-radius:6px;" : "";
-          h+="<div class='list-item' style='"+rowStyle+"'><div class='list-item-left'>"+ex(v.title)+rd+viewsHtml+dupeHtml+"</div><div style='display:flex;gap:6px;'><button class='edit-btn' onclick='openEdit(\""+key+"\")'>Edit</button><button class='del-btn' onclick='delVideo(\""+key+"\")'>✕</button></div></div>";
-        });
+        items.forEach(function(item){ h+=buildAdmVideoRow(item.key, item.v, viewCounts[item.key]||0, !!dupeKeys[item.key]); });
       }
       h+="</div></div>";
     });
-    if(!anyShown) h="<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No duplicates found in this view.</p>";
+    if(!anyShown) h="<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No videos match.</p>";
   }
   document.getElementById("video-list").innerHTML=h;
-  // Re-collapse groups back to the usual closed state after a full re-render,
-  // except keep them open while actively hunting for duplicates.
-  if(!admVideoShowDupesOnly){
-    document.querySelectorAll("#video-list .admin-vid-group-body").forEach(function(b){ b.style.display="none"; });
-    document.querySelectorAll("#video-list .admin-vid-group-arrow").forEach(function(a){ a.style.transform="rotate(0deg)"; });
+  admVidUpdateSelectCount();
+}
+
+function buildAdmVideoRow(key, v, views, isDupe){
+  var rd=v.held?" <span style='font-size:11px;color:#a8677a;font-weight:600;'>● On Hold</span>":(v.releaseDate?(" <span style='font-size:11px;color:var(--sub);'>"+v.releaseDate+"</span>"):"");
+  var viewsHtml=" <span style='font-size:11px;color:var(--sub);'>· 👁️ "+views+" view"+(views!==1?"s":"")+"</span>";
+  var dupeHtml = isDupe ? " <span style='font-size:11px;color:#c0392b;font-weight:700;'>⚠️ Duplicate</span>" : "";
+  var rowStyle = isDupe ? "background:#fdeceb;border-radius:6px;" : "";
+  var checked = !!admSelectedKeys[key];
+  if(admSelectMode){
+    return "<div class='list-item' style='"+rowStyle+"cursor:pointer;' onclick='admVidToggleSelect(\""+key+"\")'>"+
+      "<div class='list-item-left' style='display:flex;align-items:center;gap:10px;'><input type='checkbox' "+(checked?"checked":"")+" style='width:19px;height:19px;flex-shrink:0;' onclick='event.stopPropagation();admVidToggleSelect(\""+key+"\")' /><span>"+ex(v.title)+rd+viewsHtml+dupeHtml+"</span></div>"+
+      "</div>";
   }
+  return "<div class='list-item' style='"+rowStyle+"'><div class='list-item-left'>"+ex(v.title)+rd+viewsHtml+dupeHtml+"</div><div style='display:flex;gap:6px;'><button class='edit-btn' onclick='openEdit(\""+key+"\")'>Edit</button><button class='del-btn' onclick='delVideo(\""+key+"\")'>✕</button></div></div>";
 }
 
 function buildAdmVideoCard(key, v, views, isDupe){
   var ytId=getYTId(v.url);
   var th=ytId?"<img src='https://img.youtube.com/vi/"+ytId+"/mqdefault.jpg' onerror=\"this.style.display='none'\" />":"";
-  var borderStyle = isDupe ? "border:2px solid #c0392b;" : "";
-  var h="<div class='video-card' style='"+borderStyle+"'>";
-  h+="<div class='video-thumb'>"+th+"</div>";
+  var checked = !!admSelectedKeys[key];
+  var borderStyle = isDupe ? "border:2px solid #c0392b;" : (admSelectMode && checked ? "border:2px solid var(--accent);" : "");
+  var clickAttr = admSelectMode ? " onclick='admVidToggleSelect(\""+key+"\")' style='"+borderStyle+"cursor:pointer;'" : " style='"+borderStyle+"'";
+  var h="<div class='video-card'"+clickAttr+">";
+  if(admSelectMode){
+    h+="<input type='checkbox' "+(checked?"checked":"")+" style='position:absolute;top:8px;left:8px;width:22px;height:22px;z-index:2;' onclick='event.stopPropagation();admVidToggleSelect(\""+key+"\")' />";
+  }
+  var thumbClick = admSelectMode ? "event.stopPropagation();openVideo(\""+ex(v.url).replace(/"/g,"&quot;")+"\",null)" : "";
+  h+="<div class='video-thumb'"+(admSelectMode?" style='cursor:pointer;' onclick='"+thumbClick+"'":"")+">"+th+"</div>";
   h+="<div class='video-info'>";
   if(isDupe) h+="<div style='font-size:11px;color:#c0392b;font-weight:700;margin-bottom:2px;'>⚠️ Duplicate</div>";
   h+="<div class='video-title'>"+ex(v.title)+"</div>";
   h+="<div style='font-size:11px;color:var(--sub);margin-bottom:6px;'>👁️ "+views+" view"+(views!==1?"s":"")+"</div>";
-  h+="<div class='video-actions'>";
-  h+="<button class='vact-btn' onclick='openEdit(\""+key+"\")' title='Edit'>Edit</button>";
-  h+="<button class='vact-btn' onclick='delVideo(\""+key+"\")' title='Delete'>✕ Delete</button>";
-  h+="</div></div></div>";
+  if(!admSelectMode){
+    h+="<div class='video-actions'>";
+    h+="<button class='vact-btn' onclick='openEdit(\""+key+"\")' title='Edit'>Edit</button>";
+    h+="<button class='vact-btn' onclick='delVideo(\""+key+"\")' title='Delete'>✕ Delete</button>";
+    h+="</div>";
+  }
+  h+="</div></div>";
   return h;
 }
 
 function toggleAdmVidGroup(headerEl){
+  var cat = headerEl.getAttribute("data-cat");
   var body = headerEl.nextElementSibling;
   var arrow = headerEl.querySelector(".admin-vid-group-arrow");
+  var open = body.style.display !== "none";
+  var newOpen = !open;
+  admVidExpandedCats[cat] = newOpen;
+  body.style.display = newOpen ? "block" : "none";
+  arrow.style.transform = newOpen ? "rotate(90deg)" : "rotate(0deg)";
+}
+function admVidExpandAll(){
+  cachedAdmCats.forEach(function(c){ admVidExpandedCats[c]=true; });
+  renderAdmVideoList();
+}
+function admVidCollapseAll(){
+  cachedAdmCats.forEach(function(c){ admVidExpandedCats[c]=false; });
+  renderAdmVideoList();
+}
+
+function toggleAddVideoCard(){
+  var body = document.getElementById("add-video-body");
+  var arrow = document.getElementById("add-video-arrow");
+  var open = body.style.display !== "none";
+  body.style.display = open ? "none" : "block";
+  arrow.style.transform = open ? "rotate(0deg)" : "rotate(90deg)";
+}
+function toggleBulkAddCard(){
+  var body = document.getElementById("bulk-add-body");
+  var arrow = document.getElementById("bulk-add-arrow");
   var open = body.style.display !== "none";
   body.style.display = open ? "none" : "block";
   arrow.style.transform = open ? "rotate(0deg)" : "rotate(90deg)";
@@ -2857,120 +3038,6 @@ function submitBulkVideos(){
   });
 }
 
-// BULK TAG EQUIPMENT (existing videos)
-var bulkTagVideoData = [];
-var bulkTagSelectedKeys = {};
-var bulkTagSelectedEquip = null;
-
-function loadBulkTagVideos(){
-  if(!DB) return;
-  DB.ref("videos").once("value", function(snap){
-    bulkTagVideoData = [];
-    var cats = {};
-    if(snap.exists()) snap.forEach(function(c){
-      var v = c.val();
-      bulkTagVideoData.push({key:c.key, title:v.title||"(untitled)", tag:v.tag||"Uncategorized", equipment:normalizeFocus(v.equipment), url:v.url||""});
-      cats[v.tag||"Uncategorized"] = true;
-    });
-    var sel = document.getElementById("bt-cat-filter");
-    var prevVal = sel.value;
-    sel.innerHTML = '<option value="">All Categories</option>' + Object.keys(cats).sort().map(function(c){
-      return "<option value='"+ex(c).replace(/'/g,"&#39;")+"'>"+ex(c)+"</option>";
-    }).join("");
-    sel.value = prevVal;
-    renderBulkTagChips();
-    renderBulkTagList();
-  });
-}
-
-function renderBulkTagChips(){
-  var wrap = document.getElementById("bt-equip-chips");
-  if(!allEquipTags.length){ wrap.innerHTML = "<p class='tip' style='margin:0;'>No equipment tags yet — type one below to create it.</p>"; return; }
-  wrap.innerHTML = allEquipTags.map(function(e){
-    var on = bulkTagSelectedEquip===e;
-    return "<button type='button' class='focus-chip"+(on?" on":"")+"' onclick='setBulkTagEquip(\""+ex(e).replace(/"/g,"&quot;")+"\")'>"+ex(e)+"</button>";
-  }).join("");
-}
-
-function setBulkTagEquip(tag){
-  bulkTagSelectedEquip = bulkTagSelectedEquip===tag ? null : tag;
-  document.getElementById("bt-equip-new").value = "";
-  renderBulkTagChips();
-}
-
-function renderBulkTagList(){
-  var wrap = document.getElementById("bt-video-list");
-  var filterCat = document.getElementById("bt-cat-filter").value;
-  var vids = filterCat ? bulkTagVideoData.filter(function(v){ return v.tag===filterCat; }) : bulkTagVideoData;
-  if(!vids.length){ wrap.innerHTML = "<p class='tip' style='padding:10px;'>No videos found.</p>"; return; }
-  wrap.innerHTML = "<div class='video-grid' style='padding:10px;'>"+vids.map(function(v){
-    var checked = !!bulkTagSelectedKeys[v.key];
-    var ytId = getYTId(v.url);
-    var th = ytId ? "<img src='https://img.youtube.com/vi/"+ytId+"/mqdefault.jpg' onerror=\"this.style.display='none'\" />" : "";
-    var equipTxt = v.equipment.length ? "<div style='font-size:11px;color:var(--sub);margin-top:2px;'>"+ex(v.equipment.join(", "))+"</div>" : "";
-    var borderStyle = checked ? "border:2px solid var(--accent);" : "";
-    return "<div class='video-card bt-card' data-key='"+v.key+"' style='"+borderStyle+"cursor:pointer;' onclick='toggleBulkTagKey(\""+v.key+"\")'>"+
-      "<input type='checkbox' "+(checked?"checked":"")+" style='position:absolute;top:8px;left:8px;width:22px;height:22px;z-index:2;' onclick='event.stopPropagation();toggleBulkTagKey(\""+v.key+"\")' />"+
-      "<div class='video-thumb' style='cursor:pointer;' onclick='event.stopPropagation();openVideo(\""+ex(v.url).replace(/"/g,"&quot;")+"\",null)'>"+th+"<div class='play-overlay'></div></div>"+
-      "<div class='video-info'><div class='video-title'>"+ex(v.title)+"</div><div style='font-size:11px;color:var(--sub);'>"+ex(v.tag)+"</div>"+equipTxt+"</div>"+
-      "</div>";
-  }).join("")+"</div>";
-  updateBulkTagCount();
-}
-
-function toggleBulkTagKey(key){
-  if(bulkTagSelectedKeys[key]) delete bulkTagSelectedKeys[key];
-  else bulkTagSelectedKeys[key] = true;
-  renderBulkTagList();
-}
-
-function bulkTagSelectAll(){
-  var filterCat = document.getElementById("bt-cat-filter").value;
-  var vids = filterCat ? bulkTagVideoData.filter(function(v){ return v.tag===filterCat; }) : bulkTagVideoData;
-  vids.forEach(function(v){ bulkTagSelectedKeys[v.key] = true; });
-  renderBulkTagList();
-}
-
-function bulkTagSelectNone(){
-  bulkTagSelectedKeys = {};
-  renderBulkTagList();
-}
-
-function updateBulkTagCount(){
-  var n = Object.keys(bulkTagSelectedKeys).length;
-  document.getElementById("bt-selected-count").textContent = n+" video"+(n!==1?"s":"")+" selected.";
-}
-
-function applyBulkTag(){
-  if(!DB){ alert("Database not connected."); return; }
-  var typedTag = document.getElementById("bt-equip-new").value.trim();
-  var tag = typedTag || bulkTagSelectedEquip;
-  var keys = Object.keys(bulkTagSelectedKeys);
-  if(!tag){ alert("Choose an existing equipment tag or type a new one."); return; }
-  if(!keys.length){ alert("Select at least one video first."); return; }
-  var btn = document.getElementById("bulk-tag-apply-btn");
-  btn.disabled = true; btn.textContent = "Applying...";
-  var remaining = keys.length, failed = 0;
-  keys.forEach(function(key){
-    var entry = bulkTagVideoData.filter(function(v){ return v.key===key; })[0];
-    var current = entry ? entry.equipment.slice() : [];
-    if(current.indexOf(tag)===-1) current.push(tag);
-    DB.ref("videos/"+key).update({equipment:current}, function(e){
-      if(e) failed++;
-      remaining--;
-      if(remaining===0){
-        btn.disabled = false; btn.textContent = "Apply Tag to Selected";
-        showOk("ok-bulk-tag", failed ? (keys.length-failed)+" tagged, "+failed+" failed." : keys.length+" video"+(keys.length!==1?"s":"")+" tagged with \""+tag+"\"!");
-        document.getElementById("bt-equip-new").value = "";
-        bulkTagSelectedEquip = null;
-        bulkTagSelectedKeys = {};
-        populateProgramDatalist();
-        loadBulkTagVideos();
-        loadAdmVideos();
-      }
-    });
-  });
-}
 
 function loadReorderList(){
   var cat=document.getElementById("reorder-cat").value;
@@ -5678,8 +5745,6 @@ document.getElementById("exit-btn").onclick=function(){ sp("pg-login"); };
 document.getElementById("add-video-btn").onclick=addVideo;
 document.getElementById("bulk-preview-btn").onclick=previewBulkVideos;
 document.getElementById("bulk-add-btn").onclick=submitBulkVideos;
-document.getElementById("bulk-tag-apply-btn").onclick=applyBulkTag;
-document.getElementById("bt-equip-new").addEventListener("input",function(){ if(this.value.trim()){ bulkTagSelectedEquip=null; renderBulkTagChips(); } });
 document.getElementById("gen-btn").onclick=genCode;
 document.getElementById("add-code-btn").onclick=addCode;
 document.getElementById("send-weekly-summary-btn").onclick=sendWeeklySummary;
@@ -5709,6 +5774,7 @@ document.getElementById("edit-submission-modal").onclick = function(e){ if(e.tar
 document.getElementById("edit-code-modal").onclick = function(e){ if(e.target===this) closeEditCode(); };
 document.getElementById("video-modal").onclick = function(e){ if(e.target===this) closeVideoModal(); };
 document.getElementById("streak-milestone-modal").onclick = function(e){ if(e.target===this) closeStreakMilestone(); };
+document.getElementById("bulk-edit-modal").onclick = function(e){ if(e.target===this) closeBulkEditModal(); };
 document.getElementById("photo-lightbox").onclick = function(e){ if(e.target===this) closePhotoLightbox(); };
 document.getElementById("admin-comm-post-btn").onclick=postAdminToComm;
 document.getElementById("checkin-btn").onclick=submitCheckin;
@@ -5721,6 +5787,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-clickable-stat-cards</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-videos-tab-reorg</p>
 </body>
 </html>
