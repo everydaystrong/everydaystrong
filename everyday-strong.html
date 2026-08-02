@@ -266,7 +266,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     <div class="form-row"><span class="form-label">Release Date (optional)</span><input type="date" class="form-input" id="edit-release" /><span style="font-size:11px;color:var(--sub);margin-top:3px;">Leave blank to show immediately. Set a future date to schedule.</span></div>
     <div class="form-row"><label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;"><input type="checkbox" id="edit-held" style="width:18px;height:18px;" /> Hold — don't post yet (no date needed)</label></div>
     <div class="form-row"><span class="form-label">Category Image URL (optional)</span><input class="form-input" id="edit-catimg" placeholder="https://... image for this category card" style="text-transform:none;" /></div>
-    <button class="action-btn" onclick="saveEdit()" style="width:100%;margin-top:4px;">Save Changes</button>
+    <button class="action-btn" onclick="saveEdit()" style="width:100%;margin-top:4px;position:sticky;bottom:0;background:var(--accent);z-index:5;box-shadow:0 -8px 12px -8px rgba(0,0,0,0.25);">Save Changes</button>
   </div>
 </div>
 
@@ -316,6 +316,17 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
   </div>
 </div>
 
+<!-- RENAME TAG -->
+<div class="modal-overlay" id="rename-tag-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeRenameTagModal()">✕</button>
+    <h3 style="margin-bottom:10px;">Rename Tag</h3>
+    <p class="tip" style="margin-bottom:10px;">This updates every video currently tagged "<span id="rename-tag-old"></span>" — handy for fixing a typo without redoing it video by video.</p>
+    <input class="form-input" id="rename-tag-new" placeholder="New tag name" style="text-transform:none;margin-bottom:12px;" />
+    <button class="action-btn" onclick="applyRenameTag()" style="width:100%;">Rename Everywhere</button>
+  </div>
+</div>
+
 <!-- BULK EDIT VIDEO TAGS -->
 <div class="modal-overlay" id="bulk-edit-modal">
   <div class="modal">
@@ -345,7 +356,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     <button class="modal-close" onclick="closeEditSubmission()">✕</button>
     <h3>Edit Submission</h3>
     <div id="edit-submission-fields"></div>
-    <button class="action-btn" onclick="saveSubmissionEdit()" style="width:100%;margin-top:10px;">Save Changes</button>
+    <button class="action-btn" onclick="saveSubmissionEdit()" style="width:100%;margin-top:10px;position:sticky;bottom:0;background:var(--accent);z-index:5;box-shadow:0 -8px 12px -8px rgba(0,0,0,0.25);">Save Changes</button>
   </div>
 </div>
 
@@ -384,9 +395,11 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
       <span class="form-label">Referred By (optional)</span>
       <input class="form-input" id="ec-referredby" style="text-transform:none;" placeholder="e.g. Sarah M." />
     </div>
-    <button class="action-btn" onclick="saveCodeEdit()" style="width:100%;margin-top:10px;">Save Changes</button>
+    <div style="position:sticky;bottom:0;background:var(--card);padding-top:10px;z-index:5;box-shadow:0 -8px 12px -8px rgba(0,0,0,0.25);">
+    <button class="action-btn" onclick="saveCodeEdit()" style="width:100%;">Save Changes</button>
     <button class="action-btn sec" id="ec-pause-btn" onclick="togglePauseEditingClient()" style="width:100%;margin-top:8px;">⏸️ Pause Access</button>
     <button class="action-btn sec" onclick="deleteEditingClient()" style="width:100%;margin-top:8px;color:#c05040;border-color:#c05040;">Archive Client</button>
+    </div>
   </div>
 </div>
 
@@ -867,6 +880,20 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
           <option value="">-- Select a program --</option>
         </select>
         <ul class="drag-list" id="reorder-list"></ul>
+      </div>
+      <div class="admin-card" style="padding:0;overflow:hidden;">
+        <div onclick="toggleTagMgrCard()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:1.2rem;">
+          <h3 style="margin:0;">🏷️ Manage Focus &amp; Equipment Tags</h3>
+          <span id="tag-mgr-arrow" style="transition:transform 0.15s;color:var(--sub);">▸</span>
+        </div>
+        <div id="tag-mgr-body" style="display:none;padding:0 1.2rem 1.2rem;">
+          <p class="tip" style="margin-bottom:10px;">Rename a tag to fix a typo everywhere it's used, or delete it to remove it from every video that has it.</p>
+          <div class="ok-msg" id="ok-tag-mgr">Done!</div>
+          <h4 style="font-size:13px;color:var(--text);margin:10px 0 4px;">Focus Tags</h4>
+          <div id="focus-tag-mgr-list"><p class="tip">Loading...</p></div>
+          <h4 style="font-size:13px;color:var(--text);margin:16px 0 4px;">Equipment Tags</h4>
+          <div id="equip-tag-mgr-list"><p class="tip">Loading...</p></div>
+        </div>
       </div>
       <div class="admin-card" style="padding:0;overflow:hidden;">
         <div onclick="toggleBulkAddCard()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:1.2rem;">
@@ -2476,6 +2503,7 @@ function populateProgramDatalist(){
     allEquipTags = Object.keys(equips).sort();
     renderEquipChips("v");
     renderEquipChips("edit");
+    renderTagManager();
 
     var annSel = document.getElementById("a-program");
     if(annSel){
@@ -2663,6 +2691,7 @@ function rebuildAdmVideoCache(){
   cachedAdmGrouped = grouped; cachedAdmCats = cats; cachedAdmDupeKeys = dupeKeys;
   document.getElementById("video-count").textContent=cnt;
   renderAdmVideoList();
+  renderTagManager();
   var dupeCount = Object.keys(dupeKeys).length;
   var bar = document.getElementById("dupe-alert-bar");
   if(dupeCount>0){
@@ -2933,6 +2962,102 @@ function toggleBulkAddCard(){
   var open = body.style.display !== "none";
   body.style.display = open ? "none" : "block";
   arrow.style.transform = open ? "rotate(0deg)" : "rotate(90deg)";
+}
+
+function toggleTagMgrCard(){
+  var body = document.getElementById("tag-mgr-body");
+  var arrow = document.getElementById("tag-mgr-arrow");
+  var open = body.style.display !== "none";
+  body.style.display = open ? "none" : "block";
+  arrow.style.transform = open ? "rotate(0deg)" : "rotate(90deg)";
+  if(!open) renderTagManager();
+}
+
+function renderTagManager(){
+  renderTagManagerList("focus");
+  renderTagManagerList("equipment");
+}
+
+function renderTagManagerList(type){
+  var tags = type==="focus" ? allFocusTags : allEquipTags;
+  var el = document.getElementById(type==="focus" ? "focus-tag-mgr-list" : "equip-tag-mgr-list");
+  if(!el) return;
+  if(!tags.length){ el.innerHTML = "<p class='tip'>No tags yet.</p>"; return; }
+  el.innerHTML = tags.map(function(t){
+    var count = Object.keys(cachedAdmRawVideos).filter(function(k){
+      return normalizeFocus(cachedAdmRawVideos[k][type]).indexOf(t)!==-1;
+    }).length;
+    var tEsc = ex(t).replace(/"/g,"&quot;");
+    return "<div style='display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border);gap:8px;'>"+
+      "<span style='font-size:13px;'><strong>"+ex(t)+"</strong> <span style='color:var(--sub);'>("+count+" video"+(count!==1?"s":"")+")</span></span>"+
+      "<span style='display:flex;gap:6px;flex-shrink:0;'>"+
+      "<button class='action-btn sec' style='width:auto;margin:0;font-size:11px;padding:5px 10px;' onclick='openRenameTagModal(\""+type+"\",\""+tEsc+"\")'>Rename</button>"+
+      "<button class='action-btn' style='width:auto;margin:0;font-size:11px;padding:5px 10px;background:#c0392b;' onclick='deleteTagEverywhere(\""+type+"\",\""+tEsc+"\")'>Delete</button>"+
+      "</span></div>";
+  }).join("");
+}
+
+var renameTagType = null, renameTagOld = null;
+function openRenameTagModal(type, oldTag){
+  renameTagType = type; renameTagOld = oldTag;
+  document.getElementById("rename-tag-old").textContent = oldTag;
+  document.getElementById("rename-tag-new").value = oldTag;
+  document.getElementById("rename-tag-modal").classList.add("open");
+}
+function closeRenameTagModal(){
+  document.getElementById("rename-tag-modal").classList.remove("open");
+}
+function applyRenameTag(){
+  if(!DB) return;
+  var newTag = document.getElementById("rename-tag-new").value.trim();
+  if(!newTag){ alert("Enter a new tag name."); return; }
+  if(newTag===renameTagOld){ closeRenameTagModal(); return; }
+  var field = renameTagType;
+  var keys = Object.keys(cachedAdmRawVideos).filter(function(k){
+    return normalizeFocus(cachedAdmRawVideos[k][field]).indexOf(renameTagOld)!==-1;
+  });
+  if(!keys.length){ closeRenameTagModal(); return; }
+  var remaining = keys.length, failed = 0;
+  keys.forEach(function(key){
+    var current = normalizeFocus(cachedAdmRawVideos[key][field]);
+    var idx = current.indexOf(renameTagOld);
+    if(idx!==-1) current.splice(idx,1);
+    if(current.indexOf(newTag)===-1) current.push(newTag);
+    var upd = {}; upd[field] = current;
+    DB.ref("videos/"+key).update(upd, function(e){
+      if(e) failed++;
+      remaining--;
+      if(remaining===0){
+        closeRenameTagModal();
+        showOk("ok-tag-mgr", failed ? (keys.length-failed)+" updated, "+failed+" failed." : "Renamed \""+renameTagOld+"\" to \""+newTag+"\" on "+keys.length+" video"+(keys.length!==1?"s":"")+".");
+        populateProgramDatalist();
+      }
+    });
+  });
+}
+
+function deleteTagEverywhere(type, tag){
+  if(!DB) return;
+  var keys = Object.keys(cachedAdmRawVideos).filter(function(k){
+    return normalizeFocus(cachedAdmRawVideos[k][type]).indexOf(tag)!==-1;
+  });
+  if(!keys.length){ alert("No videos currently use this tag."); return; }
+  if(!confirm("Remove \""+tag+"\" from "+keys.length+" video"+(keys.length!==1?"s":"")+"? This can't be undone.")) return;
+  var remaining = keys.length, failed = 0;
+  keys.forEach(function(key){
+    var current = normalizeFocus(cachedAdmRawVideos[key][type]);
+    var idx = current.indexOf(tag);
+    if(idx!==-1) current.splice(idx,1);
+    var upd = {}; upd[type] = current.length ? current : null;
+    DB.ref("videos/"+key).update(upd, function(e){
+      if(e) failed++;
+      remaining--;
+      if(remaining===0){
+        showOk("ok-tag-mgr", failed ? (keys.length-failed)+" updated, "+failed+" failed." : "Removed \""+tag+"\" from "+keys.length+" video"+(keys.length!==1?"s":"")+".");
+        populateProgramDatalist();
+      }
+    });
+  });
 }
 
 function addVideo(){
@@ -5789,6 +5914,7 @@ document.getElementById("edit-code-modal").onclick = function(e){ if(e.target===
 document.getElementById("video-modal").onclick = function(e){ if(e.target===this) closeVideoModal(); };
 document.getElementById("streak-milestone-modal").onclick = function(e){ if(e.target===this) closeStreakMilestone(); };
 document.getElementById("bulk-edit-modal").onclick = function(e){ if(e.target===this) closeBulkEditModal(); };
+document.getElementById("rename-tag-modal").onclick = function(e){ if(e.target===this) closeRenameTagModal(); };
 document.getElementById("photo-lightbox").onclick = function(e){ if(e.target===this) closePhotoLightbox(); };
 document.getElementById("admin-comm-post-btn").onclick=postAdminToComm;
 document.getElementById("checkin-btn").onclick=submitCheckin;
@@ -5801,6 +5927,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-fix-video-preview</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-tag-manager-sticky</p>
 </body>
 </html>
