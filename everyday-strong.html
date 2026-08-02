@@ -2847,18 +2847,31 @@ function renderAdmVideoList(){
   admVidUpdateSelectCount();
 }
 
+function buildTagsHtml(v){
+  var focus = normalizeFocus(v.focus);
+  var equip = normalizeFocus(v.equipment);
+  if(!focus.length && !equip.length){
+    return "<div style='font-size:11px;color:#c07a3a;font-weight:600;'>⚠️ No tags yet</div>";
+  }
+  var parts = [];
+  if(focus.length) parts.push("<span style='color:var(--accent);'>"+ex(focus.join(", "))+"</span>");
+  if(equip.length) parts.push("<span style='color:var(--sub);'>"+ex(equip.join(", "))+"</span>");
+  return "<div style='font-size:11px;margin-top:1px;'>"+parts.join(" <span style='color:var(--border);'>·</span> ")+"</div>";
+}
+
 function buildAdmVideoRow(key, v, views, isDupe){
   var rd=v.held?" <span style='font-size:11px;color:#a8677a;font-weight:600;'>● On Hold</span>":(v.releaseDate?(" <span style='font-size:11px;color:var(--sub);'>"+v.releaseDate+"</span>"):"");
   var viewsHtml=" <span style='font-size:11px;color:var(--sub);'>· 👁️ "+views+" view"+(views!==1?"s":"")+"</span>";
   var dupeHtml = isDupe ? " <span style='font-size:11px;color:#c0392b;font-weight:700;'>⚠️ Duplicate</span>" : "";
   var rowStyle = isDupe ? "background:#fdeceb;border-radius:6px;" : "";
   var checked = !!admSelectedKeys[key];
+  var tagsHtml = buildTagsHtml(v);
   if(admSelectMode){
     return "<div class='list-item' style='"+rowStyle+"cursor:pointer;' onclick='admVidToggleSelect(\""+key+"\")'>"+
-      "<div class='list-item-left' style='display:flex;align-items:center;gap:10px;'><input type='checkbox' "+(checked?"checked":"")+" style='width:19px;height:19px;flex-shrink:0;' onclick='event.stopPropagation();admVidToggleSelect(\""+key+"\")' /><span>"+ex(v.title)+rd+viewsHtml+dupeHtml+"</span></div>"+
+      "<div class='list-item-left' style='display:flex;align-items:center;gap:10px;'><input type='checkbox' "+(checked?"checked":"")+" style='width:19px;height:19px;flex-shrink:0;' onclick='event.stopPropagation();admVidToggleSelect(\""+key+"\")' /><div>"+ex(v.title)+rd+viewsHtml+dupeHtml+tagsHtml+"</div></div>"+
       "</div>";
   }
-  return "<div class='list-item' style='"+rowStyle+"'><div class='list-item-left'>"+ex(v.title)+rd+viewsHtml+dupeHtml+"</div><div style='display:flex;gap:6px;'><button class='edit-btn' onclick='openEdit(\""+key+"\")'>Edit</button><button class='del-btn' onclick='delVideo(\""+key+"\")'>✕</button></div></div>";
+  return "<div class='list-item' style='"+rowStyle+"'><div class='list-item-left'>"+ex(v.title)+rd+viewsHtml+dupeHtml+tagsHtml+"</div><div style='display:flex;gap:6px;'><button class='edit-btn' onclick='openEdit(\""+key+"\")'>Edit</button><button class='del-btn' onclick='delVideo(\""+key+"\")'>✕</button></div></div>";
 }
 
 function buildAdmVideoCard(key, v, views, isDupe){
@@ -2876,7 +2889,8 @@ function buildAdmVideoCard(key, v, views, isDupe){
   h+="<div class='video-info'>";
   if(isDupe) h+="<div style='font-size:11px;color:#c0392b;font-weight:700;margin-bottom:2px;'>⚠️ Duplicate</div>";
   h+="<div class='video-title'>"+ex(v.title)+"</div>";
-  h+="<div style='font-size:11px;color:var(--sub);margin-bottom:6px;'>👁️ "+views+" view"+(views!==1?"s":"")+"</div>";
+  h+="<div style='font-size:11px;color:var(--sub);margin-bottom:2px;'>👁️ "+views+" view"+(views!==1?"s":"")+"</div>";
+  h+=buildTagsHtml(v).replace("margin-top:1px;", "margin-bottom:6px;");
   if(!admSelectMode){
     h+="<div class='video-actions'>";
     h+="<button class='vact-btn' onclick='openEdit(\""+key+"\")' title='Edit'>Edit</button>";
@@ -5787,6 +5801,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-videos-tab-reorg</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-video-tags-display</p>
 </body>
 </html>
