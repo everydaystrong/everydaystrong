@@ -2833,15 +2833,55 @@ function applyBulkEdit(){
   });
 }
 
+function getCatOrder(name){
+  var found = null;
+  Object.keys(cachedCategorySettings).forEach(function(k){
+    var e = cachedCategorySettings[k];
+    if(e && e.name===name && typeof e.order==="number") found = e.order;
+  });
+  return found===null ? 9999 : found;
+}
+
+function moveAdmCategory(catName, direction){
+  if(!DB) return;
+  var ordered = cachedAdmCats.slice().sort(function(a,b){
+    var oa=getCatOrder(a), ob=getCatOrder(b);
+    if(oa!==ob) return oa-ob;
+    return a.localeCompare(b);
+  });
+  var idx = ordered.indexOf(catName);
+  var swapIdx = idx + direction;
+  if(idx===-1 || swapIdx<0 || swapIdx>=ordered.length) return;
+  var tmp = ordered[idx]; ordered[idx] = ordered[swapIdx]; ordered[swapIdx] = tmp;
+  var updates = {};
+  ordered.forEach(function(name, i){
+    var existingKey = null;
+    Object.keys(cachedCategorySettings).forEach(function(k){
+      if(cachedCategorySettings[k] && cachedCategorySettings[k].name===name) existingKey = k;
+    });
+    var key = existingKey || sk(name);
+    var existing = cachedCategorySettings[key] || {};
+    var merged = {}; for(var p in existing) merged[p]=existing[p];
+    merged.name = name; merged.order = i;
+    updates[key] = merged;
+  });
+  DB.ref("category_settings").update(updates);
+}
+
 function renderAdmVideoList(){
-  var cats = cachedAdmCats, grouped = cachedAdmGrouped, viewCounts = cachedAdmViewCounts, dupeKeys = cachedAdmDupeKeys;
+  var grouped = cachedAdmGrouped, viewCounts = cachedAdmViewCounts, dupeKeys = cachedAdmDupeKeys;
+  var cats = cachedAdmCats.slice().sort(function(a,b){
+    var oa=getCatOrder(a), ob=getCatOrder(b);
+    if(oa!==ob) return oa-ob;
+    return a.localeCompare(b);
+  });
   var q = (document.getElementById("adm-vid-search")?document.getElementById("adm-vid-search").value:"").trim().toLowerCase();
   var h="";
   var anyShown = false;
   if(!cats.length){
     h="<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No videos yet.</p>";
   } else {
-    cats.forEach(function(tag){
+    cats.forEach(function(tag, catIdx){
       var items=grouped[tag];
       if(admVideoShowDupesOnly) items = items.filter(function(item){ return dupeKeys[item.key]; });
       if(q) items = items.filter(function(item){ return (item.v.title||"").toLowerCase().indexOf(q)!==-1; });
@@ -2853,10 +2893,13 @@ function renderAdmVideoList(){
         return e && e.standalone && e.name===tag;
       });
       var pinEsc = ex(tag).replace(/"/g,"&quot;");
+      var isFirst = catIdx===0, isLast = catIdx===cats.length-1;
       h+="<div class='admin-vid-group' style='margin-bottom:10px;'>";
-      h+="<div class='admin-vid-group-header' data-cat=\""+ex(tag)+"\" onclick='toggleAdmVidGroup(this)' style='cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--inp);border-radius:8px;font-weight:600;font-size:13px;color:var(--text);'>";
+      h+="<div class='admin-vid-group-header' data-cat=\""+ex(tag)+"\" onclick='toggleAdmVidGroup(this)' style='cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--inp);border-radius:8px;font-weight:600;font-size:13px;color:var(--text);gap:8px;'>";
       h+="<span>"+ex(tag)+" <span style='font-weight:400;color:var(--sub);'>("+items.length+")</span></span>";
-      h+="<span style='display:flex;align-items:center;gap:10px;'>";
+      h+="<span style='display:flex;align-items:center;gap:6px;flex-shrink:0;'>";
+      h+="<button type='button' onclick='event.stopPropagation();moveAdmCategory(\""+pinEsc+"\",-1)' "+(isFirst?"disabled":"")+" style='width:24px;height:24px;padding:0;border:1px solid var(--border);border-radius:5px;background:var(--card);color:"+(isFirst?"var(--border)":"var(--text)")+";font-size:12px;cursor:"+(isFirst?"default":"pointer")+";' title='Move up'>▲</button>";
+      h+="<button type='button' onclick='event.stopPropagation();moveAdmCategory(\""+pinEsc+"\",1)' "+(isLast?"disabled":"")+" style='width:24px;height:24px;padding:0;border:1px solid var(--border);border-radius:5px;background:var(--card);color:"+(isLast?"var(--border)":"var(--text)")+";font-size:12px;cursor:"+(isLast?"default":"pointer")+";' title='Move down'>▼</button>";
       h+="<label onclick='event.stopPropagation();' style='display:flex;align-items:center;gap:3px;font-weight:400;font-size:16px;cursor:pointer;' title='Always show as its own tile for clients'><input type='checkbox' "+(isPinned?"checked":"")+" onchange='toggleCategoryStandalone(\""+pinEsc+"\", this.checked)' style='width:15px;height:15px;' />📌</label>";
       h+="<span class='admin-vid-group-arrow' style='transform:rotate("+(isOpen?90:0)+"deg);transition:transform 0.15s;'>▸</span>";
       h+="</span></div>";
@@ -5927,6 +5970,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-tag-manager-sticky</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-category-reorder</p>
 </body>
 </html>
