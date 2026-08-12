@@ -1773,7 +1773,7 @@ function getStandaloneNames(){
   var standaloneNames = {};
   Object.keys(categorySettings||{}).forEach(function(k){
     var entry = categorySettings[k];
-    if(entry && entry.standalone && entry.name) standaloneNames[entry.name] = true;
+    if(entry && !entry.subcat && entry.standalone && entry.name) standaloneNames[entry.name] = true;
   });
   return standaloneNames;
 }
@@ -1781,7 +1781,7 @@ function getCatOrderFromSettings(settings, name){
   var found = null;
   Object.keys(settings||{}).forEach(function(k){
     var e = settings[k];
-    if(e && e.name===name && typeof e.order==="number") found = e.order;
+    if(e && !e.subcat && e.name===name && typeof e.order==="number") found = e.order;
   });
   return found===null ? 9999 : found;
 }
@@ -1789,9 +1789,19 @@ function getCategoryImagePool(tag){
   var pool = [];
   Object.keys(categorySettings||{}).forEach(function(k){
     var e = categorySettings[k];
-    if(e && e.name===tag){
+    if(e && !e.subcat && e.name===tag){
       if(Array.isArray(e.images)) pool = pool.concat(e.images.filter(function(u){ return u; }));
       else if(e.image) pool.push(e.image);
+    }
+  });
+  return pool;
+}
+function getSubcatImagePool(cat, subcat){
+  var pool = [];
+  Object.keys(categorySettings||{}).forEach(function(k){
+    var e = categorySettings[k];
+    if(e && e.subcat===subcat && e.name===cat){
+      if(Array.isArray(e.images)) pool = pool.concat(e.images.filter(function(u){ return u; }));
     }
   });
   return pool;
@@ -2120,8 +2130,8 @@ function renderSubcatTiles(){
     var completedCount = 0;
     vids.forEach(function(v){ if(getUserData("completed",v._k)) completedCount++; });
     var pct = vids.length ? Math.round(completedCount/vids.length*100) : 0;
-    var img = null;
-    vids.forEach(function(v){ if(!img && v.catImg) img=v.catImg; });
+    var img = pickCategoryImage(currentCat+"::"+s, getSubcatImagePool(currentCat,s));
+    if(!img) vids.forEach(function(v){ if(!img && v.catImg) img=v.catImg; });
     var sEsc = ex(s).replace(/"/g,"&quot;");
     return "<div class='cat-card' onclick='openSubcat(\""+sEsc+"\")'>"+
       (img ? "<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />" : "<div class='cat-img-placeholder'></div>")+
@@ -2137,6 +2147,13 @@ function openSubcat(subcat){
   document.getElementById("subcat-grid").style.display="none";
   document.getElementById("vid-title").textContent = currentCat+" — "+subcat;
   document.getElementById("back-btn").textContent="← Back to "+currentCat;
+  var desc = "";
+  Object.keys(categorySettings||{}).forEach(function(k){
+    var e = categorySettings[k];
+    if(e && e.name===currentCat && e.subcat===subcat && e.description) desc = e.description;
+  });
+  var descEl = document.getElementById("cat-desc-text");
+  if(desc){ descEl.textContent = desc; descEl.style.display="block"; } else { descEl.style.display="none"; descEl.textContent=""; }
   currentDisplayVids = currentCatVids.filter(function(v){ return (v.subcat||"General")===subcat; });
   renderFocusFilters();
   renderFilteredVideos();
@@ -2345,6 +2362,7 @@ function goBack(){
     document.getElementById("video-grid").innerHTML="";
     document.getElementById("vid-title").textContent = currentCat;
     document.getElementById("back-btn").textContent = "← Back to Workouts";
+    renderCatDescription(currentCat);
     renderSubcatTiles();
     window.scrollTo(0,0);
     return;
@@ -2727,7 +2745,7 @@ function toggleCategoryStandalone(catName, isStandalone){
     var updates = {};
     var existing = {};
     Object.keys(settings).forEach(function(k){
-      if(settings[k] && settings[k].name===catName){
+      if(settings[k] && !settings[k].subcat && settings[k].name===catName){
         for(var p in settings[k]) existing[p] = settings[k][p];
         updates[k] = null;
       }
@@ -2740,13 +2758,16 @@ function toggleCategoryStandalone(catName, isStandalone){
 }
 
 var catInfoEditingName = null;
-function openCatInfoModal(catName){
+var catInfoEditingSubcat = null;
+function openCatInfoModal(catName, subcatName){
   catInfoEditingName = catName;
-  document.getElementById("cat-info-name").textContent = catName;
+  catInfoEditingSubcat = subcatName || null;
+  document.getElementById("cat-info-name").textContent = subcatName ? (catName+" — "+subcatName) : catName;
   var desc = "", images = [];
   Object.keys(cachedCategorySettings).forEach(function(k){
     var e = cachedCategorySettings[k];
-    if(e && e.name===catName){
+    var matches = subcatName ? (e && e.name===catName && e.subcat===subcatName) : (e && e.name===catName && !e.subcat);
+    if(matches){
       if(e.description) desc = e.description;
       if(Array.isArray(e.images)) images = e.images.slice();
       else if(e.image) images = [e.image];
@@ -2763,21 +2784,25 @@ function saveCatInfo(){
   if(!DB || !catInfoEditingName) return;
   var desc = document.getElementById("cat-info-desc").value.trim();
   var images = document.getElementById("cat-info-image").value.split("\n").map(function(s){ return s.trim(); }).filter(function(s){ return s; });
+  var subcat = catInfoEditingSubcat;
   DB.ref("category_settings").once("value", function(snap){
     var settings = snap.exists() ? snap.val() : {};
     var updates = {};
     var existing = {};
     Object.keys(settings).forEach(function(k){
-      if(settings[k] && settings[k].name===catInfoEditingName){
+      var matches = subcat ? (settings[k] && settings[k].name===catInfoEditingName && settings[k].subcat===subcat) : (settings[k] && settings[k].name===catInfoEditingName && !settings[k].subcat);
+      if(matches){
         for(var p in settings[k]) existing[p] = settings[k][p];
         updates[k] = null;
       }
     });
     existing.name = catInfoEditingName;
+    existing.subcat = subcat || null;
     existing.description = desc || null;
     existing.images = images.length ? images : null;
     delete existing.image; // fully migrated to the images array on save
-    updates[sk(catInfoEditingName)] = existing;
+    var key = subcat ? (sk(catInfoEditingName)+"__"+sk(subcat)) : sk(catInfoEditingName);
+    updates[key] = existing;
     DB.ref("category_settings").update(updates, function(e){
       if(!e){ closeCatInfoModal(); showOk("ok-adm-vid-bulk","Category info saved!"); }
     });
@@ -3148,7 +3173,7 @@ function moveAdmCategory(catName, direction){
   DB.ref("category_settings").update(updates);
 }
 
-function renderAdmVideoItemsGroup(items){
+function renderAdmVideoItemsGroup(items, catTag){
   var viewCounts = cachedAdmViewCounts, dupeKeys = cachedAdmDupeKeys;
   var hasSubcats = items.some(function(item){ return item.v.subcat; });
   if(!hasSubcats){
@@ -3173,7 +3198,14 @@ function renderAdmVideoItemsGroup(items){
   var h = "";
   order.forEach(function(s){
     var subItems = groups[s];
-    h += "<div style='margin:10px 0 6px;padding:4px 8px;font-size:12px;font-weight:700;color:var(--accent);border-left:3px solid var(--accent);'>"+ex(s)+" <span style='font-weight:400;color:var(--sub);'>("+subItems.length+")</span></div>";
+    var catEsc = ex(catTag).replace(/"/g,"&quot;");
+    var subEsc = ex(s).replace(/"/g,"&quot;");
+    h += "<div style='margin:10px 0 6px;padding:4px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-left:3px solid var(--accent);'>";
+    h += "<span style='font-size:12px;font-weight:700;color:var(--accent);'>"+ex(s)+" <span style='font-weight:400;color:var(--sub);'>("+subItems.length+")</span></span>";
+    if(s!=="General"){
+      h += "<button type='button' onclick='openCatInfoModal(\""+catEsc+"\",\""+subEsc+"\")' style='width:22px;height:22px;padding:0;border:1px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);font-size:11px;cursor:pointer;flex-shrink:0;' title='Edit subcategory description/images'>✏️</button>";
+    }
+    h += "</div>";
     if(admVideoViewMode==="grid"){
       h += "<div class='video-grid' style='margin-bottom:4px;'>"+subItems.map(function(item){ return buildAdmVideoCard(item.key, item.v, viewCounts[item.key]||0, !!dupeKeys[item.key]); }).join("")+"</div>";
     } else {
@@ -3220,7 +3252,7 @@ function renderAdmVideoList(){
       h+="<span class='admin-vid-group-arrow' style='transform:rotate("+(isOpen?90:0)+"deg);transition:transform 0.15s;'>▸</span>";
       h+="</span></div>";
       h+="<div class='admin-vid-group-body' style='display:"+(isOpen?"block":"none")+";padding-top:4px;'>";
-      h+=renderAdmVideoItemsGroup(items);
+      h+=renderAdmVideoItemsGroup(items, tag);
       h+="</div></div>";
     });
     if(!anyShown) h="<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No videos match.</p>";
@@ -6287,6 +6319,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-fix-client-category-order</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-subcategory-images</p>
 </body>
 </html>
