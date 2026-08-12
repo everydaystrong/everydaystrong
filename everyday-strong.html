@@ -250,8 +250,11 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     <div class="form-row"><span class="form-label">YouTube Link</span><input class="form-input" id="edit-url" style="text-transform:none;" /></div>
     <div class="form-row"><span class="form-label">Program / Category</span><input class="form-input" id="edit-tag" oninput="refreshSubcatDatalist('edit')" style="text-transform:none;" /></div>
     <div class="form-row"><span class="form-label">Subcategory (optional)</span>
-      <input class="form-input" id="edit-subcat" list="edit-subcat-list" placeholder="e.g. Week 1" style="text-transform:none;" />
-      <datalist id="edit-subcat-list"></datalist>
+      <select class="form-select" id="edit-subcat-select" onchange="handleSubcatSelect('edit')" style="text-transform:none;margin-bottom:8px;">
+        <option value="">-- No subcategory --</option>
+        <option value="__new__">+ Add a new subcategory…</option>
+      </select>
+      <input class="form-input" id="edit-subcat" placeholder="Type new subcategory name" style="text-transform:none;display:none;" />
       <p class="tip">For programs with weeks or stages. Leave blank for a normal category with no sub-groups.</p>
     </div>
     <div class="form-row"><span class="form-label">Video Description (optional)</span>
@@ -847,8 +850,11 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
           <p class="tip">Pick an existing program/category from the list, or choose "+ Add a new category" to create one.</p>
         </div>
         <div class="form-row"><span class="form-label">Subcategory (optional)</span>
-          <input class="form-input" id="v-subcat" list="v-subcat-list" placeholder="e.g. Week 1" style="text-transform:none;" />
-          <datalist id="v-subcat-list"></datalist>
+          <select class="form-select" id="v-subcat-select" onchange="handleSubcatSelect('v')" style="text-transform:none;margin-bottom:8px;">
+            <option value="">-- No subcategory --</option>
+            <option value="__new__">+ Add a new subcategory…</option>
+          </select>
+          <input class="form-input" id="v-subcat" placeholder="Type new subcategory name" style="text-transform:none;display:none;" />
           <p class="tip">For programs with weeks or stages — e.g. "Week 1," "Week 2." Clients will see this as its own tile inside the category. Leave blank for a normal category with no sub-groups.</p>
         </div>
         <div class="form-row"><span class="form-label">Video Description (optional)</span>
@@ -2726,10 +2732,37 @@ function handleTagSelect(){
 var subcatsByCategory = {};
 function refreshSubcatDatalist(prefix){
   var cat = prefix==="v" ? document.getElementById("v-tag").value : document.getElementById("edit-tag").value;
-  var list = document.getElementById(prefix+"-subcat-list");
-  if(!list) return;
+  var sel = document.getElementById(prefix+"-subcat-select");
+  var txt = document.getElementById(prefix+"-subcat");
+  if(!sel || !txt) return;
   var subs = (subcatsByCategory[cat]||[]).slice().sort();
-  list.innerHTML = subs.map(function(s){ return "<option value='"+ex(s)+"'></option>"; }).join("");
+  var currentVal = txt.value;
+  sel.innerHTML = '<option value="">-- No subcategory --</option>' +
+    subs.map(function(s){ return "<option value='"+ex(s).replace(/'/g,"&#39;")+"'>"+ex(s)+"</option>"; }).join("") +
+    '<option value="__new__">+ Add a new subcategory…</option>';
+  if(currentVal && subs.indexOf(currentVal)!==-1){
+    sel.value = currentVal;
+    txt.style.display = "none";
+  } else if(currentVal){
+    sel.value = "__new__";
+    txt.style.display = "block";
+  } else {
+    sel.value = "";
+    txt.value = "";
+    txt.style.display = "none";
+  }
+}
+function handleSubcatSelect(prefix){
+  var sel = document.getElementById(prefix+"-subcat-select");
+  var txt = document.getElementById(prefix+"-subcat");
+  if(sel.value === "__new__"){
+    txt.style.display = "block";
+    txt.value = "";
+    txt.focus();
+  } else {
+    txt.style.display = "none";
+    txt.value = sel.value;
+  }
 }
 
 // FOCUS TAGS (multi-select chip picker, shared pool of tags across Add and Edit forms)
@@ -3051,6 +3084,41 @@ function moveAdmCategory(catName, direction){
   DB.ref("category_settings").update(updates);
 }
 
+function renderAdmVideoItemsGroup(items){
+  var viewCounts = cachedAdmViewCounts, dupeKeys = cachedAdmDupeKeys;
+  var hasSubcats = items.some(function(item){ return item.v.subcat; });
+  if(!hasSubcats){
+    if(admVideoViewMode==="grid"){
+      return "<div class='video-grid'>"+items.map(function(item){ return buildAdmVideoCard(item.key, item.v, viewCounts[item.key]||0, !!dupeKeys[item.key]); }).join("")+"</div>";
+    }
+    return items.map(function(item){ return buildAdmVideoRow(item.key, item.v, viewCounts[item.key]||0, !!dupeKeys[item.key]); }).join("");
+  }
+  var groups = {}, order = [];
+  items.forEach(function(item){
+    var s = item.v.subcat || "General";
+    if(!groups[s]){ groups[s]=[]; order.push(s); }
+    groups[s].push(item);
+  });
+  order.sort(function(a,b){
+    if(a==="General") return 1;
+    if(b==="General") return -1;
+    var minA = Math.min.apply(null, groups[a].map(function(item){ return item.v.order||0; }));
+    var minB = Math.min.apply(null, groups[b].map(function(item){ return item.v.order||0; }));
+    return minA-minB;
+  });
+  var h = "";
+  order.forEach(function(s){
+    var subItems = groups[s];
+    h += "<div style='margin:10px 0 6px;padding:4px 8px;font-size:12px;font-weight:700;color:var(--accent);border-left:3px solid var(--accent);'>"+ex(s)+" <span style='font-weight:400;color:var(--sub);'>("+subItems.length+")</span></div>";
+    if(admVideoViewMode==="grid"){
+      h += "<div class='video-grid' style='margin-bottom:4px;'>"+subItems.map(function(item){ return buildAdmVideoCard(item.key, item.v, viewCounts[item.key]||0, !!dupeKeys[item.key]); }).join("")+"</div>";
+    } else {
+      h += subItems.map(function(item){ return buildAdmVideoRow(item.key, item.v, viewCounts[item.key]||0, !!dupeKeys[item.key]); }).join("");
+    }
+  });
+  return h;
+}
+
 function renderAdmVideoList(){
   var grouped = cachedAdmGrouped, viewCounts = cachedAdmViewCounts, dupeKeys = cachedAdmDupeKeys;
   var cats = cachedAdmCats.slice().sort(function(a,b){
@@ -3088,13 +3156,7 @@ function renderAdmVideoList(){
       h+="<span class='admin-vid-group-arrow' style='transform:rotate("+(isOpen?90:0)+"deg);transition:transform 0.15s;'>▸</span>";
       h+="</span></div>";
       h+="<div class='admin-vid-group-body' style='display:"+(isOpen?"block":"none")+";padding-top:4px;'>";
-      if(admVideoViewMode==="grid"){
-        h+="<div class='video-grid'>";
-        items.forEach(function(item){ h+=buildAdmVideoCard(item.key, item.v, viewCounts[item.key]||0, !!dupeKeys[item.key]); });
-        h+="</div>";
-      } else {
-        items.forEach(function(item){ h+=buildAdmVideoRow(item.key, item.v, viewCounts[item.key]||0, !!dupeKeys[item.key]); });
-      }
+      h+=renderAdmVideoItemsGroup(items);
       h+="</div></div>";
     });
     if(!anyShown) h="<p style='color:var(--sub);font-size:13px;padding:6px 0;'>No videos match.</p>";
@@ -3309,6 +3371,8 @@ function addVideo(){
         document.getElementById("v-tag").style.display="none";
         document.getElementById("v-tag-select").value="";
         document.getElementById("v-subcat").value="";
+        document.getElementById("v-subcat").style.display="none";
+        document.getElementById("v-subcat-select").value="";
         document.getElementById("v-desc").value="";
         vFocusSelected = [];
         renderFocusChips("v");
@@ -6159,6 +6223,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-subcategories-descriptions</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-subcat-picker-admin-groups</p>
 </body>
 </html>
