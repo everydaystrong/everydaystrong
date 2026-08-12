@@ -248,7 +248,16 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     <input type="hidden" id="edit-key" />
     <div class="form-row"><span class="form-label">Title</span><input class="form-input" id="edit-title" style="text-transform:none;" /></div>
     <div class="form-row"><span class="form-label">YouTube Link</span><input class="form-input" id="edit-url" style="text-transform:none;" /></div>
-    <div class="form-row"><span class="form-label">Program / Category</span><input class="form-input" id="edit-tag" style="text-transform:none;" /></div>
+    <div class="form-row"><span class="form-label">Program / Category</span><input class="form-input" id="edit-tag" oninput="refreshSubcatDatalist('edit')" style="text-transform:none;" /></div>
+    <div class="form-row"><span class="form-label">Subcategory (optional)</span>
+      <input class="form-input" id="edit-subcat" list="edit-subcat-list" placeholder="e.g. Week 1" style="text-transform:none;" />
+      <datalist id="edit-subcat-list"></datalist>
+      <p class="tip">For programs with weeks or stages. Leave blank for a normal category with no sub-groups.</p>
+    </div>
+    <div class="form-row"><span class="form-label">Video Description (optional)</span>
+      <textarea class="form-input" id="edit-desc" rows="3" placeholder="What to expect in this video..." style="text-transform:none;resize:vertical;"></textarea>
+      <p class="tip">Shown to clients when they open the video.</p>
+    </div>
     <div class="form-row"><span class="form-label">Focus / Body Part (optional — tap all that apply)</span>
       <div id="edit-focus-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;"></div>
       <div style="display:flex;gap:8px;">
@@ -306,6 +315,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     <div style="position:relative;width:100%;padding-top:56.25%;background:#000;border-radius:8px;overflow:hidden;">
       <iframe id="video-modal-frame" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
     </div>
+    <p id="video-modal-desc" style="display:none;color:var(--sub);font-size:13px;margin-top:10px;padding:0 4px;white-space:pre-wrap;"></p>
   </div>
 </div>
 
@@ -313,6 +323,17 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
   <div class="modal" style="max-width:90vw;width:100%;padding:12px;background:transparent;box-shadow:none;">
     <button class="modal-close" onclick="closePhotoLightbox()" style="background:#fff;">✕</button>
     <img id="photo-lightbox-img" src="" style="width:100%;height:auto;max-height:85vh;object-fit:contain;border-radius:8px;" />
+  </div>
+</div>
+
+<!-- EDIT CATEGORY INFO -->
+<div class="modal-overlay" id="cat-info-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeCatInfoModal()">✕</button>
+    <h3 style="margin-bottom:10px;">Edit Category Info</h3>
+    <p class="tip" style="margin-bottom:10px;">Shown to clients at the top of "<span id="cat-info-name"></span>" — explain what the program covers.</p>
+    <textarea class="form-input" id="cat-info-desc" rows="4" placeholder="e.g. A 6-week strength program broken into weekly blocks..." style="text-transform:none;resize:vertical;margin-bottom:12px;"></textarea>
+    <button class="action-btn" onclick="saveCatInfo()" style="width:100%;">Save</button>
   </div>
 </div>
 
@@ -480,6 +501,8 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <button class="back-btn" id="back-btn">← Back to Workouts</button>
         <p class="section-title" id="vid-title">Videos</p>
         <p class="section-sub" id="vid-sub"></p>
+        <p id="cat-desc-text" style="display:none;color:var(--sub);font-size:13px;margin:-6px 0 14px;white-space:pre-wrap;"></p>
+        <div id="subcat-grid" class="cat-grid" style="display:none;"></div>
         <div id="focus-filters" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
         <div class="video-grid" id="video-grid"></div>
       </div>
@@ -822,6 +845,15 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
           </select>
           <input class="form-input" id="v-tag" placeholder="Type new category name" style="text-transform:none;display:none;" />
           <p class="tip">Pick an existing program/category from the list, or choose "+ Add a new category" to create one.</p>
+        </div>
+        <div class="form-row"><span class="form-label">Subcategory (optional)</span>
+          <input class="form-input" id="v-subcat" list="v-subcat-list" placeholder="e.g. Week 1" style="text-transform:none;" />
+          <datalist id="v-subcat-list"></datalist>
+          <p class="tip">For programs with weeks or stages — e.g. "Week 1," "Week 2." Clients will see this as its own tile inside the category. Leave blank for a normal category with no sub-groups.</p>
+        </div>
+        <div class="form-row"><span class="form-label">Video Description (optional)</span>
+          <textarea class="form-input" id="v-desc" rows="3" placeholder="What to expect in this video — e.g. equipment needed, focus, difficulty..." style="text-transform:none;resize:vertical;"></textarea>
+          <p class="tip">Shown to clients when they open the video.</p>
         </div>
         <div class="form-row"><span class="form-label">Focus / Body Part (optional — tap all that apply)</span>
           <div id="v-focus-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;"></div>
@@ -1957,16 +1989,86 @@ function getAllUserData(type){
 // OPEN CATEGORY
 var currentCatVids = [];
 var currentFocusFilter = null;
+var currentSubcat = null;
+var currentDisplayVids = [];
 
 function openCategory(cat){
   if(!canAccess(cat)) return;
   currentCat=cat;
+  currentSubcat=null;
   currentFocusFilter=null;
   document.getElementById("cat-view").style.display="none";
   document.getElementById("vid-view").style.display="block";
   document.getElementById("vid-title").textContent=cat;
+  document.getElementById("back-btn").textContent="← Back to Workouts";
   currentCatVids=allVideos.filter(function(v){ return (v.tag||"Uncategorized")===cat; });
   currentCatVids.sort(function(a,b){ return (a.order||0)-(b.order||0); });
+  renderCatDescription(cat);
+  var hasSubcats = currentCatVids.some(function(v){ return v.subcat; });
+  if(hasSubcats){
+    renderSubcatTiles();
+  } else {
+    document.getElementById("subcat-grid").style.display="none";
+    currentDisplayVids = currentCatVids;
+    renderFocusFilters();
+    renderFilteredVideos();
+  }
+  window.scrollTo(0,0);
+}
+
+function renderCatDescription(cat){
+  var desc = "";
+  Object.keys(categorySettings||{}).forEach(function(k){
+    var e = categorySettings[k];
+    if(e && e.name===cat && e.description) desc = e.description;
+  });
+  var el = document.getElementById("cat-desc-text");
+  if(desc){ el.textContent = desc; el.style.display="block"; } else { el.style.display="none"; el.textContent=""; }
+}
+
+function renderSubcatTiles(){
+  var grid = document.getElementById("subcat-grid");
+  document.getElementById("focus-filters").style.display="none";
+  document.getElementById("video-grid").style.display="none";
+  document.getElementById("video-grid").innerHTML="";
+  grid.style.display="grid";
+  var groups = {}, order = [];
+  currentCatVids.forEach(function(v){
+    var s = v.subcat || "General";
+    if(!groups[s]){ groups[s]=[]; order.push(s); }
+    groups[s].push(v);
+  });
+  order.sort(function(a,b){
+    if(a==="General") return 1;
+    if(b==="General") return -1;
+    var minA = Math.min.apply(null, groups[a].map(function(v){ return v.order||0; }));
+    var minB = Math.min.apply(null, groups[b].map(function(v){ return v.order||0; }));
+    return minA-minB;
+  });
+  document.getElementById("vid-sub").textContent = order.length+" group"+(order.length!==1?"s":"");
+  grid.innerHTML = order.map(function(s){
+    var vids = groups[s];
+    var completedCount = 0;
+    vids.forEach(function(v){ if(getUserData("completed",v._k)) completedCount++; });
+    var pct = vids.length ? Math.round(completedCount/vids.length*100) : 0;
+    var img = null;
+    vids.forEach(function(v){ if(!img && v.catImg) img=v.catImg; });
+    var sEsc = ex(s).replace(/"/g,"&quot;");
+    return "<div class='cat-card' onclick='openSubcat(\""+sEsc+"\")'>"+
+      (img ? "<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />" : "<div class='cat-img-placeholder'></div>")+
+      "<div class='cat-info'><div class='cat-name'>"+ex(s)+"</div><div class='cat-count'>"+vids.length+" video"+(vids.length!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>"+
+      (pct>0 ? "<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>" : "")+
+      "</div></div>";
+  }).join("");
+}
+
+function openSubcat(subcat){
+  currentSubcat = subcat;
+  currentFocusFilter = null;
+  document.getElementById("subcat-grid").style.display="none";
+  document.getElementById("vid-title").textContent = currentCat+" — "+subcat;
+  document.getElementById("back-btn").textContent="← Back to "+currentCat;
+  currentDisplayVids = currentCatVids.filter(function(v){ return (v.subcat||"General")===subcat; });
   renderFocusFilters();
   renderFilteredVideos();
   window.scrollTo(0,0);
@@ -1974,8 +2076,9 @@ function openCategory(cat){
 
 function renderFocusFilters(){
   var wrap = document.getElementById("focus-filters");
+  document.getElementById("video-grid").style.display="";
   var focuses = {};
-  currentCatVids.forEach(function(v){ normalizeFocus(v.focus).forEach(function(f){ focuses[f]=true; }); });
+  currentDisplayVids.forEach(function(v){ normalizeFocus(v.focus).forEach(function(f){ focuses[f]=true; }); });
   var keys = Object.keys(focuses).sort();
   if(!keys.length){ wrap.style.display="none"; wrap.innerHTML=""; return; }
   wrap.style.display="flex";
@@ -1993,7 +2096,7 @@ function setFocusFilter(f){
 }
 
 function renderFilteredVideos(){
-  var vids = currentFocusFilter ? currentCatVids.filter(function(v){ return normalizeFocus(v.focus).indexOf(currentFocusFilter)!==-1; }) : currentCatVids;
+  var vids = currentFocusFilter ? currentDisplayVids.filter(function(v){ return normalizeFocus(v.focus).indexOf(currentFocusFilter)!==-1; }) : currentDisplayVids;
   document.getElementById("vid-sub").textContent=vids.length+" video"+(vids.length!==1?"s":"")+(currentFocusFilter?" · "+currentFocusFilter:"");
   document.getElementById("video-grid").innerHTML=renderVideoCards(vids);
 }
@@ -2013,7 +2116,7 @@ function buildVideoCard(v){
   var isFav=getUserData("fav",v._k);
   var isDone=getUserData("completed",v._k);
   var h="<div class='video-card' id='vc-"+v._k+"'>";
-  h+="<div class='video-thumb' onclick='openVideo(\""+ex(v.url)+"\",\""+v._k+"\")'>";
+  h+="<div class='video-thumb' onclick='openVideo(\""+ex(v.url)+"\",\""+v._k+"\",\""+ex(v.desc||"").replace(/"/g,"&quot;").replace(/\n/g,"&#10;")+"\")'>";
   h+=th+"<div class='play-overlay'></div>";
   if(isDone) h+="<span class='completed-badge'>Done</span>";
   h+="</div>";
@@ -2031,10 +2134,15 @@ function buildVideoCard(v){
   return h;
 }
 
-function openVideo(url, videoKey){
+function openVideo(url, videoKey, desc){
   var ytId=getYTId(url);
   var embedUrl = ytId ? ("https://www.youtube.com/embed/"+ytId+"?autoplay=1&rel=0") : url;
   document.getElementById("video-modal-frame").src = embedUrl;
+  var descEl = document.getElementById("video-modal-desc");
+  if(descEl){
+    if(desc){ descEl.textContent = desc; descEl.style.display="block"; }
+    else { descEl.textContent=""; descEl.style.display="none"; }
+  }
   document.getElementById("video-modal").classList.add("open");
   // Only count real client views — not your own admin preview/comment-review clicks
   if(videoKey && DB && !previewingAsClient){
@@ -2160,6 +2268,18 @@ function refreshCard(key){
 }
 
 function goBack(){
+  if(currentSubcat){
+    currentSubcat = null;
+    currentFocusFilter = null;
+    document.getElementById("focus-filters").style.display="none";
+    document.getElementById("video-grid").style.display="none";
+    document.getElementById("video-grid").innerHTML="";
+    document.getElementById("vid-title").textContent = currentCat;
+    document.getElementById("back-btn").textContent = "← Back to Workouts";
+    renderSubcatTiles();
+    window.scrollTo(0,0);
+    return;
+  }
   document.getElementById("vid-view").style.display="none";
   document.getElementById("cat-view").style.display="block";
   currentCat=null;
@@ -2442,6 +2562,9 @@ function openEdit(key){
     document.getElementById("edit-title").value=v.title||"";
     document.getElementById("edit-url").value=v.url||"";
     document.getElementById("edit-tag").value=v.tag||"";
+    document.getElementById("edit-subcat").value=v.subcat||"";
+    document.getElementById("edit-desc").value=v.desc||"";
+    refreshSubcatDatalist("edit");
     editFocusSelected = normalizeFocus(v.focus);
     editFocusSelected.forEach(function(f){ if(allFocusTags.indexOf(f)===-1) allFocusTags.push(f); });
     renderFocusChips("edit");
@@ -2466,12 +2589,14 @@ function saveEdit(){
   var t=document.getElementById("edit-title").value.trim();
   var u=document.getElementById("edit-url").value.trim();
   var tg=document.getElementById("edit-tag").value.trim();
+  var sc=document.getElementById("edit-subcat").value.trim();
+  var desc=document.getElementById("edit-desc").value.trim();
   var rd=document.getElementById("edit-release").value;
   var held=document.getElementById("edit-held").checked;
   var ci=document.getElementById("edit-catimg").value.trim();
   if(!t||!u){ alert("Please enter a title and link."); return; }
-  DB.ref("videos/"+key).update({title:t,url:u,tag:tg,focus:editFocusSelected.length?editFocusSelected:null,equipment:editEquipSelected.length?editEquipSelected:null,releaseDate:rd||null,held:held||null,catImg:ci||null},function(e){
-    if(!e){ closeEdit(); showOk("ok-video","Video updated!"); }
+  DB.ref("videos/"+key).update({title:t,url:u,tag:tg,subcat:sc||null,desc:desc||null,focus:editFocusSelected.length?editFocusSelected:null,equipment:editEquipSelected.length?editEquipSelected:null,releaseDate:rd||null,held:held||null,catImg:ci||null},function(e){
+    if(!e){ closeEdit(); showOk("ok-video","Video updated!"); populateProgramDatalist(); }
   });
 }
 
@@ -2480,10 +2605,13 @@ function populateProgramDatalist(){
   if(!DB) return;
   DB.ref("videos").once("value", function(snap){
     var cats = {}, focuses = {}, equips = {};
+    subcatsByCategory = {};
     if(snap.exists()) snap.forEach(function(c){
       var t=c.val().tag; if(t) cats[t]=true;
       normalizeFocus(c.val().focus).forEach(function(f){ focuses[f]=true; });
       normalizeFocus(c.val().equipment).forEach(function(e){ equips[e]=true; });
+      var sc=c.val().subcat;
+      if(t && sc){ if(!subcatsByCategory[t]) subcatsByCategory[t]=[]; if(subcatsByCategory[t].indexOf(sc)===-1) subcatsByCategory[t].push(sc); }
     });
     var sel = document.getElementById("v-tag-select");
     if(sel){
@@ -2504,6 +2632,8 @@ function populateProgramDatalist(){
     renderEquipChips("v");
     renderEquipChips("edit");
     renderTagManager();
+    refreshSubcatDatalist("v");
+    refreshSubcatDatalist("edit");
 
     var annSel = document.getElementById("a-program");
     if(annSel){
@@ -2524,15 +2654,58 @@ function toggleCategoryStandalone(catName, isStandalone){
   // Clean up ANY existing entries for this name (regardless of what key
   // format they were saved under previously) before writing the new one,
   // so toggling off always fully takes effect and toggling on never leaves
-  // duplicate stale entries behind.
+  // duplicate stale entries behind. Preserves order/description already set.
   DB.ref("category_settings").once("value", function(snap){
     var settings = snap.exists() ? snap.val() : {};
     var updates = {};
+    var existing = {};
     Object.keys(settings).forEach(function(k){
-      if(settings[k] && settings[k].name===catName) updates[k] = null;
+      if(settings[k] && settings[k].name===catName){
+        for(var p in settings[k]) existing[p] = settings[k][p];
+        updates[k] = null;
+      }
     });
-    updates[sk(catName)] = isStandalone ? {standalone:true, name:catName} : null;
+    existing.name = catName;
+    existing.standalone = isStandalone || null;
+    updates[sk(catName)] = existing;
     DB.ref("category_settings").update(updates);
+  });
+}
+
+var catInfoEditingName = null;
+function openCatInfoModal(catName){
+  catInfoEditingName = catName;
+  document.getElementById("cat-info-name").textContent = catName;
+  var desc = "";
+  Object.keys(cachedCategorySettings).forEach(function(k){
+    var e = cachedCategorySettings[k];
+    if(e && e.name===catName && e.description) desc = e.description;
+  });
+  document.getElementById("cat-info-desc").value = desc;
+  document.getElementById("cat-info-modal").classList.add("open");
+}
+function closeCatInfoModal(){
+  document.getElementById("cat-info-modal").classList.remove("open");
+}
+function saveCatInfo(){
+  if(!DB || !catInfoEditingName) return;
+  var desc = document.getElementById("cat-info-desc").value.trim();
+  DB.ref("category_settings").once("value", function(snap){
+    var settings = snap.exists() ? snap.val() : {};
+    var updates = {};
+    var existing = {};
+    Object.keys(settings).forEach(function(k){
+      if(settings[k] && settings[k].name===catInfoEditingName){
+        for(var p in settings[k]) existing[p] = settings[k][p];
+        updates[k] = null;
+      }
+    });
+    existing.name = catInfoEditingName;
+    existing.description = desc || null;
+    updates[sk(catInfoEditingName)] = existing;
+    DB.ref("category_settings").update(updates, function(e){
+      if(!e){ closeCatInfoModal(); showOk("ok-adm-vid-bulk","Category info saved!"); }
+    });
   });
 }
 
@@ -2547,6 +2720,16 @@ function handleTagSelect(){
     txt.style.display = "none";
     txt.value = sel.value;
   }
+  refreshSubcatDatalist("v");
+}
+
+var subcatsByCategory = {};
+function refreshSubcatDatalist(prefix){
+  var cat = prefix==="v" ? document.getElementById("v-tag").value : document.getElementById("edit-tag").value;
+  var list = document.getElementById(prefix+"-subcat-list");
+  if(!list) return;
+  var subs = (subcatsByCategory[cat]||[]).slice().sort();
+  list.innerHTML = subs.map(function(s){ return "<option value='"+ex(s)+"'></option>"; }).join("");
 }
 
 // FOCUS TAGS (multi-select chip picker, shared pool of tags across Add and Edit forms)
@@ -2901,6 +3084,7 @@ function renderAdmVideoList(){
       h+="<button type='button' onclick='event.stopPropagation();moveAdmCategory(\""+pinEsc+"\",-1)' "+(isFirst?"disabled":"")+" style='width:24px;height:24px;padding:0;border:1px solid var(--border);border-radius:5px;background:var(--card);color:"+(isFirst?"var(--border)":"var(--text)")+";font-size:12px;cursor:"+(isFirst?"default":"pointer")+";' title='Move up'>▲</button>";
       h+="<button type='button' onclick='event.stopPropagation();moveAdmCategory(\""+pinEsc+"\",1)' "+(isLast?"disabled":"")+" style='width:24px;height:24px;padding:0;border:1px solid var(--border);border-radius:5px;background:var(--card);color:"+(isLast?"var(--border)":"var(--text)")+";font-size:12px;cursor:"+(isLast?"default":"pointer")+";' title='Move down'>▼</button>";
       h+="<label onclick='event.stopPropagation();' style='display:flex;align-items:center;gap:3px;font-weight:400;font-size:16px;cursor:pointer;' title='Always show as its own tile for clients'><input type='checkbox' "+(isPinned?"checked":"")+" onchange='toggleCategoryStandalone(\""+pinEsc+"\", this.checked)' style='width:15px;height:15px;' />📌</label>";
+      h+="<button type='button' onclick='event.stopPropagation();openCatInfoModal(\""+pinEsc+"\")' style='width:24px;height:24px;padding:0;border:1px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);font-size:12px;cursor:pointer;' title='Edit category description'>✏️</button>";
       h+="<span class='admin-vid-group-arrow' style='transform:rotate("+(isOpen?90:0)+"deg);transition:transform 0.15s;'>▸</span>";
       h+="</span></div>";
       h+="<div class='admin-vid-group-body' style='display:"+(isOpen?"block":"none")+";padding-top:4px;'>";
@@ -3107,6 +3291,8 @@ function addVideo(){
   var t=document.getElementById("v-title").value.trim();
   var u=document.getElementById("v-url").value.trim();
   var tg=document.getElementById("v-tag").value.trim();
+  var sc=document.getElementById("v-subcat").value.trim();
+  var desc=document.getElementById("v-desc").value.trim();
   var rd=document.getElementById("v-release").value;
   var held=document.getElementById("v-held").checked;
   if(!t||!u){ alert("Please enter a title and video link."); return; }
@@ -3115,13 +3301,15 @@ function addVideo(){
   DB.ref("videos").orderByChild("tag").equalTo(tg).once("value",function(snap){
     var maxOrder=0;
     if(snap.exists()) snap.forEach(function(c){ var o=c.val().order||0; if(o>maxOrder) maxOrder=o; });
-    DB.ref("videos").push({title:t,url:u,tag:tg,focus:vFocusSelected.length?vFocusSelected:null,equipment:vEquipSelected.length?vEquipSelected:null,order:maxOrder+1,releaseDate:rd||null,held:held||null,ts:Date.now()},function(e){
+    DB.ref("videos").push({title:t,url:u,tag:tg,subcat:sc||null,desc:desc||null,focus:vFocusSelected.length?vFocusSelected:null,equipment:vEquipSelected.length?vEquipSelected:null,order:maxOrder+1,releaseDate:rd||null,held:held||null,ts:Date.now()},function(e){
       if(!e){
         document.getElementById("v-title").value="";
         document.getElementById("v-url").value="";
         document.getElementById("v-tag").value="";
         document.getElementById("v-tag").style.display="none";
         document.getElementById("v-tag-select").value="";
+        document.getElementById("v-subcat").value="";
+        document.getElementById("v-desc").value="";
         vFocusSelected = [];
         renderFocusChips("v");
         vEquipSelected = [];
@@ -5958,6 +6146,7 @@ document.getElementById("video-modal").onclick = function(e){ if(e.target===this
 document.getElementById("streak-milestone-modal").onclick = function(e){ if(e.target===this) closeStreakMilestone(); };
 document.getElementById("bulk-edit-modal").onclick = function(e){ if(e.target===this) closeBulkEditModal(); };
 document.getElementById("rename-tag-modal").onclick = function(e){ if(e.target===this) closeRenameTagModal(); };
+document.getElementById("cat-info-modal").onclick = function(e){ if(e.target===this) closeCatInfoModal(); };
 document.getElementById("photo-lightbox").onclick = function(e){ if(e.target===this) closePhotoLightbox(); };
 document.getElementById("admin-comm-post-btn").onclick=postAdminToComm;
 document.getElementById("checkin-btn").onclick=submitCheckin;
@@ -5970,6 +6159,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-category-reorder</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-subcategories-descriptions</p>
 </body>
 </html>
