@@ -335,9 +335,9 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     <h3 style="margin-bottom:10px;">Edit Category Info</h3>
     <p class="tip" style="margin-bottom:10px;">Shown to clients at the top of "<span id="cat-info-name"></span>" — explain what the program covers.</p>
     <textarea class="form-input" id="cat-info-desc" rows="4" placeholder="e.g. A 6-week strength program broken into weekly blocks..." style="text-transform:none;resize:vertical;margin-bottom:12px;"></textarea>
-    <label class="form-label" style="display:block;margin-bottom:6px;">Category Image URL (optional)</label>
-    <input class="form-input" id="cat-info-image" placeholder="https://... or media/foundations.jpg" style="text-transform:none;margin-bottom:4px;" />
-    <p class="tip" style="margin-bottom:12px;">Shown as the picture on this category's tile.</p>
+    <label class="form-label" style="display:block;margin-bottom:6px;">Category Images (optional)</label>
+    <textarea class="form-input" id="cat-info-image" rows="3" placeholder="https://... or media/foundations.jpg&#10;One per line — add more than one and clients see a random one each visit" style="text-transform:none;resize:vertical;margin-bottom:4px;font-size:13px;"></textarea>
+    <p class="tip" style="margin-bottom:12px;">One URL per line. Add several to rotate a random one each visit — or just one for a fixed picture.</p>
     <button class="action-btn" onclick="saveCatInfo()" style="width:100%;">Save</button>
   </div>
 </div>
@@ -900,6 +900,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
           <button class="action-btn sec" onclick="admVidExpandAll()" style="width:auto;margin:0;font-size:12px;padding:7px 14px;">Expand All</button>
           <button class="action-btn sec" onclick="admVidCollapseAll()" style="width:auto;margin:0;font-size:12px;padding:7px 14px;">Collapse All</button>
+          <button class="action-btn sec" onclick="openCatInfoModal('Most Popular')" style="width:auto;margin:0;font-size:12px;padding:7px 14px;">✏️ Most Popular Tile Images</button>
         </div>
         <div id="adm-vid-select-bar" style="display:none;background:var(--inp);border-radius:9px;padding:10px 12px;margin-bottom:10px;">
           <p id="adm-vid-select-count" style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">0 selected</p>
@@ -1776,13 +1777,27 @@ function getStandaloneNames(){
   });
   return standaloneNames;
 }
-function getCategoryImage(tag){
-  var img = null;
+function getCategoryImagePool(tag){
+  var pool = [];
   Object.keys(categorySettings||{}).forEach(function(k){
     var e = categorySettings[k];
-    if(e && e.name===tag && e.image) img = e.image;
+    if(e && e.name===tag){
+      if(Array.isArray(e.images)) pool = pool.concat(e.images.filter(function(u){ return u; }));
+      else if(e.image) pool.push(e.image);
+    }
   });
-  return img;
+  return pool;
+}
+// One random pick per category, per browser session — re-rolls on a fresh
+// visit (new page load), but doesn't flicker/change mid-browse if data
+// happens to refresh while someone's looking at the page.
+var categoryImageChoice = {};
+function pickCategoryImage(cacheKey, pool){
+  if(categoryImageChoice[cacheKey]) return categoryImageChoice[cacheKey];
+  if(!pool || !pool.length) return null;
+  var pick = pool[Math.floor(Math.random()*pool.length)];
+  categoryImageChoice[cacheKey] = pick;
+  return pick;
 }
 // Falls back to an uploaded stock photo (media/live-classes.jpeg, etc.) when a
 // category has no per-video catImg set — matched loosely by name so it works
@@ -1862,8 +1877,10 @@ function renderCategories(){
   if(currentAccess==="ALL" && popularVideoKeys.length){
     var popVids = allVideos.filter(function(v){ return popularVideoKeys.indexOf(v._k)!==-1; });
     if(popVids.length){
+      var popImg = pickCategoryImage("Most Popular", getCategoryImagePool("Most Popular"));
       h+="<div class='cat-card' onclick='openPopularCategory()'>";
-      h+="<div class='cat-img-placeholder'></div>";
+      if(popImg){ h+="<img class='cat-img' src='"+ex(popImg)+"' onerror='this.style.display=\"none\"' />"; }
+      else{ h+="<div class='cat-img-placeholder'></div>"; }
       h+="<div class='cat-info'><div class='cat-name'>Most Popular</div><div class='cat-count'>"+popVids.length+" video"+(popVids.length!==1?"s":"")+"</div></div></div>";
     }
   }
@@ -1875,8 +1892,9 @@ function renderCategories(){
     var completedCount=0;
     allVids.forEach(function(v){ if(getUserData("completed",v._k)) completedCount++; });
     var pct=count>0?Math.round(completedCount/count*100):0;
-    var img=null;
-    mergeableKeys.forEach(function(k){ if(!img) img=getCategoryImage(k); });
+    var pool=[];
+    mergeableKeys.forEach(function(k){ pool=pool.concat(getCategoryImagePool(k)); });
+    var img=pickCategoryImage("__LIVE__", pool);
     if(!img) mergeableKeys.forEach(function(k){ if(!img && cats[k].img) img=cats[k].img; });
     if(!img) img=getDefaultCatImg("Live Classes");
     h+="<div class='cat-card' onclick='openMergedCategories()'>";
@@ -1892,7 +1910,7 @@ function renderCategories(){
       var completedCount=0;
       data.videos.forEach(function(v){ if(getUserData("completed",v._k)) completedCount++; });
       var pct=count>0?Math.round(completedCount/count*100):0;
-      var img=getCategoryImage(cat)||data.img||getDefaultCatImg(cat);
+      var img=pickCategoryImage(cat,getCategoryImagePool(cat))||data.img||getDefaultCatImg(cat);
       h+="<div class='cat-card' onclick='openCategory(\""+ex(cat)+"\")'>";
       if(img){ h+="<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />"; }
       else{ h+="<div class='cat-img-placeholder'></div>"; }
@@ -1909,7 +1927,7 @@ function renderCategories(){
     var completedCount=0;
     data.videos.forEach(function(v){ if(getUserData("completed",v._k)) completedCount++; });
     var pct=count>0?Math.round(completedCount/count*100):0;
-    var img=getCategoryImage(cat)||data.img||getDefaultCatImg(cat);
+    var img=pickCategoryImage(cat,getCategoryImagePool(cat))||data.img||getDefaultCatImg(cat);
     h+="<div class='cat-card' onclick='openCategory(\""+ex(cat)+"\")'>";
     if(img){ h+="<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />"; }
     else{ h+="<div class='cat-img-placeholder'></div>"; }
@@ -2701,16 +2719,17 @@ var catInfoEditingName = null;
 function openCatInfoModal(catName){
   catInfoEditingName = catName;
   document.getElementById("cat-info-name").textContent = catName;
-  var desc = "", img = "";
+  var desc = "", images = [];
   Object.keys(cachedCategorySettings).forEach(function(k){
     var e = cachedCategorySettings[k];
     if(e && e.name===catName){
       if(e.description) desc = e.description;
-      if(e.image) img = e.image;
+      if(Array.isArray(e.images)) images = e.images.slice();
+      else if(e.image) images = [e.image];
     }
   });
   document.getElementById("cat-info-desc").value = desc;
-  document.getElementById("cat-info-image").value = img;
+  document.getElementById("cat-info-image").value = images.join("\n");
   document.getElementById("cat-info-modal").classList.add("open");
 }
 function closeCatInfoModal(){
@@ -2719,7 +2738,7 @@ function closeCatInfoModal(){
 function saveCatInfo(){
   if(!DB || !catInfoEditingName) return;
   var desc = document.getElementById("cat-info-desc").value.trim();
-  var img = document.getElementById("cat-info-image").value.trim();
+  var images = document.getElementById("cat-info-image").value.split("\n").map(function(s){ return s.trim(); }).filter(function(s){ return s; });
   DB.ref("category_settings").once("value", function(snap){
     var settings = snap.exists() ? snap.val() : {};
     var updates = {};
@@ -2732,7 +2751,8 @@ function saveCatInfo(){
     });
     existing.name = catInfoEditingName;
     existing.description = desc || null;
-    existing.image = img || null;
+    existing.images = images.length ? images : null;
+    delete existing.image; // fully migrated to the images array on save
     updates[sk(catInfoEditingName)] = existing;
     DB.ref("category_settings").update(updates, function(e){
       if(!e){ closeCatInfoModal(); showOk("ok-adm-vid-bulk","Category info saved!"); }
@@ -6248,6 +6268,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-category-image-in-cat-info</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-random-category-images</p>
 </body>
 </html>
