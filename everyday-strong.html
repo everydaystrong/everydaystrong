@@ -1827,6 +1827,19 @@ function getDefaultCatImg(catName){
   if(n.indexOf("reset")!==-1) return "media/reset-build.jpeg";
   return null;
 }
+// Same idea, but for subcategories (Week 1, Week 2, etc.) — auto-guesses a
+// predictable filename so uploading a photo with the right name is enough on
+// its own, same as the category-level shortcut above. Pattern:
+// media/{category-slug}-{subcategory-slug}.jpeg — e.g. "Reset & Build" +
+// "Week One" → media/reset-build-week-one.jpeg. The ✏️ button still works for
+// anyone who wants a description, multiple rotating photos, or a custom path,
+// but for the common case of "just show my one photo" this alone is enough.
+function slugifyForFilename(s){
+  return String(s||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+}
+function getDefaultSubcatImg(catName, subcatName){
+  return "media/"+slugifyForFilename(catName)+"-"+slugifyForFilename(subcatName)+".jpeg";
+}
 
 // EQUIPMENT SEARCH — lets a client find videos by what equipment they have,
 // across every category at once, either by tapping a chip or typing.
@@ -2132,9 +2145,17 @@ function renderSubcatTiles(){
     var pct = vids.length ? Math.round(completedCount/vids.length*100) : 0;
     var img = pickCategoryImage(currentCat+"::"+s, getSubcatImagePool(currentCat,s));
     if(!img) vids.forEach(function(v){ if(!img && v.catImg) img=v.catImg; });
+    var isGuess = false;
+    if(!img && s!=="General"){ img = getDefaultSubcatImg(currentCat, s); isGuess = true; }
     var sEsc = ex(s).replace(/"/g,"&quot;");
+    // If this is our own auto-guessed filename and no such file actually
+    // exists, fall back to the normal placeholder instead of showing a
+    // broken image — only real, uploaded photos ever show as a picture.
+    var imgErrorHandler = isGuess
+      ? "this.outerHTML='<div class=&quot;cat-img-placeholder&quot;></div>'"
+      : "this.style.display='none'";
     return "<div class='cat-card' onclick='openSubcat(\""+sEsc+"\")'>"+
-      (img ? "<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />" : "<div class='cat-img-placeholder'></div>")+
+      (img ? "<img class='cat-img' src='"+ex(img)+"' onerror=\""+imgErrorHandler+"\" />" : "<div class='cat-img-placeholder'></div>")+
       "<div class='cat-info'><div class='cat-name'>"+ex(s)+"</div><div class='cat-count'>"+vids.length+" video"+(vids.length!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>"+
       (pct>0 ? "<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>" : "")+
       "</div></div>";
@@ -6319,6 +6340,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-subcategory-images</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-auto-subcat-images</p>
 </body>
 </html>
