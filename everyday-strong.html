@@ -1912,13 +1912,18 @@ function renderCategories(){
 
 function openMergedCategories(){
   currentCat="__ALL__";
+  currentSubcat=null;
   currentFocusFilter=null;
   document.getElementById("cat-view").style.display="none";
   document.getElementById("vid-view").style.display="block";
   document.getElementById("vid-title").textContent="Live Classes";
+  document.getElementById("back-btn").textContent="← Back to Workouts";
+  document.getElementById("subcat-grid").style.display="none";
+  document.getElementById("cat-desc-text").style.display="none";
   var standaloneNames = getStandaloneNames();
   currentCatVids=allVideos.filter(function(v){ var tag=v.tag||"Uncategorized"; return canAccess(tag) && !standaloneNames[tag]; });
   currentCatVids.sort(function(a,b){ return (a.order||0)-(b.order||0); });
+  currentDisplayVids = currentCatVids;
   renderFocusFilters();
   renderFilteredVideos();
   window.scrollTo(0,0);
@@ -1946,11 +1951,16 @@ function refreshPopularVideos(callback){
 
 function openPopularCategory(){
   currentCat="__POPULAR__";
+  currentSubcat=null;
   currentFocusFilter=null;
   document.getElementById("cat-view").style.display="none";
   document.getElementById("vid-view").style.display="block";
   document.getElementById("vid-title").textContent="⭐ Most Popular";
+  document.getElementById("back-btn").textContent="← Back to Workouts";
+  document.getElementById("subcat-grid").style.display="none";
+  document.getElementById("cat-desc-text").style.display="none";
   currentCatVids=allVideos.filter(function(v){ return popularVideoKeys.indexOf(v._k)!==-1; });
+  currentDisplayVids = currentCatVids;
   renderFocusFilters();
   renderFilteredVideos();
   window.scrollTo(0,0);
@@ -6223,6 +6233,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-subcat-picker-admin-groups</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-fix-merged-category-leak</p>
 </body>
 </html>
