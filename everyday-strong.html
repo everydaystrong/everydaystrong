@@ -1777,6 +1777,14 @@ function getStandaloneNames(){
   });
   return standaloneNames;
 }
+function getCatOrderFromSettings(settings, name){
+  var found = null;
+  Object.keys(settings||{}).forEach(function(k){
+    var e = settings[k];
+    if(e && e.name===name && typeof e.order==="number") found = e.order;
+  });
+  return found===null ? 9999 : found;
+}
 function getCategoryImagePool(tag){
   var pool = [];
   Object.keys(categorySettings||{}).forEach(function(k){
@@ -1873,7 +1881,8 @@ function renderCategories(){
 
   // Most Popular — full members only (currentAccess === "ALL"). Someone who
   // only paid for a specific program shouldn't see a tile showcasing videos
-  // outside what they actually have access to.
+  // outside what they actually have access to. Always pinned first — it's a
+  // virtual tile with no admin reorder control of its own.
   if(currentAccess==="ALL" && popularVideoKeys.length){
     var popVids = allVideos.filter(function(v){ return popularVideoKeys.indexOf(v._k)!==-1; });
     if(popVids.length){
@@ -1884,6 +1893,13 @@ function renderCategories(){
       h+="<div class='cat-info'><div class='cat-name'>Most Popular</div><div class='cat-count'>"+popVids.length+" video"+(popVids.length!==1?"s":"")+"</div></div></div>";
     }
   }
+
+  // Build every remaining tile as a descriptor {order, html} first, then sort
+  // by the admin-set custom order and render in that sequence — this lets a
+  // standalone category (e.g. Reset & Build) be ordered ahead of or behind
+  // the merged Live Classes tile, instead of standalone tiles always being
+  // forced to the end regardless of what order was actually set.
+  var tiles = [];
 
   if(mergeableKeys.length>1){
     var allVids=[];
@@ -1897,12 +1913,14 @@ function renderCategories(){
     var img=pickCategoryImage("__LIVE__", pool);
     if(!img) mergeableKeys.forEach(function(k){ if(!img && cats[k].img) img=cats[k].img; });
     if(!img) img=getDefaultCatImg("Live Classes");
-    h+="<div class='cat-card' onclick='openMergedCategories()'>";
-    if(img){ h+="<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />"; }
-    else{ h+="<div class='cat-img-placeholder'></div>"; }
-    h+="<div class='cat-info'><div class='cat-name'>Live Classes</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
-    if(pct>0) h+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
-    h+="</div></div>";
+    var liveOrder = Math.min.apply(null, mergeableKeys.map(function(k){ return getCatOrderFromSettings(categorySettings,k); }));
+    var th="<div class='cat-card' onclick='openMergedCategories()'>";
+    if(img){ th+="<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />"; }
+    else{ th+="<div class='cat-img-placeholder'></div>"; }
+    th+="<div class='cat-info'><div class='cat-name'>Live Classes</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
+    if(pct>0) th+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
+    th+="</div></div>";
+    tiles.push({order:liveOrder, html:th});
   } else {
     mergeableKeys.forEach(function(cat){
       var data=cats[cat];
@@ -1911,16 +1929,18 @@ function renderCategories(){
       data.videos.forEach(function(v){ if(getUserData("completed",v._k)) completedCount++; });
       var pct=count>0?Math.round(completedCount/count*100):0;
       var img=pickCategoryImage(cat,getCategoryImagePool(cat))||data.img||getDefaultCatImg(cat);
-      h+="<div class='cat-card' onclick='openCategory(\""+ex(cat)+"\")'>";
-      if(img){ h+="<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />"; }
-      else{ h+="<div class='cat-img-placeholder'></div>"; }
-      h+="<div class='cat-info'><div class='cat-name'>"+ex(cat)+"</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
-      if(pct>0) h+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
-      h+="</div></div>";
+      var th="<div class='cat-card' onclick='openCategory(\""+ex(cat)+"\")'>";
+      if(img){ th+="<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />"; }
+      else{ th+="<div class='cat-img-placeholder'></div>"; }
+      th+="<div class='cat-info'><div class='cat-name'>"+ex(cat)+"</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
+      if(pct>0) th+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
+      th+="</div></div>";
+      tiles.push({order:getCatOrderFromSettings(categorySettings,cat), html:th});
     });
   }
 
-  // Standalone categories always get their own tile, never merged
+  // Standalone categories — now ordered alongside everything else instead of
+  // always being forced to the end.
   standaloneKeys.forEach(function(cat){
     var data=cats[cat];
     var count=data.videos.length;
@@ -1928,13 +1948,17 @@ function renderCategories(){
     data.videos.forEach(function(v){ if(getUserData("completed",v._k)) completedCount++; });
     var pct=count>0?Math.round(completedCount/count*100):0;
     var img=pickCategoryImage(cat,getCategoryImagePool(cat))||data.img||getDefaultCatImg(cat);
-    h+="<div class='cat-card' onclick='openCategory(\""+ex(cat)+"\")'>";
-    if(img){ h+="<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />"; }
-    else{ h+="<div class='cat-img-placeholder'></div>"; }
-    h+="<div class='cat-info'><div class='cat-name'>"+ex(cat)+"</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
-    if(pct>0) h+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
-    h+="</div></div>";
+    var th="<div class='cat-card' onclick='openCategory(\""+ex(cat)+"\")'>";
+    if(img){ th+="<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />"; }
+    else{ th+="<div class='cat-img-placeholder'></div>"; }
+    th+="<div class='cat-info'><div class='cat-name'>"+ex(cat)+"</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
+    if(pct>0) th+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
+    th+="</div></div>";
+    tiles.push({order:getCatOrderFromSettings(categorySettings,cat), html:th});
   });
+
+  tiles.sort(function(a,b){ return a.order-b.order; });
+  tiles.forEach(function(t){ h+=t.html; });
 
   grid.innerHTML=h;
 }
@@ -3095,12 +3119,7 @@ function applyBulkEdit(){
 }
 
 function getCatOrder(name){
-  var found = null;
-  Object.keys(cachedCategorySettings).forEach(function(k){
-    var e = cachedCategorySettings[k];
-    if(e && e.name===name && typeof e.order==="number") found = e.order;
-  });
-  return found===null ? 9999 : found;
+  return getCatOrderFromSettings(cachedCategorySettings, name);
 }
 
 function moveAdmCategory(catName, direction){
@@ -6268,6 +6287,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-random-category-images</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-fix-client-category-order</p>
 </body>
 </html>
