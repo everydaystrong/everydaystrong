@@ -1825,6 +1825,7 @@ function getDefaultCatImg(catName){
   if(n.indexOf("live")!==-1) return "media/live-classes.jpeg";
   if(n.indexOf("found")!==-1) return "media/foundations.jpeg";
   if(n.indexOf("reset")!==-1) return "media/reset-build.jpeg";
+  if(n.indexOf("popular")!==-1) return "media/most-popular.jpeg";
   return null;
 }
 // Same idea, but for subcategories (Week 1, Week 2, etc.) — auto-guesses a
@@ -1909,9 +1910,9 @@ function renderCategories(){
   if(currentAccess==="ALL" && popularVideoKeys.length){
     var popVids = allVideos.filter(function(v){ return popularVideoKeys.indexOf(v._k)!==-1; });
     if(popVids.length){
-      var popImg = pickCategoryImage("Most Popular", getCategoryImagePool("Most Popular"));
+      var popImg = pickCategoryImage("Most Popular", getCategoryImagePool("Most Popular")) || getDefaultCatImg("Most Popular");
       h+="<div class='cat-card' onclick='openPopularCategory()'>";
-      if(popImg){ h+="<img class='cat-img' src='"+ex(popImg)+"' onerror='this.style.display=\"none\"' />"; }
+      if(popImg){ h+="<img class='cat-img' src='"+ex(popImg)+"' onerror=\"this.outerHTML='<div class=&quot;cat-img-placeholder&quot;></div>'\" />"; }
       else{ h+="<div class='cat-img-placeholder'></div>"; }
       h+="<div class='cat-info'><div class='cat-name'>Most Popular</div><div class='cat-count'>"+popVids.length+" video"+(popVids.length!==1?"s":"")+"</div></div></div>";
     }
@@ -6340,6 +6341,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-auto-subcat-images</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-final-simple-images</p>
 </body>
 </html>
