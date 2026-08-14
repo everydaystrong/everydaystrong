@@ -751,6 +751,45 @@ function checkDiscountCode(){
   });
 }
 
+// Called once at final submission (Waiver step). Deliberately re-checks
+// everything fresh from Firebase using whatever's currently in the discount
+// code field, rather than trusting the appliedDiscountCode variable set
+// earlier — that variable lives in memory only, so if the browser reloaded
+// or resumed a saved draft anywhere between the Intake and Waiver steps, it
+// would have silently reset to null even though the code text itself was
+// correctly restored into the field. This way redemption logging can never
+// be skipped just because of a reload in between.
+function logDiscountRedemptionIfValid(programName, clientName, clientEmail){
+  if(!fbDB) return;
+  var input = document.getElementById("i-discount-code");
+  var raw = input ? input.value.trim().toUpperCase() : "";
+  if(!raw) return;
+  fbDB.ref("discountCodes").once("value", function(snap){
+    var match = null, matchKey = null;
+    if(snap.exists()) snap.forEach(function(c){
+      var d = c.val();
+      if(d.code && d.code.toUpperCase()===raw){ match = d; matchKey = c.key; }
+    });
+    if(!match || match.active===false) return;
+    if(match.expiresAt && Date.now() > match.expiresAt) return;
+    var limit = match.usageLimit;
+    var used = match.usageCount || 0;
+    var limitNum = limit==="one" ? 1 : (limit==="unlimited" ? Infinity : parseInt(limit,10));
+    if(!isNaN(limitNum) && used >= limitNum) return;
+    var scope = match.programScope;
+    if(scope!=="any" && Array.isArray(scope) && scope.indexOf(programName)===-1) return;
+    fbDB.ref("discountCodes/"+matchKey+"/usageCount").transaction(function(cur){ return (cur||0)+1; });
+    fbDB.ref("codeRedemptions").push({
+      codeKey: matchKey,
+      code: match.code,
+      clientName: clientName,
+      clientEmail: clientEmail,
+      programName: programName,
+      ts: Date.now()
+    });
+  });
+}
+
 function switchForm(name, btn){
   document.querySelectorAll(".form-section").forEach(function(s){ s.classList.remove("on"); });
   document.querySelectorAll(".fnav-btn").forEach(function(b){ b.classList.remove("on"); });
@@ -1050,17 +1089,7 @@ function submitWaiver(){
     btn.style.display="none";
     successBox.style.display="block";
 
-    if(appliedDiscountCode && appliedDiscountCode.key && fbDB){
-      fbDB.ref("discountCodes/"+appliedDiscountCode.key+"/usageCount").transaction(function(cur){ return (cur||0)+1; });
-      fbDB.ref("codeRedemptions").push({
-        codeKey: appliedDiscountCode.key,
-        code: appliedDiscountCode.code,
-        clientName: name,
-        clientEmail: email,
-        programName: program,
-        ts: Date.now()
-      });
-    }
+    logDiscountRedemptionIfValid(program, name, email);
 
     emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
       .then(function(){

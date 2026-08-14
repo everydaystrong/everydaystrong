@@ -5542,48 +5542,81 @@ function renderSubmissionsList(){
     return s.ts <= lastCheck;
   });
   if(!items.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Nothing here.</p>"; return; }
-  items.sort(function(a,b){ return b.ts-a.ts; });
-  el.innerHTML = items.map(function(s){
-    var isNew = !s.deleted && s.ts > lastCheck;
+
+  // Group every matching form by the person it belongs to — a full signup
+  // is 3 separate form submissions (Intake, Agreement, Waiver), and showing
+  // each as its own card made it look like 3 different people each needing
+  // their own action, when really it's one person and one thing to do.
+  var groups = {}; // norm -> {name, forms:[...], hasNew}
+  var groupOrder = [];
+  items.forEach(function(s){
     var rawName = (s.data && s.data.Name) || "Unknown";
     var norm = sk(rawName);
-    // Use the canonical (Intake-based) name so "+ Create Client Code" always
-    // produces a code that matches where these forms are actually stored —
-    // not whichever name this particular entry happened to save.
     var name = cachedCanonicalByNorm[norm] || rawName;
-    var date = new Date(s.ts).toLocaleString();
-    var fields = "";
-    if(s.data){
-      Object.keys(s.data).forEach(function(k){
-        if(s.data[k]) fields += "<p style='font-size:12px;color:var(--sub);margin-bottom:3px;white-space:pre-wrap;'><strong>"+ex(k)+":</strong> "+ex(String(s.data[k]))+"</p>";
-      });
-    }
-    var photosHtml = "";
-    if(s.photos && s.photos.length){
-      photosHtml = "<div style='display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;'>"+
-        s.photos.map(function(src){ return "<img src='"+src+"' onclick=\"openPhotoLightbox(this.src)\" style='width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;' />"; }).join("")+
+    if(!groups[norm]){ groups[norm] = {name:name, norm:norm, forms:[], hasNew:false}; groupOrder.push(norm); }
+    if(!s.deleted && s.ts > lastCheck) groups[norm].hasNew = true;
+    groups[norm].forms.push(s);
+  });
+  var formTypeOrder = {"Intake Form":0, "Client Agreement":1, "Waiver":2};
+  groupOrder.sort(function(a,b){
+    var latestA = Math.max.apply(null, groups[a].forms.map(function(f){ return f.ts; }));
+    var latestB = Math.max.apply(null, groups[b].forms.map(function(f){ return f.ts; }));
+    return latestB-latestA;
+  });
+
+  el.innerHTML = groupOrder.map(function(norm){
+    var g = groups[norm];
+    var name = g.name;
+    var forms = g.forms.slice().sort(function(a,b){
+      return (formTypeOrder[a.formType]!=null?formTypeOrder[a.formType]:9) - (formTypeOrder[b.formType]!=null?formTypeOrder[b.formType]:9);
+    });
+    var formsHtml = forms.map(function(s){
+      var date = new Date(s.ts).toLocaleString();
+      var fields = "";
+      if(s.data){
+        Object.keys(s.data).forEach(function(k){
+          if(s.data[k]) fields += "<p style='font-size:12px;color:var(--sub);margin-bottom:3px;white-space:pre-wrap;'><strong>"+ex(k)+":</strong> "+ex(String(s.data[k]))+"</p>";
+        });
+      }
+      var photosHtml = "";
+      if(s.photos && s.photos.length){
+        photosHtml = "<div style='display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;'>"+
+          s.photos.map(function(src){ return "<img src='"+src+"' onclick=\"openPhotoLightbox(this.src)\" style='width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;' />"; }).join("")+
+          "</div>";
+      }
+      var formActions;
+      if(submissionFilter==="deleted"){
+        formActions = "<button class='action-btn sec' style='font-size:12px;padding:5px 10px;width:auto;margin-bottom:0;' onclick='restoreSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\")'>↩️ Restore</button>"+
+          "<button class='action-btn sec' style='font-size:12px;padding:5px 10px;width:auto;margin-bottom:0;color:#c05040;border-color:#c05040;' onclick='permanentlyDeleteSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\",\""+ex(name).replace(/"/g,"&quot;")+"\")'>Delete Forever</button>";
+      } else {
+        formActions = "<button class='action-btn sec' style='font-size:12px;padding:5px 10px;width:auto;margin-bottom:0;' onclick='editSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\")'>Edit</button>"+
+          "<button class='action-btn sec' style='font-size:12px;padding:5px 10px;width:auto;margin-bottom:0;color:#c05040;border-color:#c05040;' onclick='deleteSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\",\""+ex(name).replace(/"/g,"&quot;")+"\")'>Delete</button>";
+      }
+      return "<div style='border-top:0.5px solid var(--border);padding-top:10px;margin-top:10px;'>"+
+        "<div style='display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px;'>"+
+        "<span style='font-size:13px;font-weight:600;color:var(--text);'>"+ex(s.formType||"")+" <span style='font-weight:400;color:var(--sub);'>· "+date+"</span></span>"+
+        "<div style='display:flex;gap:6px;'>"+formActions+"</div>"+
+        "</div>"+photosHtml+fields+
         "</div>";
-    }
+    }).join("");
+
     var mergeBtn = cachedMergeGroups[norm]
       ? "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;color:#8b6f10;border-color:#c9a227;' onclick='mergeSubmissionGroup(\""+norm+"\")'>Merge into one record</button>"
       : "";
-    var actionBtns;
-    if(submissionFilter==="deleted"){
-      actionBtns = "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='restoreSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\")'>↩️ Restore</button>"+
-        "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;color:#c05040;border-color:#c05040;' onclick='permanentlyDeleteSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\",\""+ex(name).replace(/"/g,"&quot;")+"\")'>Delete Forever</button>";
-    } else {
-      actionBtns = "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='createCodeFromSubmission(\""+ex(name).replace(/"/g,"&quot;")+"\",\""+ex(cachedPreferredCodeByNorm[norm]||"").replace(/"/g,"&quot;")+"\")'>+ Create Client Code</button>"+
-        "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='editSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\")'>Edit</button>"+
-        "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;color:#c05040;border-color:#c05040;' onclick='deleteSubmission(\""+s._clientKey+"\",\""+s._entryKey+"\",\""+ex(name).replace(/"/g,"&quot;")+"\")'>Delete</button>";
-    }
+    var groupActions = submissionFilter==="deleted" ? "" :
+      "<div style='display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;'>"+
+      "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='createCodeFromSubmission(\""+ex(name).replace(/"/g,"&quot;")+"\",\""+ex(cachedPreferredCodeByNorm[norm]||"").replace(/"/g,"&quot;")+"\")'>+ Create Client Code</button>"+
+      mergeBtn+
+      "</div>";
+
     return "<div style='padding:14px;background:var(--inp);border-radius:10px;margin-bottom:10px;'>"+
-      "<div style='display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;'>"+
-      (isNew ? "<span style='width:8px;height:8px;background:#c05040;border-radius:50%;'></span>" : "")+
-      "<strong style='font-size:14px;'>"+ex(name)+"</strong>"+
-      "<span style='font-size:11px;color:var(--sub);'>· "+ex(s.formType||"")+" · "+date+"</span>"+
-      "</div>"+photosHtml+fields+
-      "<div style='display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;'>"+actionBtns+mergeBtn+
-      "</div></div>";
+      "<div style='display:flex;align-items:center;gap:8px;margin-bottom:2px;flex-wrap:wrap;'>"+
+      (g.hasNew ? "<span style='width:8px;height:8px;background:#c05040;border-radius:50%;'></span>" : "")+
+      "<strong style='font-size:15px;'>"+ex(name)+"</strong>"+
+      "<span style='font-size:11px;color:var(--sub);'>"+forms.length+" form"+(forms.length!==1?"s":"")+" submitted</span>"+
+      "</div>"+
+      formsHtml+groupActions+
+      "</div>";
   }).join("");
 }
 
@@ -6794,6 +6827,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-fix-save-code-btn</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-group-submissions</p>
 </body>
 </html>
