@@ -4676,13 +4676,13 @@ function loadUnpaidDashboard(){
     if(snap.exists()) snap.forEach(function(c){
       var cd = c.val();
       var status = cd.paymentStatus || "unpaid";
-      if(status === "unpaid") unpaid.push({name:cd.name, code:cd.code, key:c.key});
+      if(status === "unpaid") unpaid.push({name:cd.name, code:cd.code, key:c.key, note:cd.paymentStatusNote||""});
     });
     if(!unpaid.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Everyone's paid up!</p>"; return; }
     unpaid.sort(function(a,b){ return (a.name||"").localeCompare(b.name||""); });
     el.innerHTML = unpaid.map(function(u){
       return "<div style='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;' onclick='openClientProfile(\""+ex(u.name).replace(/"/g,"&quot;")+"\")'>"+
-        "<div><strong style='font-size:14px;color:var(--text);'>"+ex(u.name)+"</strong><br/><span style='font-family:monospace;font-size:11px;color:var(--sub);'>"+ex(u.code)+"</span></div>"+
+        "<div><strong style='font-size:14px;color:var(--text);'>"+ex(u.name)+"</strong><br/><span style='font-family:monospace;font-size:11px;color:var(--sub);'>"+ex(u.code)+"</span>"+(u.note?"<br/><span style='font-size:12px;color:var(--sub);'>💬 "+ex(u.note)+"</span>":"")+"</div>"+
         "<span style='background:#c05040;color:#fff;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600;white-space:nowrap;'>Unpaid</span>"+
         "</div>";
     }).join("");
@@ -5101,6 +5101,16 @@ function loadClientPayments(){
           h += "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:13px;padding:7px 12px;' onclick='markPaymentStatus(\"unpaid\")'>Undo — Track Payments Normally</button>";
         }
         h += "</div>";
+        if(!isPaid || isExempt){
+          h += "<div style='display:flex;align-items:center;gap:8px;margin-bottom:1rem;'>";
+          if(cd.paymentStatusNote){
+            h += "<p style='font-size:13px;color:var(--sub);flex:1;'>💬 "+ex(cd.paymentStatusNote)+"</p>";
+          } else {
+            h += "<p style='font-size:13px;color:var(--sub);flex:1;'>No reason noted.</p>";
+          }
+          h += "<button class='edit-btn' onclick='editPaymentStatusNote()'>"+(cd.paymentStatusNote?"Edit":"+ Add Note")+"</button>";
+          h += "</div>";
+        }
         if(isExempt){
           h += "<p class='tip' style='margin-bottom:1rem;'>This client is marked No Charge — they won't show up under the Unpaid filter or badge, and won't be affected by any future payment reminders.</p>";
         }
@@ -5185,10 +5195,33 @@ function returnPaymentEntry(entryKey){
 
 function markPaymentStatus(status){
   if(!DB||!currentClientKey||currentClientKey==="undefined"){ alert("Couldn't find this client — please close and reopen their profile, then try again."); return; }
+  var updates = {paymentStatus:status};
+  if(status==="unpaid" || status==="exempt"){
+    var promptLabel = status==="exempt" ? "Why no charge? (optional — e.g. \"friend trialing the program\")" : "Reason for marking unpaid? (optional)";
+    var note = prompt(promptLabel);
+    if(note!==null) updates.paymentStatusNote = note.trim() || null;
+  } else {
+    updates.paymentStatusNote = null; // back to normal paid tracking — clear any old note
+  }
   resolveClientCodeKey(function(realKey){
     if(!realKey){ alert("Couldn't find this client's access code — nothing was changed."); return; }
-    DB.ref("codes/"+realKey).update({paymentStatus:status}, function(e){
+    DB.ref("codes/"+realKey).update(updates, function(e){
       if(!e) loadClientPayments();
+    });
+  });
+}
+
+function editPaymentStatusNote(){
+  if(!DB||!currentClientKey||currentClientKey==="undefined") return;
+  resolveClientCodeKey(function(realKey){
+    if(!realKey) return;
+    DB.ref("codes/"+realKey).once("value", function(snap){
+      var current = (snap.val()||{}).paymentStatusNote || "";
+      var note = prompt("Note for this status:", current);
+      if(note===null) return;
+      DB.ref("codes/"+realKey).update({paymentStatusNote: note.trim() || null}, function(e){
+        if(!e) loadClientPayments();
+      });
     });
   });
 }
@@ -6399,6 +6432,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-get-the-app-label</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-payment-status-notes</p>
 </body>
 </html>
