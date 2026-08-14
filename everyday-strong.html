@@ -775,6 +775,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
       <button class="tab-btn" id="atab-settings">Settings</button>
       <button class="tab-btn" id="atab-community">Community</button>
       <button class="tab-btn" id="atab-programs">Programs</button>
+      <button class="tab-btn" id="atab-discounts">Discount Codes</button>
       <button class="tab-btn" id="atab-testimonials">Testimonials<span id="testi-tab-dot" style="display:none;width:8px;height:8px;background:#c05040;border-radius:50%;margin-left:5px;vertical-align:middle;"></span></button>
       <button class="tab-btn" id="atab-featured">Featured Photos</button>
       <button class="tab-btn" id="atab-recipes-admin">Recipes</button>
@@ -1162,7 +1163,17 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         </div>
         <div class="form-row">
           <span class="form-label">Price</span>
-          <input class="form-input" type="text" id="prog-price" placeholder="e.g. $30/week or $80/session" style="text-transform:none;" />
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-size:16px;color:var(--text);">$</span>
+            <input class="form-input" type="number" step="0.01" min="0" id="prog-price-amount" placeholder="30" style="flex:1;" />
+            <select class="form-select" id="prog-price-unit" style="flex:1;">
+              <option value="week">per week</option>
+              <option value="session">per session</option>
+              <option value="class">per class</option>
+              <option value="month">per month</option>
+              <option value="one-time">one-time</option>
+            </select>
+          </div>
         </div>
         <div class="form-row">
           <span class="form-label">Details (bullet points, one per line)</span>
@@ -1181,6 +1192,56 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
       <div class="admin-card">
         <h3>Your Programs</h3>
         <div id="admin-prog-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="atc-discounts">
+      <div class="admin-card">
+        <h3 id="disc-form-title">+ Create a Discount Code</h3>
+        <div class="ok-msg" id="ok-disc">Code saved!</div>
+        <div class="form-row">
+          <span class="form-label">Code</span>
+          <input class="form-input" type="text" id="disc-code" placeholder="e.g. FRIEND50" style="text-transform:uppercase;" />
+        </div>
+        <div class="form-row">
+          <span class="form-label">Discount Type</span>
+          <select class="form-select" id="disc-type">
+            <option value="percent">Percent off (%)</option>
+            <option value="flat">Flat dollar amount off ($)</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <span class="form-label" id="disc-value-label">Percent off</span>
+          <input class="form-input" type="number" step="0.01" min="0" id="disc-value" placeholder="e.g. 20" />
+        </div>
+        <div class="form-row">
+          <span class="form-label">Applies To</span>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;margin-bottom:8px;">
+            <input type="checkbox" id="disc-any-program" checked style="width:18px;height:18px;" onchange="toggleDiscProgramList()" /> Any program
+          </label>
+          <div id="disc-program-checklist" style="display:none;max-height:180px;overflow-y:auto;border:0.5px solid var(--border);border-radius:8px;padding:8px;"><p class="tip">Loading programs...</p></div>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Usage Limit</span>
+          <select class="form-select" id="disc-limit-type" onchange="toggleDiscLimitCap()">
+            <option value="unlimited">Unlimited uses</option>
+            <option value="one">One-time use only</option>
+            <option value="capped">Capped at a number of uses</option>
+          </select>
+          <input class="form-input" type="number" min="1" id="disc-limit-cap" placeholder="e.g. 10" style="display:none;margin-top:8px;" />
+        </div>
+        <div class="form-row">
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;margin-bottom:8px;">
+            <input type="checkbox" id="disc-no-expiry" checked style="width:18px;height:18px;" onchange="toggleDiscExpiry()" /> No expiration
+          </label>
+          <input class="form-input" type="date" id="disc-expiry" style="display:none;" />
+        </div>
+        <button class="action-btn" id="save-disc-btn">Save Code</button>
+        <button class="action-btn sec" id="cancel-disc-edit-btn" style="display:none;margin-top:8px;">Cancel Edit</button>
+      </div>
+      <div class="admin-card">
+        <h3>Your Discount Codes</h3>
+        <div id="admin-disc-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
       </div>
     </div>
 
@@ -1313,6 +1374,18 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         </div>
         <div id="report-output"><p style="color:var(--sub);font-size:13px;">Select a month and click Generate.</p></div>
       </div>
+      <div class="admin-card">
+        <h3>Discount Code Usage</h3>
+        <p class="tip" style="margin-bottom:10px;">How many times each code has been used, by whom, and total dollars discounted.</p>
+        <button class="action-btn" id="disc-report-btn" style="padding:8px 16px;">Generate</button>
+        <div id="disc-report-output" style="margin-top:1rem;"></div>
+      </div>
+      <div class="admin-card">
+        <h3>Membership Breakdown</h3>
+        <p class="tip" style="margin-bottom:10px;">Current active clients sorted by what they actually have access to — Two Day, One Day, or Program-only.</p>
+        <button class="action-btn" id="membership-report-btn" style="padding:8px 16px;">Generate</button>
+        <div id="membership-report-output" style="margin-top:1rem;"></div>
+      </div>
     </div>
     <div class="tab-content" id="atc-testimonials">
       <div class="admin-card">
@@ -1412,6 +1485,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 
 <script>
 var adminPass = "ADMIN123";
+var adminPassLoaded = false;
 var currentUser = null;
 var currentUserKey = null;
 var currentAccess = "ALL";
@@ -1433,8 +1507,8 @@ try {
     appId:"1:835314554846:web:cd5367a8002833c6ed2f4f"
   });
   DB = firebase.database();
-  DB.ref("adminPass").once("value",function(s){ if(s.exists()) adminPass=s.val(); });
-} catch(e){}
+  DB.ref("adminPass").once("value",function(s){ if(s.exists()) adminPass=s.val(); adminPassLoaded=true; });
+} catch(e){ adminPassLoaded=true; }
 
 // Email notifications for dashboard activity
 var EMAILJS_PUBLIC_KEY = "Df_RHTxaHGQXv0-yY";
@@ -2525,9 +2599,10 @@ function loadAnnouncements(){
 
 // ADMIN
 function doAdmin(){
+  if(!adminPassLoaded){ alert("Still loading — please wait a couple seconds and try again."); return; }
   var p=prompt("Instructor password:");
   if(p===null) return;
-  if(p===adminPass){ loadDashboard(); loadTrialTracker(); loadUnpaidDashboard(); loadPaymentReminders(); loadAtRiskClients(); loadReferrals(); loadClassWaitlist(); loadAdmVideos(); populateProgramDatalist(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); initCommentsBadge(); sp("pg-admin"); }
+  if(p.trim().toLowerCase()===adminPass.toLowerCase()){ loadDashboard(); loadTrialTracker(); loadUnpaidDashboard(); loadPaymentReminders(); loadAtRiskClients(); loadReferrals(); loadClassWaitlist(); loadAdmVideos(); populateProgramDatalist(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); initCommentsBadge(); sp("pg-admin"); }
   else alert("Incorrect password. Please try again.");
 }
 
@@ -2539,6 +2614,7 @@ document.getElementById("atab-announce").onclick=function(){ setAdmTab("announce
 document.getElementById("atab-settings").onclick=function(){ setAdmTab("settings",this); };
 document.getElementById("atab-community").onclick=function(){ setAdmTab("community",this); loadAdminCommList(); };
 document.getElementById("atab-programs").onclick=function(){ setAdmTab("programs",this); loadAdminPrograms(); };
+document.getElementById("atab-discounts").onclick=function(){ setAdmTab("discounts",this); loadAdminDiscountCodes(); populateDiscProgramChecklist(); };
 document.getElementById("atab-testimonials").onclick=function(){ setAdmTab("testimonials",this); loadTestimonialsAdmin(); loadPendingTestimonials(); };
 document.getElementById("add-prog-btn").onclick=saveProgram;
 document.getElementById("atab-featured").onclick=function(){ setAdmTab("featured",this); loadFeaturedAdmin(); };
@@ -2552,6 +2628,8 @@ document.getElementById("atab-report").onclick=function(){ setAdmTab("report",th
 document.getElementById("att-save-btn").onclick=saveAttendance;
 document.getElementById("bulk-send-btn").onclick=sendBulkMessage;
 document.getElementById("report-gen-btn").onclick=generateReport;
+document.getElementById("disc-report-btn").onclick=generateDiscountReport;
+document.getElementById("membership-report-btn").onclick=generateMembershipReport;
 function setAdmTab(name,btn){
   document.querySelectorAll(".tab-btn").forEach(function(t){ t.classList.remove("on"); });
   document.querySelectorAll(".tab-content").forEach(function(t){ t.classList.remove("on"); });
@@ -3852,8 +3930,8 @@ function permanentlyDeleteAnn(key){ if(!confirm("Permanently delete this announc
 
 // SETTINGS
 document.getElementById("pass-btn").onclick=function(){
-  var cur=document.getElementById("pass-cur").value,nw=document.getElementById("pass-new").value.trim(),cf=document.getElementById("pass-cf").value.trim();
-  if(cur!==adminPass){ alert("Current password is incorrect."); return; }
+  var cur=document.getElementById("pass-cur").value.trim(),nw=document.getElementById("pass-new").value.trim(),cf=document.getElementById("pass-cf").value.trim();
+  if(cur.toLowerCase()!==adminPass.toLowerCase()){ alert("Current password is incorrect."); return; }
   if(!nw||nw!==cf){ alert("Passwords don't match."); return; }
   adminPass=nw; if(DB) DB.ref("adminPass").set(nw);
   document.getElementById("pass-cur").value=""; document.getElementById("pass-new").value=""; document.getElementById("pass-cf").value="";
@@ -5119,7 +5197,7 @@ function loadClientPayments(){
         h += "<div class='form-row'><span class='form-label'>Amount</span><input class='form-input' id='pay-amount' type='text' placeholder='e.g. 50, $50, or 0 for free/promo' /></div>";
         h += "<div class='form-row'><span class='form-label'>Date Paid</span><input class='form-input' id='pay-date' type='date' /></div>";
         h += "<div class='form-row'><span class='form-label'>Next Due Date (optional)</span><input class='form-input' id='pay-nextdue' type='date' /></div>";
-        h += "<div class='form-row'><span class='form-label'>Promo Code (optional)</span><input class='form-input' id='pay-promo' type='text' placeholder='e.g. SUMMER2026' /></div>";
+        h += "<div class='form-row'><span class='form-label'>Discount Code (optional)</span><select class='form-select' id='pay-promo'><option value=''>-- None --</option></select></div>";
         h += "<div class='form-row'><span class='form-label'>Note (optional)</span><input class='form-input' id='pay-note' type='text' placeholder='e.g. July - 4 weeks, or first month free' /></div>";
         h += "<button class='action-btn' id='pay-form-btn' style='margin-top:8px;' onclick='logPayment()'>Log Payment</button>";
         h += "<button class='action-btn sec' id='pay-form-cancel' style='margin-top:8px;display:none;' onclick='cancelEditPayment()'>Cancel</button>";
@@ -5140,12 +5218,29 @@ function loadClientPayments(){
         el.innerHTML = h;
         var dateInput = document.getElementById("pay-date");
         if(dateInput) dateInput.value = new Date().toISOString().slice(0,10);
+        populatePayPromoDropdown();
       });
     });
   });
 }
 
 var editingPaymentKey = null;
+
+function populatePayPromoDropdown(){
+  var sel = document.getElementById("pay-promo");
+  if(!sel || !DB) return;
+  DB.ref("discountCodes").once("value", function(snap){
+    if(!snap.exists()) return;
+    var items = []; snap.forEach(function(c){ items.push(c.val()); });
+    items.sort(function(a,b){ return (b.active?1:0)-(a.active?1:0) || (a.code||"").localeCompare(b.code||""); });
+    items.forEach(function(d){
+      var opt = document.createElement("option");
+      opt.value = d.code;
+      opt.textContent = d.code + (d.active?"":" (inactive)");
+      sel.appendChild(opt);
+    });
+  });
+}
 
 function startEditPayment(entryKey){
   if(!DB||!currentClientKey) return;
@@ -6076,6 +6171,80 @@ function generateReport(){
   });
 }
 
+function generateDiscountReport(){
+  if(!DB) return;
+  var el = document.getElementById("disc-report-output");
+  el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>Generating...</p>";
+  DB.ref("discountCodes").once("value", function(codeSnap){
+    var codes = {};
+    if(codeSnap.exists()) codeSnap.forEach(function(c){ codes[c.key] = c.val(); });
+    DB.ref("codeRedemptions").once("value", function(redSnap){
+      var byCode = {};
+      if(redSnap.exists()) redSnap.forEach(function(c){
+        var r = c.val();
+        if(!byCode[r.codeKey]) byCode[r.codeKey] = [];
+        byCode[r.codeKey].push(r);
+      });
+      var codeKeys = Object.keys(codes);
+      if(!codeKeys.length){ el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>No discount codes created yet.</p>"; return; }
+      codeKeys.sort(function(a,b){ return (byCode[b]?byCode[b].length:0)-(byCode[a]?byCode[a].length:0); });
+      el.innerHTML = codeKeys.map(function(k){
+        var d = codes[k];
+        var uses = byCode[k] || [];
+        var valueLabel = d.discountType==="percent" ? d.discountValue+"% off" : "$"+d.discountValue+" off";
+        var totalLabel = (d.discountType==="flat" && uses.length) ? ("~$"+(d.discountValue*uses.length).toFixed(2)+" total discounted") : "";
+        var clientList = uses.length ? uses.map(function(u){ return ex(u.clientName||"Unknown")+" <span style='color:var(--sub);'>("+new Date(u.ts).toLocaleDateString("en-US",{month:"short",day:"numeric"})+")</span>"; }).join("<br/>") : "<span style='color:var(--sub);'>Not used yet.</span>";
+        return "<div style='padding:12px 0;border-bottom:0.5px solid var(--border);'>"+
+          "<strong style='font-family:monospace;font-size:14px;'>"+ex(d.code)+"</strong> <span style='color:var(--sub);font-size:12px;'>"+valueLabel+"</span><br/>"+
+          "<span style='font-size:13px;font-weight:600;'>"+uses.length+" use"+(uses.length!==1?"s":"")+"</span>"+(totalLabel?" · "+totalLabel:"")+
+          "<div style='font-size:12px;color:var(--text);margin-top:6px;'>"+clientList+"</div>"+
+          "</div>";
+      }).join("");
+    });
+  });
+}
+
+// Membership breakdown reads each client's access array directly. "Two Day"
+// / "One Day" specifically look for your Monday Classes / Wednesday Classes
+// category names — if those categories ever get renamed, this needs to be
+// updated to match, or these clients will fall into "Program Only" instead.
+function generateMembershipReport(){
+  if(!DB) return;
+  var el = document.getElementById("membership-report-output");
+  el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>Generating...</p>";
+  DB.ref("codes").once("value", function(snap){
+    var buckets = {"Full Access":[], "Two Day":[], "One Day":[], "Program Only":[], "No Access Set":[]};
+    if(snap.exists()) snap.forEach(function(c){
+      var cd = c.val();
+      if(isClientBlocked(cd)) return; // skip archived/expired — this is a snapshot of active clients only
+      var access = cd.access;
+      var name = cd.name || "Unnamed";
+      if(!access || access==="ALL"){
+        buckets["Full Access"].push(name);
+        return;
+      }
+      var arr = Array.isArray(access) ? access : [access];
+      var hasMon = arr.indexOf("Monday Classes")!==-1;
+      var hasWed = arr.indexOf("Wednesday Classes")!==-1;
+      var otherPrograms = arr.filter(function(a){ return a!=="Monday Classes" && a!=="Wednesday Classes"; });
+      if(hasMon && hasWed) buckets["Two Day"].push(name);
+      else if(hasMon || hasWed) buckets["One Day"].push(name);
+      else if(otherPrograms.length) buckets["Program Only"].push(name+" ("+otherPrograms.join(", ")+")");
+      else buckets["No Access Set"].push(name);
+    });
+    var order = ["Full Access","Two Day","One Day","Program Only","No Access Set"];
+    var out = order.map(function(label){
+      var list = buckets[label];
+      if(!list.length) return "";
+      return "<div style='padding:12px 0;border-bottom:0.5px solid var(--border);'>"+
+        "<strong style='font-size:14px;'>"+label+"</strong> <span style='color:var(--sub);font-size:12px;'>("+list.length+")</span>"+
+        "<div style='font-size:13px;color:var(--text);margin-top:6px;'>"+list.map(function(n){ return ex(n); }).join("<br/>")+"</div>"+
+        "</div>";
+    }).join("");
+    el.innerHTML = out || "<p style='color:var(--sub);font-size:13px;'>No active clients found.</p>";
+  });
+}
+
 function initReportYears(){
   var sel=document.getElementById("report-year");
   var y=new Date().getFullYear();
@@ -6088,24 +6257,37 @@ function initReportYears(){
 }
 
 // PROGRAMS ADMIN
+function formatProgramPrice(p){
+  if(p && p.priceAmount!=null && p.priceAmount!=="" && p.priceUnit){
+    var unitLabels = {week:"/week", session:"/session", "class":"/class", month:"/month", "one-time":" one-time"};
+    var amt = parseFloat(p.priceAmount);
+    var amtStr = (amt%1===0) ? amt.toFixed(0) : amt.toFixed(2);
+    return "$"+amtStr+(unitLabels[p.priceUnit]||"");
+  }
+  return (p && p.price) || "";
+}
+
 function saveProgram(){
   var name=document.getElementById("prog-name").value.trim();
   var desc=document.getElementById("prog-desc-admin").value.trim();
-  var price=document.getElementById("prog-price").value.trim();
+  var priceAmount=document.getElementById("prog-price-amount").value.trim();
+  var priceUnit=document.getElementById("prog-price-unit").value;
   var details=document.getElementById("prog-details-admin").value.trim();
   var showWeb=document.getElementById("prog-show-web").checked;
   var showForms=document.getElementById("prog-show-forms").checked;
   if(!name){ alert("Please enter a program name."); return; }
   if(!DB) return;
+  var priceObj = {priceAmount: priceAmount?parseFloat(priceAmount):null, priceUnit: priceUnit};
+  var displayPrice = formatProgramPrice(priceObj);
   DB.ref("programs").push({
-    name:name, desc:desc, price:price,
+    name:name, desc:desc, price:displayPrice, priceAmount:priceObj.priceAmount, priceUnit:priceUnit,
     details:details, showWeb:showWeb, showForms:showForms,
     ts:Date.now()
   }, function(e){
     if(!e){
       document.getElementById("prog-name").value="";
       document.getElementById("prog-desc-admin").value="";
-      document.getElementById("prog-price").value="";
+      document.getElementById("prog-price-amount").value="";
       document.getElementById("prog-details-admin").value="";
       showOk("ok-prog","Program saved!");
       loadAdminPrograms();
@@ -6128,7 +6310,7 @@ function loadAdminPrograms(){
       left.style.flex="1";
       var webBadge=p.showWeb?"<span style='background:#4a7c5c;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;margin-right:4px;'>Website</span>":"";
       var formBadge=p.showForms?"<span style='background:#a76a5b;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>Forms</span>":"";
-      left.innerHTML="<strong style='font-size:14px;color:var(--text);'>"+ex(p.name)+"</strong> "+webBadge+formBadge+"<br/><span style='font-size:12px;color:var(--accent);font-weight:700;'>"+ex(p.price||"")+"</span><br/><span style='font-size:12px;color:var(--sub);'>"+ex((p.desc||"").substring(0,60))+(p.desc&&p.desc.length>60?"...":"")+"</span>";
+      left.innerHTML="<strong style='font-size:14px;color:var(--text);'>"+ex(p.name)+"</strong> "+webBadge+formBadge+"<br/><span style='font-size:12px;color:var(--accent);font-weight:700;'>"+ex(formatProgramPrice(p))+"</span><br/><span style='font-size:12px;color:var(--sub);'>"+ex((p.desc||"").substring(0,60))+(p.desc&&p.desc.length>60?"...":"")+"</span>";
       var del=document.createElement("button");
       del.className="del-btn";
       del.textContent="✕";
@@ -6138,6 +6320,184 @@ function loadAdminPrograms(){
       row.appendChild(del);
       el.appendChild(row);
     });
+  });
+}
+
+// DISCOUNT CODES ADMIN
+function toggleDiscProgramList(){
+  var any = document.getElementById("disc-any-program").checked;
+  document.getElementById("disc-program-checklist").style.display = any ? "none" : "block";
+}
+function toggleDiscLimitCap(){
+  var show = document.getElementById("disc-limit-type").value==="capped";
+  document.getElementById("disc-limit-cap").style.display = show ? "block" : "none";
+}
+function toggleDiscExpiry(){
+  var show = !document.getElementById("disc-no-expiry").checked;
+  document.getElementById("disc-expiry").style.display = show ? "block" : "none";
+}
+document.getElementById("disc-type").onchange = function(){
+  document.getElementById("disc-value-label").textContent = this.value==="percent" ? "Percent off" : "Dollar amount off";
+};
+
+function populateDiscProgramChecklist(){
+  if(!DB) return;
+  DB.ref("programs").once("value", function(snap){
+    var el = document.getElementById("disc-program-checklist");
+    if(!snap.exists()){ el.innerHTML = "<p class='tip'>Add a program first.</p>"; return; }
+    var names = [];
+    snap.forEach(function(c){ if(c.val().name) names.push(c.val().name); });
+    if(!names.length){ el.innerHTML = "<p class='tip'>Add a program first.</p>"; return; }
+    el.innerHTML = names.map(function(n){
+      var nEsc = ex(n).replace(/"/g,"&quot;");
+      return "<label style='display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;cursor:pointer;'><input type='checkbox' class='disc-prog-check' value=\""+nEsc+"\" style='width:16px;height:16px;' /> "+ex(n)+"</label>";
+    }).join("");
+  });
+}
+
+var editingDiscKey = null;
+
+function saveDiscountCode(){
+  var code = document.getElementById("disc-code").value.trim().toUpperCase();
+  var discountType = document.getElementById("disc-type").value;
+  var discountValue = parseFloat(document.getElementById("disc-value").value);
+  var anyProgram = document.getElementById("disc-any-program").checked;
+  var limitType = document.getElementById("disc-limit-type").value;
+  var limitCap = document.getElementById("disc-limit-cap").value;
+  var noExpiry = document.getElementById("disc-no-expiry").checked;
+  var expiryDate = document.getElementById("disc-expiry").value;
+
+  if(!code){ alert("Please enter a code."); return; }
+  if(isNaN(discountValue) || discountValue<=0){ alert("Please enter a discount amount greater than 0."); return; }
+  if(!DB) return;
+
+  var programScope = "any";
+  if(!anyProgram){
+    programScope = Array.prototype.slice.call(document.querySelectorAll(".disc-prog-check:checked")).map(function(el){ return el.value; });
+    if(!programScope.length){ alert("Select at least one program, or check \"Any program.\""); return; }
+  }
+  var usageLimit = limitType==="capped" ? (parseInt(limitCap,10)||1) : limitType;
+  var expiresAt = noExpiry ? null : (expiryDate ? new Date(expiryDate+"T23:59:59").getTime() : null);
+
+  var payload = {
+    code: code,
+    discountType: discountType,
+    discountValue: discountValue,
+    programScope: programScope,
+    usageLimit: usageLimit,
+    expiresAt: expiresAt,
+    active: true
+  };
+
+  if(editingDiscKey){
+    DB.ref("discountCodes/"+editingDiscKey).update(payload, function(e){
+      if(!e){ showOk("ok-disc","Code updated!"); resetDiscForm(); loadAdminDiscountCodes(); }
+    });
+  } else {
+    // Make sure this code doesn't already exist before creating a new one
+    DB.ref("discountCodes").orderByChild("code").equalTo(code).once("value", function(snap){
+      if(snap.exists()){ alert("A code with this name already exists."); return; }
+      payload.usageCount = 0;
+      payload.ts = Date.now();
+      DB.ref("discountCodes").push(payload, function(e){
+        if(!e){ showOk("ok-disc","Code saved!"); resetDiscForm(); loadAdminDiscountCodes(); }
+      });
+    });
+  }
+}
+
+function resetDiscForm(){
+  editingDiscKey = null;
+  document.getElementById("disc-form-title").textContent = "+ Create a Discount Code";
+  document.getElementById("save-disc-btn").textContent = "Save Code";
+  document.getElementById("cancel-disc-edit-btn").style.display = "none";
+  document.getElementById("disc-code").value = "";
+  document.getElementById("disc-type").value = "percent";
+  document.getElementById("disc-value-label").textContent = "Percent off";
+  document.getElementById("disc-value").value = "";
+  document.getElementById("disc-any-program").checked = true;
+  toggleDiscProgramList();
+  document.querySelectorAll(".disc-prog-check").forEach(function(el){ el.checked=false; });
+  document.getElementById("disc-limit-type").value = "unlimited";
+  toggleDiscLimitCap();
+  document.getElementById("disc-limit-cap").value = "";
+  document.getElementById("disc-no-expiry").checked = true;
+  toggleDiscExpiry();
+  document.getElementById("disc-expiry").value = "";
+}
+
+function editDiscountCode(key){
+  if(!DB) return;
+  DB.ref("discountCodes/"+key).once("value", function(snap){
+    var d = snap.val();
+    if(!d) return;
+    editingDiscKey = key;
+    document.getElementById("disc-form-title").textContent = "✏️ Edit Discount Code";
+    document.getElementById("save-disc-btn").textContent = "Save Changes";
+    document.getElementById("cancel-disc-edit-btn").style.display = "inline-block";
+    document.getElementById("disc-code").value = d.code;
+    document.getElementById("disc-type").value = d.discountType;
+    document.getElementById("disc-value-label").textContent = d.discountType==="percent" ? "Percent off" : "Dollar amount off";
+    document.getElementById("disc-value").value = d.discountValue;
+    var anyProgram = d.programScope==="any";
+    document.getElementById("disc-any-program").checked = anyProgram;
+    toggleDiscProgramList();
+    populateDiscProgramChecklist();
+    if(!anyProgram && Array.isArray(d.programScope)){
+      setTimeout(function(){
+        document.querySelectorAll(".disc-prog-check").forEach(function(el){ el.checked = d.programScope.indexOf(el.value)!==-1; });
+      }, 300); // wait for checklist to finish populating
+    }
+    var limitType = (d.usageLimit==="one"||d.usageLimit==="unlimited") ? d.usageLimit : "capped";
+    document.getElementById("disc-limit-type").value = limitType;
+    toggleDiscLimitCap();
+    if(limitType==="capped") document.getElementById("disc-limit-cap").value = d.usageLimit;
+    var noExpiry = !d.expiresAt;
+    document.getElementById("disc-no-expiry").checked = noExpiry;
+    toggleDiscExpiry();
+    if(!noExpiry) document.getElementById("disc-expiry").value = new Date(d.expiresAt).toISOString().slice(0,10);
+    document.getElementById("disc-form-title").scrollIntoView({behavior:"smooth", block:"start"});
+  });
+}
+
+function toggleDiscountCodeActive(key, makeActive){
+  if(!DB) return;
+  DB.ref("discountCodes/"+key).update({active: makeActive}, function(e){ if(!e) loadAdminDiscountCodes(); });
+}
+
+function deleteDiscountCode(key){
+  if(!DB) return;
+  if(!confirm("Delete this discount code? This won't affect past redemptions, only stop new ones.")) return;
+  DB.ref("discountCodes/"+key).remove(function(e){ if(!e) loadAdminDiscountCodes(); });
+}
+
+function loadAdminDiscountCodes(){
+  if(!DB) return;
+  DB.ref("discountCodes").on("value", function(snap){
+    var el = document.getElementById("admin-disc-list");
+    if(!el) return;
+    if(!snap.exists()){ el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>No discount codes yet.</p>"; return; }
+    var items = []; snap.forEach(function(c){ var d=c.val(); d._k=c.key; items.push(d); });
+    items.sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+    el.innerHTML = items.map(function(d){
+      var valueLabel = d.discountType==="percent" ? d.discountValue+"% off" : "$"+d.discountValue+" off";
+      var scopeLabel = d.programScope==="any" ? "Any program" : (Array.isArray(d.programScope) ? d.programScope.join(", ") : "");
+      var limitLabel = d.usageLimit==="unlimited" ? "Unlimited" : (d.usageLimit==="one" ? "One-time" : ("Capped at "+d.usageLimit));
+      var usedCount = d.usageCount || 0;
+      var usageLabel = d.usageLimit==="unlimited" ? (usedCount+" used") : (usedCount+" / "+(d.usageLimit==="one"?1:d.usageLimit)+" used");
+      var expiryLabel = d.expiresAt ? ("Expires "+new Date(d.expiresAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})) : "No expiration";
+      var isExpired = d.expiresAt && Date.now() > d.expiresAt;
+      var statusBadge = !d.active ? "<span style='background:#8a8a8a;color:#fff;font-size:10px;padding:2px 8px;border-radius:8px;'>Inactive</span>" : (isExpired ? "<span style='background:#c05040;color:#fff;font-size:10px;padding:2px 8px;border-radius:8px;'>Expired</span>" : "<span style='background:#4a7c5c;color:#fff;font-size:10px;padding:2px 8px;border-radius:8px;'>Active</span>");
+      return "<div style='padding:12px 0;border-bottom:0.5px solid var(--border);'>"+
+        "<div style='display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;'><strong style='font-size:15px;color:var(--text);font-family:monospace;'>"+ex(d.code)+"</strong>"+statusBadge+"</div>"+
+        "<p style='font-size:13px;color:var(--sub);margin-bottom:2px;'>"+valueLabel+" · "+ex(scopeLabel)+"</p>"+
+        "<p style='font-size:12px;color:var(--sub);margin-bottom:8px;'>"+limitLabel+" ("+usageLabel+") · "+expiryLabel+"</p>"+
+        "<div style='display:flex;gap:6px;flex-wrap:wrap;'>"+
+        "<button class='edit-btn' onclick='editDiscountCode(\""+d._k+"\")'>Edit</button>"+
+        "<button class='action-btn sec' style='width:auto;margin:0;font-size:11px;padding:5px 10px;' onclick='toggleDiscountCodeActive(\""+d._k+"\","+(!d.active)+")'>"+(d.active?"Deactivate":"Activate")+"</button>"+
+        "<button class='del-btn' onclick='deleteDiscountCode(\""+d._k+"\")'>✕</button>"+
+        "</div></div>";
+    }).join("");
   });
 }
 
@@ -6432,6 +6792,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-payment-status-notes</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-fix-admin-password</p>
 </body>
 </html>

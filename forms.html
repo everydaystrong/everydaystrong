@@ -254,6 +254,11 @@ nav{background:#f9f2ec;border-bottom:none;padding:0.9rem 2rem;display:flex;align
           <input type="checkbox" id="i-fundamentals-request" style="width:18px;height:18px;accent-color:#a76a5b;cursor:pointer;flex-shrink:0;" />
           <span>💡 I'd like to add the optional <strong>1-on-1 Fundamentals class ($40)</strong> to learn proper form before group classes</span>
         </label>
+        <div style="margin-top:10px;">
+          <label class="field-label">Discount Code (optional)</label>
+          <input class="field-input" type="text" id="i-discount-code" placeholder="Enter code if you have one" style="text-transform:uppercase;" />
+          <p id="discount-code-feedback" style="font-size:12px;margin-top:4px;"></p>
+        </div>
       </div>
     </div>
 
@@ -606,6 +611,11 @@ try {
   loadPrograms();
 } catch(e){ loadFallbackPrograms(); }
 
+document.getElementById("i-discount-code").addEventListener("input", function(){
+  clearTimeout(window._discCodeDebounce);
+  window._discCodeDebounce = setTimeout(checkDiscountCode, 400);
+});
+
 // Submitting all 3 forms back-to-back can fire 3 database writes in rapid
 // succession. This retries a failed write automatically before giving up.
 // IMPORTANT: creates its own fresh database() reference on every call/retry
@@ -650,14 +660,24 @@ function loadPrograms(){
     var opts=[];
     if(snap.exists()) snap.forEach(function(c){
       var p=c.val();
-      if(p.showForms && p.name && p.name.trim().toLowerCase()!=="7 day trial") opts.push(p.name+(p.price?" ("+p.price+")":""));
+      if(p.showForms && p.name && p.name.trim().toLowerCase()!=="7 day trial"){
+        opts.push({
+          label: p.name+(p.price?" ("+p.price+")":""),
+          name: p.name,
+          priceAmount: (p.priceAmount!=null && p.priceAmount!=="") ? p.priceAmount : null,
+          priceUnit: p.priceUnit || null
+        });
+      }
     });
     buildProgramSelect(opts);
   });
 }
 
 function loadFallbackPrograms(){
-  buildProgramSelect(["Virtual Semi Private Classes","Private Coaching Virtual"]);
+  buildProgramSelect([
+    {label:"Virtual Semi Private Classes", name:"Virtual Semi Private Classes"},
+    {label:"Private Coaching Virtual", name:"Private Coaching Virtual"}
+  ]);
 }
 
 function buildProgramSelect(cats){
@@ -665,7 +685,10 @@ function buildProgramSelect(cats){
   sel.innerHTML = '<option value="">Select a program...</option>';
   cats.forEach(function(c){
     var opt = document.createElement("option");
-    opt.value = c; opt.textContent = c;
+    opt.value = c.label; opt.textContent = c.label;
+    opt.setAttribute("data-progname", c.name);
+    if(c.priceAmount!=null) opt.setAttribute("data-price-amount", c.priceAmount);
+    if(c.priceUnit) opt.setAttribute("data-price-unit", c.priceUnit);
     sel.appendChild(opt);
   });
   // Restore a previously saved selection now that options exist
@@ -676,6 +699,56 @@ function buildProgramSelect(cats){
       if(data["i-program"]) sel.value = data["i-program"];
     }
   } catch(e){}
+  sel.onchange = checkDiscountCode;
+  checkDiscountCode();
+}
+
+// ── Discount codes ──────────────────────────────────────────────────
+var appliedDiscountCode = null; // {key, code, discountType, discountValue, finalPriceLabel}
+function checkDiscountCode(){
+  var input = document.getElementById("i-discount-code");
+  var feedback = document.getElementById("discount-code-feedback");
+  if(!input || !feedback) return;
+  var raw = input.value.trim().toUpperCase();
+  appliedDiscountCode = null;
+  if(!raw){ feedback.textContent=""; return; }
+  var progSel = document.getElementById("i-program");
+  var progOpt = progSel && progSel.selectedOptions && progSel.selectedOptions[0];
+  var progName = progOpt ? progOpt.getAttribute("data-progname") : null;
+  fbDB.ref("discountCodes").once("value", function(snap){
+    var match = null, matchKey = null;
+    if(snap.exists()) snap.forEach(function(c){
+      var d = c.val();
+      if(d.code && d.code.toUpperCase()===raw){ match = d; matchKey = c.key; }
+    });
+    if(!match){ feedback.textContent="❌ Code not found."; feedback.style.color="#c0392b"; return; }
+    if(match.active===false){ feedback.textContent="❌ This code is no longer active."; feedback.style.color="#c0392b"; return; }
+    if(match.expiresAt && Date.now() > match.expiresAt){ feedback.textContent="❌ This code has expired."; feedback.style.color="#c0392b"; return; }
+    var limit = match.usageLimit;
+    var used = match.usageCount || 0;
+    var limitNum = limit==="one" ? 1 : (limit==="unlimited" ? Infinity : parseInt(limit,10));
+    if(!isNaN(limitNum) && used >= limitNum){ feedback.textContent="❌ This code has already been fully redeemed."; feedback.style.color="#c0392b"; return; }
+    var scope = match.programScope;
+    if(scope!=="any" && Array.isArray(scope)){
+      if(!progName){ feedback.textContent="⚠️ Select a program first to check this code."; feedback.style.color="#a76a5b"; return; }
+      if(scope.indexOf(progName)===-1){ feedback.textContent="❌ This code isn't valid for the selected program."; feedback.style.color="#c0392b"; return; }
+    }
+    // Valid!
+    appliedDiscountCode = {key:matchKey, code:match.code, discountType:match.discountType, discountValue:match.discountValue};
+    var priceAmount = progOpt ? progOpt.getAttribute("data-price-amount") : null;
+    var priceUnit = progOpt ? progOpt.getAttribute("data-price-unit") : null;
+    if(priceAmount!=null && priceAmount!==""){
+      var base = parseFloat(priceAmount);
+      var finalPrice = match.discountType==="percent" ? base*(1-match.discountValue/100) : Math.max(0, base-match.discountValue);
+      var unitLabels = {week:"/week", session:"/session", "class":"/class", month:"/month", "one-time":" one-time"};
+      var fmt = function(n){ return (n%1===0) ? n.toFixed(0) : n.toFixed(2); };
+      appliedDiscountCode.finalPriceLabel = "$"+fmt(finalPrice)+(unitLabels[priceUnit]||"");
+      feedback.innerHTML = "✅ Code applied! <strong>"+appliedDiscountCode.finalPriceLabel+"</strong> <span style='text-decoration:line-through;opacity:0.6;'>$"+fmt(base)+(unitLabels[priceUnit]||"")+"</span>";
+    } else {
+      feedback.textContent = "✅ Code applied!";
+    }
+    feedback.style.color="#4a7c5c";
+  });
 }
 
 function switchForm(name, btn){
@@ -770,7 +843,7 @@ function submitIntake(){
   var preferredCode = val("i-preferredcode").trim().toUpperCase().replace(/[^A-Z0-9]/g,"");
   saveFormWithRetry(cname, {
     formType:"Intake Form", ts:Date.now(),
-    data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,TrialRequested:(trialRequested?"Yes":"No"),FundamentalsClassRequested:(fundamentalsRequested?"Yes":"No"),Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None","Preferred Code":preferredCode||"None (Heather will assign one)","OK to Contact":document.getElementById("i-contact-ok").checked?"Yes":"No","Preferred Contact Method":val("i-contact-method")}
+    data:{Name:fname+" "+lname,Email:email,Phone:phone,DOB:dob,Program:program,TrialRequested:(trialRequested?"Yes":"No"),FundamentalsClassRequested:(fundamentalsRequested?"Yes":"No"),Level:level,Goals:goals,Injuries:val("i-injuries")||"None",Equipment:val("i-equipment")||"None",Referral:val("i-referral")||"None",Notes:val("i-notes")||"None","Preferred Code":preferredCode||"None (Heather will assign one)","OK to Contact":document.getElementById("i-contact-ok").checked?"Yes":"No","Preferred Contact Method":val("i-contact-method"),"Discount Code":(appliedDiscountCode?appliedDiscountCode.code:"None"),"Discounted Price":(appliedDiscountCode&&appliedDiscountCode.finalPriceLabel?appliedDiscountCode.finalPriceLabel:"N/A")}
   }, 3, "Intake Form");
 
   // Show success immediately — the data is safely saved regardless of email outcome
@@ -976,6 +1049,19 @@ function submitWaiver(){
     }
     btn.style.display="none";
     successBox.style.display="block";
+
+    if(appliedDiscountCode && appliedDiscountCode.key && fbDB){
+      fbDB.ref("discountCodes/"+appliedDiscountCode.key+"/usageCount").transaction(function(cur){ return (cur||0)+1; });
+      fbDB.ref("codeRedemptions").push({
+        codeKey: appliedDiscountCode.key,
+        code: appliedDiscountCode.code,
+        clientName: name,
+        clientEmail: email,
+        programName: program,
+        ts: Date.now()
+      });
+    }
+
     emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
       .then(function(){
         var clientParams = {
