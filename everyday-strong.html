@@ -2617,6 +2617,8 @@ document.getElementById("atab-programs").onclick=function(){ setAdmTab("programs
 document.getElementById("atab-discounts").onclick=function(){ setAdmTab("discounts",this); loadAdminDiscountCodes(); populateDiscProgramChecklist(); };
 document.getElementById("atab-testimonials").onclick=function(){ setAdmTab("testimonials",this); loadTestimonialsAdmin(); loadPendingTestimonials(); };
 document.getElementById("add-prog-btn").onclick=saveProgram;
+document.getElementById("save-disc-btn").onclick=saveDiscountCode;
+document.getElementById("cancel-disc-edit-btn").onclick=resetDiscForm;
 document.getElementById("atab-featured").onclick=function(){ setAdmTab("featured",this); loadFeaturedAdmin(); };
 document.getElementById("add-test-btn").onclick=addTestimonial;
 document.getElementById("add-feat-btn").onclick=addFeaturedPhoto;
@@ -6792,6 +6794,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-fix-admin-password</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-fix-save-code-btn</p>
 </body>
 </html>
