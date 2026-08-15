@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Everyday Strong</title>
@@ -888,6 +891,8 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
       <div class="admin-card">
         <h3>All Videos (<span id="video-count">0</span>)</h3>
         <p class="tip" style="margin-bottom:10px;">Tap the 📌 next to a category to keep it as its own tile for clients instead of it getting merged into "Live Classes."</p>
+        <button class="action-btn sec" id="force-refresh-imgs-btn" style="width:auto;margin-bottom:10px;font-size:12px;padding:7px 14px;">🔄 Force-Refresh Cover Photos for Everyone</button>
+        <p class="tip" id="force-refresh-imgs-tip" style="margin-bottom:10px;">Changed a category or week photo and it's not showing up for people who already have the site saved to their home screen? Tap this — it makes every phone re-download the current photos next time they open the app, without anyone needing to reinstall anything.</p>
         <div id="dupe-alert-bar" style="display:none;background:#fdeceb;border:1px solid #e8a89f;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:#a13a2e;">
           <span id="dupe-alert-text"></span>
           <button class="action-btn sec" id="dupe-filter-btn" onclick="toggleAdmDupeFilter()" style="width:auto;margin:8px 0 0;font-size:12px;padding:6px 12px;">Show Only Duplicates</button>
@@ -1486,6 +1491,11 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 <script>
 var adminPass = "ADMIN123";
 var adminPassLoaded = false;
+var imgCacheVersion = "";
+function withCacheBust(url){
+  if(!url) return url;
+  return url + (url.indexOf("?")!==-1 ? "&" : "?") + "v=" + (imgCacheVersion || "1");
+}
 var currentUser = null;
 var currentUserKey = null;
 var currentAccess = "ALL";
@@ -1508,6 +1518,7 @@ try {
   });
   DB = firebase.database();
   DB.ref("adminPass").once("value",function(s){ if(s.exists()) adminPass=s.val(); adminPassLoaded=true; });
+  DB.ref("siteConfig/imgVersion").once("value",function(s){ if(s.exists()) imgCacheVersion=s.val(); });
 } catch(e){ adminPassLoaded=true; }
 
 // Email notifications for dashboard activity
@@ -1987,7 +1998,7 @@ function renderCategories(){
     if(popVids.length){
       var popImg = pickCategoryImage("Most Popular", getCategoryImagePool("Most Popular")) || getDefaultCatImg("Most Popular");
       h+="<div class='cat-card' onclick='openPopularCategory()'>";
-      if(popImg){ h+="<img class='cat-img' src='"+ex(popImg)+"' onerror=\"this.outerHTML='<div class=&quot;cat-img-placeholder&quot;></div>'\" />"; }
+      if(popImg){ h+="<img class='cat-img' src='"+ex(withCacheBust(popImg))+"' onerror=\"this.outerHTML='<div class=&quot;cat-img-placeholder&quot;></div>'\" />"; }
       else{ h+="<div class='cat-img-placeholder'></div>"; }
       h+="<div class='cat-info'><div class='cat-name'>Most Popular</div><div class='cat-count'>"+popVids.length+" video"+(popVids.length!==1?"s":"")+"</div></div></div>";
     }
@@ -2014,7 +2025,7 @@ function renderCategories(){
     if(!img) img=getDefaultCatImg("Live Classes");
     var liveOrder = Math.min.apply(null, mergeableKeys.map(function(k){ return getCatOrderFromSettings(categorySettings,k); }));
     var th="<div class='cat-card' onclick='openMergedCategories()'>";
-    if(img){ th+="<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />"; }
+    if(img){ th+="<img class='cat-img' src='"+ex(withCacheBust(img))+"' onerror='this.style.display=\"none\"' />"; }
     else{ th+="<div class='cat-img-placeholder'></div>"; }
     th+="<div class='cat-info'><div class='cat-name'>Live Classes</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
     if(pct>0) th+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
@@ -2029,7 +2040,7 @@ function renderCategories(){
       var pct=count>0?Math.round(completedCount/count*100):0;
       var img=pickCategoryImage(cat,getCategoryImagePool(cat))||data.img||getDefaultCatImg(cat);
       var th="<div class='cat-card' onclick='openCategory(\""+ex(cat)+"\")'>";
-      if(img){ th+="<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />"; }
+      if(img){ th+="<img class='cat-img' src='"+ex(withCacheBust(img))+"' onerror='this.style.display=\"none\"' />"; }
       else{ th+="<div class='cat-img-placeholder'></div>"; }
       th+="<div class='cat-info'><div class='cat-name'>"+ex(cat)+"</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
       if(pct>0) th+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
@@ -2048,7 +2059,7 @@ function renderCategories(){
     var pct=count>0?Math.round(completedCount/count*100):0;
     var img=pickCategoryImage(cat,getCategoryImagePool(cat))||data.img||getDefaultCatImg(cat);
     var th="<div class='cat-card' onclick='openCategory(\""+ex(cat)+"\")'>";
-    if(img){ th+="<img class='cat-img' src='"+ex(img)+"' onerror='this.style.display=\"none\"' />"; }
+    if(img){ th+="<img class='cat-img' src='"+ex(withCacheBust(img))+"' onerror='this.style.display=\"none\"' />"; }
     else{ th+="<div class='cat-img-placeholder'></div>"; }
     th+="<div class='cat-info'><div class='cat-name'>"+ex(cat)+"</div><div class='cat-count'>"+count+" video"+(count!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>";
     if(pct>0) th+="<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>";
@@ -2231,7 +2242,7 @@ function renderSubcatTiles(){
       ? "this.outerHTML='<div class=&quot;cat-img-placeholder&quot;></div>'"
       : "this.style.display='none'";
     return "<div class='cat-card' onclick='openSubcat(\""+sEsc+"\")'>"+
-      (img ? "<img class='cat-img' src='"+ex(img)+"' onerror=\""+imgErrorHandler+"\" />" : "<div class='cat-img-placeholder'></div>")+
+      (img ? "<img class='cat-img' src='"+ex(withCacheBust(img))+"' onerror=\""+imgErrorHandler+"\" />" : "<div class='cat-img-placeholder'></div>")+
       "<div class='cat-info'><div class='cat-name'>"+ex(s)+"</div><div class='cat-count'>"+vids.length+" video"+(vids.length!==1?"s":"")+(pct>0?" · "+pct+"% done":"")+"</div>"+
       (pct>0 ? "<div class='cat-progress'><div class='cat-progress-fill' style='width:"+pct+"%'></div></div>" : "")+
       "</div></div>";
@@ -3718,7 +3729,21 @@ function moveVideo(idx,dir){
 }
 
 // CODES
-function genCode(){ var c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",o=""; for(var i=0;i<8;i++) o+=c[Math.floor(Math.random()*c.length)]; document.getElementById("c-code").value=o; }
+function genCode(){
+  var nameInput = document.getElementById("c-name").value.trim();
+  var out;
+  if(nameInput){
+    var firstName = nameInput.split(" ")[0].toUpperCase().replace(/[^A-Z]/g,"");
+    var num = Math.floor(Math.random()*90+10); // 2-digit number, 10-99
+    out = firstName ? (firstName+num) : "";
+  }
+  if(!out){
+    var c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",o="";
+    for(var i=0;i<8;i++) o+=c[Math.floor(Math.random()*c.length)];
+    out = o;
+  }
+  document.getElementById("c-code").value=out;
+}
 
 function addCode(){
   var n=document.getElementById("c-name").value.trim();
@@ -6784,6 +6809,22 @@ document.getElementById("add-video-btn").onclick=addVideo;
 document.getElementById("bulk-preview-btn").onclick=previewBulkVideos;
 document.getElementById("bulk-add-btn").onclick=submitBulkVideos;
 document.getElementById("gen-btn").onclick=genCode;
+document.getElementById("force-refresh-imgs-btn").onclick=function(){
+  if(!DB) return;
+  var now = Date.now();
+  DB.ref("siteConfig/imgVersion").set(now, function(e){
+    if(!e){
+      imgCacheVersion = now;
+      var tip = document.getElementById("force-refresh-imgs-tip");
+      var original = tip.textContent;
+      tip.textContent = "✅ Done! Next time anyone opens the site or the home-screen app, they'll get the current photos — no reinstall needed.";
+      tip.style.color = "#4a7c5c";
+      setTimeout(function(){ tip.textContent = original; tip.style.color = ""; }, 5000);
+    } else {
+      alert("Something went wrong — please try again.");
+    }
+  });
+};
 document.getElementById("add-code-btn").onclick=addCode;
 document.getElementById("send-weekly-summary-btn").onclick=sendWeeklySummary;
 document.getElementById("add-ann-btn").onclick=addAnn;
@@ -6827,6 +6868,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-28-group-submissions</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-15-no-cache-headers</p>
 </body>
 </html>
