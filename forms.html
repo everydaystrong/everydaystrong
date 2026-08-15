@@ -916,7 +916,14 @@ function submitAgreement(){
   // (final step) covering all three forms, instead of one per step.
 }
 
-function generateFallbackCode(){
+function generateFallbackCode(name){
+  if(name){
+    var firstName = String(name).split(" ")[0].toUpperCase().replace(/[^A-Z]/g,"");
+    if(firstName){
+      var num = Math.floor(Math.random()*90+10); // 2-digit, 10-99
+      return firstName+num;
+    }
+  }
   var chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789", out="";
   for(var i=0;i<8;i++) out+=chars[Math.floor(Math.random()*chars.length)];
   return out;
@@ -976,13 +983,13 @@ onPreferredCodeInput();
 // Checks a candidate code for uniqueness against existing client codes, and
 // keeps trying fallback codes until one is free. Calls back with the final
 // code that was actually reserved (or null if something went wrong).
-function reserveUniqueCode(candidate, attemptsLeft, callback){
+function reserveUniqueCode(candidate, attemptsLeft, callback, name){
   if(attemptsLeft === undefined) attemptsLeft = 5;
   if(attemptsLeft <= 0){ callback(null); return; }
   firebase.database(fbApp).ref("codes").orderByChild("code").equalTo(candidate).once("value", function(snap){
     if(snap.exists()){
-      // Taken — fall back to a random generated code instead
-      reserveUniqueCode(generateFallbackCode(), attemptsLeft-1, callback);
+      // Taken — try again with a fresh name-based code instead
+      reserveUniqueCode(generateFallbackCode(name), attemptsLeft-1, callback, name);
     } else {
       callback(candidate);
     }
@@ -990,7 +997,7 @@ function reserveUniqueCode(candidate, attemptsLeft, callback){
 }
 
 function autoActivateTrial(name, email, preferredCode, program, callback){
-  var candidate = preferredCode || generateFallbackCode();
+  var candidate = preferredCode || generateFallbackCode(name);
   reserveUniqueCode(candidate, 5, function(finalCode){
     if(!finalCode){ callback(null); return; }
     firebase.database(fbApp).ref("codes").push({
@@ -1115,6 +1122,6 @@ function submitWaiver(){
   }
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-07-09-logo-back-to-side</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-15-friendly-trial-codes</p>
 </body>
 </html>
