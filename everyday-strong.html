@@ -351,7 +351,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     <p class="tip" style="margin-bottom:10px;">Shown to clients at the top of "<span id="cat-info-name"></span>" — explain what the program covers.</p>
     <textarea class="form-input" id="cat-info-desc" rows="4" placeholder="e.g. A 6-week strength program broken into weekly blocks..." style="text-transform:none;resize:vertical;margin-bottom:12px;"></textarea>
     <label class="form-label" style="display:block;margin-bottom:6px;">Category Images (optional)</label>
-    <textarea class="form-input" id="cat-info-image" rows="3" placeholder="https://... or media/foundations.jpg&#10;One per line — add more than one and clients see a random one each visit" style="text-transform:none;resize:vertical;margin-bottom:4px;font-size:13px;"></textarea>
+    <textarea class="form-input" id="cat-info-image" rows="3" placeholder="https://... or media/foundations.jpg&#10;If you list more than one, only the first is used — extra lines are ignored" style="text-transform:none;resize:vertical;margin-bottom:4px;font-size:13px;"></textarea>
     <p class="tip" style="margin-bottom:12px;">One URL per line. Add several to rotate a random one each visit — or just one for a fixed picture.</p>
     <button class="action-btn" onclick="saveCatInfo()" style="width:100%;">Save</button>
   </div>
@@ -1921,16 +1921,15 @@ function getSubcatImagePool(cat, subcat){
   });
   return pool;
 }
-// One random pick per category, per browser session — re-rolls on a fresh
-// visit (new page load), but doesn't flicker/change mid-browse if data
-// happens to refresh while someone's looking at the page.
+// Randomized rotation was removed — Heather standardized on one specific
+// photo per category, so this just always returns the first (only) image
+// in the pool. Kept as a function (rather than inlined) so any leftover
+// multi-image data from the old rotation feature doesn't cause errors —
+// it just quietly uses the first entry instead.
 var categoryImageChoice = {};
 function pickCategoryImage(cacheKey, pool){
-  if(categoryImageChoice[cacheKey]) return categoryImageChoice[cacheKey];
   if(!pool || !pool.length) return null;
-  var pick = pool[Math.floor(Math.random()*pool.length)];
-  categoryImageChoice[cacheKey] = pick;
-  return pick;
+  return pool[0];
 }
 // Falls back to an uploaded stock photo (media/live-classes.jpeg, etc.) when a
 // category has no per-video catImg set — matched loosely by name so it works
@@ -6951,6 +6950,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: TEST-REFRESH-CHECK-002</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-remove-photo-rotation</p>
 </body>
 </html>
