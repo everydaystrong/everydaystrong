@@ -2,6 +2,18 @@
 <html lang="en">
 <head>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<script>
+// Registers the update-control service worker (see sw.js) and forces an
+// automatic page reload the moment a newer version takes over — this is
+// what makes "upload a new file, everyone sees it" actually reliable,
+// including on iPhone home-screen apps.
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").then(function(reg){ reg.update(); }).catch(function(){});
+  navigator.serviceWorker.addEventListener("controllerchange", function(){
+    window.location.reload();
+  });
+}
+</script>
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <meta charset="UTF-8" />
@@ -6939,6 +6951,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-15-password-eye-toggle</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: TEST-REFRESH-CHECK-001</p>
 </body>
 </html>
