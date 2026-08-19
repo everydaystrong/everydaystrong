@@ -4823,7 +4823,7 @@ function loadUnpaidDashboard(){
     if(!unpaid.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Everyone's paid up!</p>"; return; }
     unpaid.sort(function(a,b){ return (a.name||"").localeCompare(b.name||""); });
     el.innerHTML = unpaid.map(function(u){
-      return "<div style='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;' onclick='openClientProfile(\""+ex(u.name).replace(/"/g,"&quot;")+"\")'>"+
+      return "<div style='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;' onclick='openClientProfile(\""+ex(u.name).replace(/"/g,"&quot;")+"\",\""+ex(u.key)+"\")'>"+
         "<div><strong style='font-size:14px;color:var(--text);'>"+ex(u.name)+"</strong><br/><span style='font-family:monospace;font-size:11px;color:var(--sub);'>"+ex(u.code)+"</span>"+(u.note?"<br/><span style='font-size:12px;color:var(--sub);'>💬 "+ex(u.note)+"</span>":"")+"</div>"+
         "<span style='background:#c05040;color:#fff;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600;white-space:nowrap;'>Unpaid</span>"+
         "</div>";
@@ -4859,7 +4859,7 @@ function loadPaymentReminders(){
         var label = d.overdue ? "Overdue" : "Due "+d.nextDue;
         var nameEsc = ex(d.name).replace(/"/g,"&quot;");
         return "<div style='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);gap:8px;'>"+
-          "<div style='cursor:pointer;' onclick='openClientProfile(\""+nameEsc+"\")'><strong style='font-size:14px;color:var(--text);'>"+ex(d.name)+"</strong></div>"+
+          "<div style='cursor:pointer;' onclick='openClientProfile(\""+nameEsc+"\",\""+ex(d.key)+"\")'><strong style='font-size:14px;color:var(--text);'>"+ex(d.name)+"</strong></div>"+
           "<div style='display:flex;align-items:center;gap:6px;'>"+
           "<span style='background:"+color+";color:#fff;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600;white-space:nowrap;'>"+label+"</span>"+
           "<button class='action-btn sec' style='width:auto;margin:0;font-size:11px;padding:5px 10px;' onclick='sendPaymentReminder(\""+d.key+"\",\""+nameEsc+"\")'>Remind</button>"+
@@ -4887,14 +4887,14 @@ function loadAtRiskClients(){
       var last = cd.lastLogin || cd.ts;
       if(last && last < cutoff){
         var days = Math.floor((Date.now()-last)/(24*60*60*1000));
-        atRisk.push({name:cd.name, days:days});
+        atRisk.push({name:cd.name, days:days, key:c.key});
       }
     });
     if(!atRisk.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Everyone's been active recently!</p>"; return; }
     atRisk.sort(function(a,b){ return b.days-a.days; });
     el.innerHTML = atRisk.map(function(a){
       var nameEsc = ex(a.name).replace(/"/g,"&quot;");
-      return "<div style='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;' onclick='openClientProfile(\""+nameEsc+"\")'>"+
+      return "<div style='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;' onclick='openClientProfile(\""+nameEsc+"\",\""+ex(a.key)+"\")'>"+
         "<strong style='font-size:14px;color:var(--text);'>"+ex(a.name)+"</strong>"+
         "<span style='background:#e8a020;color:#fff;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600;white-space:nowrap;'>"+a.days+" days inactive</span></div>";
     }).join("");
@@ -5101,7 +5101,8 @@ function renderClientList(){
     var crow=document.createElement("div");
     crow.style.cssText="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);"+(cd._archived?"":"cursor:pointer;");
     crow.setAttribute("data-cname", cd.name);
-    if(!cd._archived) crow.onclick=function(){ openClientProfile(this.getAttribute("data-cname")); };
+    crow.setAttribute("data-ckey", cd._key);
+    if(!cd._archived) crow.onclick=function(){ openClientProfile(this.getAttribute("data-cname"), this.getAttribute("data-ckey")); };
     var badges="";
     if(cd._archived) badges+=" <span style='background:#555;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>ARCHIVED</span>";
     if(inactive) badges+=" <span style='background:#888;color:#fff;font-size:10px;padding:1px 6px;border-radius:5px;'>PAUSED</span>";
@@ -5428,6 +5429,7 @@ function deletePaymentEntry(entryKey){
 
 // CLIENT PROFILES
 var currentClientKey = null;
+var currentClientCodeKey = null;
 var currentClientName = null;
 
 // NEW SUBMISSIONS FEED (every client_forms entry, across all keys, regardless of code status)
@@ -5753,6 +5755,10 @@ function saveSubmissionEdit(){
 
 function editCurrentClientAccess(){
   if(!DB || !currentClientKey) return;
+  if(currentClientCodeKey){ editCode(currentClientCodeKey); return; }
+  // Fallback for the rare case a profile was opened without a specific
+  // record key (e.g. an older bookmarked link) — searches by name, which
+  // is ambiguous if more than one code shares that name.
   DB.ref("codes").once("value", function(snap){
     var foundKey = null;
     snap.forEach(function(c){
@@ -5802,10 +5808,11 @@ function loadClients(){
   });
 }
 
-function openClientProfile(name){
+function openClientProfile(name, codeKey){
   if(!name || name==="undefined"){ alert("Something went wrong loading this client — please try again from the client list."); return; }
   currentClientKey = sk(name);
   currentClientName = name;
+  currentClientCodeKey = codeKey || null;
   document.getElementById("client-profile-name").textContent = name + "  Profile";
   document.getElementById("client-profile-card").style.display="block";
   document.getElementById("client-profile-card").scrollIntoView({behavior:"smooth"});
@@ -6950,6 +6957,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-artist-logo-swap</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-fix-duplicate-name-archive</p>
 </body>
 </html>
