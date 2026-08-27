@@ -1007,6 +1007,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
       <div class="admin-card">
         <div style="display:flex;align-items:center;justify-content:space-between;">
           <h3 style="margin-bottom:0;">Client Profiles</h3>
+          <button class="action-btn sec" onclick="toggleNewClientForm()" style="width:auto;margin:0;font-size:13px;padding:7px 14px;">+ Add Client</button>
         </div>
         <div id="new-client-form" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
           <h3>Create Access Code</h3>
@@ -7163,6 +7164,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-dashboard-forms-link</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-restore-add-client-btn</p>
 </body>
 </html>
