@@ -247,7 +247,7 @@ nav{background:#f9f2ec;border-bottom:none;padding:0.9rem 2rem;display:flex;align
         <select class="field-select" id="i-dob-year" style="flex:1;"><option value="">Year</option></select>
       </div>
     </div>
-    <div class="field-group">
+    <div class="field-group" id="preferred-code-group">
       <label class="field-label">Pick an access code for your dashboard (optional)</label>
       <div style="display:flex;gap:8px;">
         <input class="field-input" id="i-preferredcode" style="text-transform:uppercase;flex:1;" placeholder="e.g. SARAH24, or leave blank and Heather will assign one" maxlength="20" />
@@ -596,7 +596,39 @@ document.addEventListener("DOMContentLoaded", function(){
     el.addEventListener("input", saveFormDraft);
     el.addEventListener("change", saveFormDraft);
   });
+  setupExistingClientMode();
 });
+
+// If someone arrives here from inside their dashboard (an existing client
+// completing forms rather than a brand-new signup), the link includes their
+// name so we can pre-fill it and skip the parts that don't apply to them —
+// they already have an access code and are already an active client, so
+// asking them to pick a new code or request a trial would be confusing.
+var isExistingClientMode = false;
+function setupExistingClientMode(){
+  var params = new URLSearchParams(window.location.search);
+  var existingName = params.get("name");
+  if(!existingName) return;
+  isExistingClientMode = true;
+  var parts = existingName.trim().split(" ");
+  var first = parts.shift() || "";
+  var last = parts.join(" ");
+  var fnameEl = document.getElementById("i-fname");
+  var lnameEl = document.getElementById("i-lname");
+  if(fnameEl && !fnameEl.value) fnameEl.value = first;
+  if(lnameEl && !lnameEl.value) lnameEl.value = last;
+  var emailParam = params.get("email");
+  var emailEl = document.getElementById("i-email");
+  if(emailEl && emailParam && !emailEl.value) emailEl.value = emailParam;
+  // Hide fields that don't apply to someone who's already an active client
+  // with a program already assigned — picking a code, a program, a trial,
+  // or the fundamentals add-on are all things Heather already handled when
+  // she set up their access.
+  var codeGroup = document.getElementById("preferred-code-group");
+  if(codeGroup) codeGroup.style.display = "none";
+  var programGroup = document.getElementById("program-field-group");
+  if(programGroup) programGroup.style.display = "none";
+}
 
 function startTrial(){
   // Make sure we're on the intake step, then scroll to the start of it
@@ -880,11 +912,11 @@ function clientFormKey(fallbackName){
 }
 
 function submitIntake(){
-  var fname=val("i-fname"),lname=val("i-lname"),email=val("i-email"),phone=val("i-phone"),dob=getDobValue("i-dob"),program=val("i-program"),level=val("i-level"),goals=val("i-goals");
+  var fname=val("i-fname"),lname=val("i-lname"),email=val("i-email"),phone=val("i-phone"),dob=getDobValue("i-dob"),program=isExistingClientMode?"Existing client — program already assigned":val("i-program"),level=val("i-level"),goals=val("i-goals");
   var trialRequested = document.getElementById("i-trial-request").checked;
   var fundamentalsRequested = document.getElementById("i-fundamentals-request").checked;
   var err=document.getElementById("err-intake");
-  if(!fname||!lname||!email||!phone||!dob||!program||!level||!goals){
+  if(!fname||!lname||!email||!phone||!dob||(!isExistingClientMode&&!program)||!level||!goals){
     err.style.display="block"; return;
   }
   err.style.display="none";
@@ -1137,6 +1169,6 @@ function submitWaiver(){
   }
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: TEST-REFRESH-CHECK-002</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-skip-program-for-existing</p>
 </body>
 </html>

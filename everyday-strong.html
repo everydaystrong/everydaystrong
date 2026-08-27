@@ -357,6 +357,31 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
   </div>
 </div>
 
+<!-- PROGRESSION CHECKLIST -->
+<div class="modal-overlay" id="checklist-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeChecklistModal()">✕</button>
+    <h3 style="margin-bottom:10px;">Progression Checklist</h3>
+    <p class="tip" style="margin-bottom:10px;">Shown to clients at the end of "<span id="checklist-name"></span>" so they can self-check readiness before moving on.</p>
+    <label class="form-label" style="display:block;margin-bottom:6px;">Enable this checklist</label>
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;">
+      <input type="checkbox" id="checklist-enabled" style="width:18px;height:18px;" />
+      <span style="font-size:13px;color:var(--sub);">Show a checklist at the end of this week</span>
+    </label>
+    <label class="form-label" style="display:block;margin-bottom:6px;">Title</label>
+    <input class="form-input" id="checklist-title" placeholder="e.g. Before moving to Week 2, ask yourself:" style="text-transform:none;margin-bottom:14px;" />
+    <label class="form-label" style="display:block;margin-bottom:6px;">Ready signs — client should answer YES to each</label>
+    <textarea class="form-input" id="checklist-ready-items" rows="4" placeholder="One per line, e.g.&#10;Can I complete all 3 days without losing form?&#10;Am I breathing throughout every exercise?" style="text-transform:none;resize:vertical;margin-bottom:14px;font-size:13px;"></textarea>
+    <label class="form-label" style="display:block;margin-bottom:6px;">Warning signs — client should answer NO to each (optional)</label>
+    <textarea class="form-input" id="checklist-warning-items" rows="2" placeholder="One per line, e.g.&#10;Am I feeling any discomfort or pain in my lower back?" style="text-transform:none;resize:vertical;margin-bottom:14px;font-size:13px;"></textarea>
+    <label class="form-label" style="display:block;margin-bottom:6px;">Message if not ready yet</label>
+    <textarea class="form-input" id="checklist-fail-message" rows="3" placeholder="e.g. Do not progress. Repeat this week and focus on..." style="text-transform:none;resize:vertical;margin-bottom:14px;font-size:13px;"></textarea>
+    <label class="form-label" style="display:block;margin-bottom:6px;">Encouragement note (always shown alongside the above)</label>
+    <textarea class="form-input" id="checklist-encouragement" rows="2" style="text-transform:none;resize:vertical;margin-bottom:14px;font-size:13px;">Remember — it's okay to repeat a week or a workout. Repeating doesn't mean falling behind, it means you're doing this right.</textarea>
+    <button class="action-btn" onclick="saveChecklist()" style="width:100%;">Save Checklist</button>
+  </div>
+</div>
+
 <!-- RENAME TAG -->
 <div class="modal-overlay" id="rename-tag-modal">
   <div class="modal">
@@ -475,6 +500,10 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
   </div>
   <div class="welcome-bar" id="welcome-bar">Welcome back!</div>
   <div class="portal-body">
+    <div id="forms-reminder-bar" style="display:none;background:#fff7f0;border:1.5px solid #e8c0a0;border-radius:10px;padding:14px 16px;margin-bottom:1rem;">
+      <p style="font-size:14px;color:#3a2a1a;margin-bottom:8px;"><strong>One more thing!</strong> Please complete your intake, agreement, and waiver forms to finish setting up your account.</p>
+      <button class="action-btn" id="forms-reminder-btn" style="width:auto;padding:8px 16px;font-size:13px;margin:0;">📝 Complete My Forms</button>
+    </div>
     <div id="ann-sec"></div>
     <div class="streak-bar" id="streak-bar" style="display:none;">
       <div><div class="streak-num" id="streak-num">0</div><div class="streak-label">day streak</div></div>
@@ -525,6 +554,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <div id="subcat-grid" class="cat-grid" style="display:none;"></div>
         <div id="focus-filters" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
         <div class="video-grid" id="video-grid"></div>
+        <div id="week-checklist-card" style="display:none;"></div>
       </div>
     </div>
 
@@ -1527,6 +1557,7 @@ function withCacheBust(url){
 }
 var currentUser = null;
 var currentUserKey = null;
+var currentUserCodeKey = null;
 var currentAccess = "ALL";
 var allVideos = [];
 var currentCat = null;
@@ -1795,6 +1826,7 @@ function doLogin(){
       }
       currentUser=found.name;
       currentUserKey=sk(found.name);
+      currentUserCodeKey=fkey;
       if(!found.access||found.access==="ALL"){ currentAccess="ALL"; }
       else if(Array.isArray(found.access)){ currentAccess=found.access; }
       else{ currentAccess=[found.access]; }
@@ -1811,6 +1843,7 @@ function doLogin(){
       checkBirthday();
       loadGoal();
       loadMyCheckins();
+      checkFormsReminder();
       sp("pg-portal");
     } else {
       err.style.display="block"; err.textContent="Incorrect code. Please check with your instructor.";
@@ -2293,7 +2326,99 @@ function openSubcat(subcat){
   currentDisplayVids = currentCatVids.filter(function(v){ return (v.subcat||"General")===subcat; });
   renderFocusFilters();
   renderFilteredVideos();
+  loadWeekChecklist(currentCat, subcat);
   window.scrollTo(0,0);
+}
+
+function loadWeekChecklist(catName, subcatName){
+  var card = document.getElementById("week-checklist-card");
+  card.style.display = "none";
+  card.innerHTML = "";
+  if(!DB || !subcatName) return;
+  var key = sk(catName)+"__"+sk(subcatName);
+  DB.ref("weekChecklists/"+key).once("value", function(snap){
+    if(!snap.exists() || !snap.val().enabled) return;
+    var c = snap.val();
+    DB.ref("checklistResponses/"+(currentUserKey||"")+"/"+key).once("value", function(rsnap){
+      var saved = rsnap.exists() ? rsnap.val() : null;
+      renderChecklistCard(card, key, c, saved);
+    });
+  });
+}
+
+function renderChecklistCard(card, key, c, saved){
+  var h = "<div class='admin-card' style='margin-top:16px;border:1px solid var(--border);'>";
+  h += "<h3 style='margin-bottom:12px;'>"+ex(c.title||"Ready for the next step?")+"</h3>";
+  var readyItems = c.readyItems || [];
+  var warningItems = c.warningItems || [];
+  readyItems.forEach(function(item, i){
+    var ans = saved && saved.readyAnswers ? saved.readyAnswers[i] : null;
+    h += checklistRow("ready", i, item, ans);
+  });
+  warningItems.forEach(function(item, i){
+    var ans = saved && saved.warningAnswers ? saved.warningAnswers[i] : null;
+    h += checklistRow("warning", i, item, ans);
+  });
+  h += "<button class='action-btn' id='checklist-submit-btn' style='width:100%;margin-top:10px;' onclick='submitChecklist(\""+key.replace(/"/g,'\\"')+"\")'>"+(saved?"Update My Answers":"Check My Readiness")+"</button>";
+  h += "<div id='checklist-result' style='margin-top:14px;display:"+(saved?"block":"none")+";'></div>";
+  h += "</div>";
+  card.innerHTML = h;
+  card.style.display = "block";
+  card.setAttribute("data-checklist", JSON.stringify(c));
+  if(saved) showChecklistResult(c, saved.passed);
+}
+
+function checklistRow(type, i, text, currentAns){
+  var name = "cl_"+type+"_"+i;
+  var yesChecked = currentAns===true ? "checked" : "";
+  var noChecked = currentAns===false ? "checked" : "";
+  return "<div style='padding:10px 0;border-bottom:0.5px solid var(--border);'>"+
+    "<p style='font-size:14px;color:var(--text);margin-bottom:8px;'>"+ex(text)+"</p>"+
+    "<div style='display:flex;gap:10px;'>"+
+    "<label style='display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;color:var(--sub);'><input type='radio' name='"+name+"' value='yes' "+yesChecked+" style='width:16px;height:16px;'/> Yes</label>"+
+    "<label style='display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;color:var(--sub);'><input type='radio' name='"+name+"' value='no' "+noChecked+" style='width:16px;height:16px;'/> No</label>"+
+    "</div></div>";
+}
+
+function submitChecklist(key){
+  var card = document.getElementById("week-checklist-card");
+  var c = JSON.parse(card.getAttribute("data-checklist"));
+  var readyItems = c.readyItems || [];
+  var warningItems = c.warningItems || [];
+  var readyAnswers = [], warningAnswers = [], allAnswered = true;
+  readyItems.forEach(function(item, i){
+    var sel = document.querySelector("input[name='cl_ready_"+i+"']:checked");
+    if(!sel){ allAnswered = false; readyAnswers.push(null); return; }
+    readyAnswers.push(sel.value==="yes");
+  });
+  warningItems.forEach(function(item, i){
+    var sel = document.querySelector("input[name='cl_warning_"+i+"']:checked");
+    if(!sel){ allAnswered = false; warningAnswers.push(null); return; }
+    warningAnswers.push(sel.value==="yes");
+  });
+  if(!allAnswered){ alert("Please answer every question first."); return; }
+  var passed = readyAnswers.every(function(a){ return a===true; }) && warningAnswers.every(function(a){ return a===false; });
+  if(!DB || !currentUserKey) return;
+  DB.ref("checklistResponses/"+currentUserKey+"/"+key).set({
+    readyAnswers: readyAnswers, warningAnswers: warningAnswers, passed: passed, ts: Date.now()
+  }, function(e){
+    if(!e){
+      document.getElementById("checklist-submit-btn").textContent = "Update My Answers";
+      showChecklistResult(c, passed);
+    }
+  });
+}
+
+function showChecklistResult(c, passed){
+  var el = document.getElementById("checklist-result");
+  if(passed){
+    el.innerHTML = "<p style='color:#4a7c5c;font-weight:700;font-size:14px;'>You're ready to move on! 🎉</p>";
+  } else {
+    var msg = "<p style='color:#a13a2e;font-weight:700;font-size:14px;margin-bottom:8px;'>"+ex(c.failMessage||"Not quite ready yet — that's okay!")+"</p>";
+    if(c.encouragement) msg += "<p style='color:var(--sub);font-size:13px;font-style:italic;'>"+ex(c.encouragement)+"</p>";
+    el.innerHTML = msg;
+  }
+  el.style.display = "block";
 }
 
 function renderFocusFilters(){
@@ -2393,6 +2518,19 @@ function closePhotoLightbox(){
   document.getElementById("photo-lightbox").classList.remove("open");
   document.getElementById("photo-lightbox-img").src = "";
 }
+
+function checkFormsReminder(){
+  var bar = document.getElementById("forms-reminder-bar");
+  if(!bar || !DB || !currentUserKey) return;
+  DB.ref("client_forms/"+currentUserKey).once("value", function(snap){
+    bar.style.display = snap.exists() ? "none" : "block";
+  });
+}
+document.getElementById("forms-reminder-btn").onclick = function(){
+  var params = new URLSearchParams();
+  params.set("name", currentUser||"");
+  window.open("forms.html?"+params.toString(), "_blank");
+};
 
 function toggleFav(key){
   var cur=getUserData("fav",key);
@@ -2961,6 +3099,56 @@ function saveCatInfo(){
   });
 }
 
+var checklistEditingCat = null;
+var checklistEditingSubcat = null;
+function openChecklistModal(catName, subcatName){
+  checklistEditingCat = catName;
+  checklistEditingSubcat = subcatName;
+  document.getElementById("checklist-name").textContent = catName+" — "+subcatName;
+  var key = sk(catName)+"__"+sk(subcatName);
+  document.getElementById("checklist-enabled").checked = false;
+  document.getElementById("checklist-title").value = "Before moving to the next week, ask yourself:";
+  document.getElementById("checklist-ready-items").value = "";
+  document.getElementById("checklist-warning-items").value = "";
+  document.getElementById("checklist-fail-message").value = "";
+  document.getElementById("checklist-encouragement").value = "Remember — it's okay to repeat a week or a workout. Repeating doesn't mean falling behind, it means you're doing this right.";
+  if(DB){
+    DB.ref("weekChecklists/"+key).once("value", function(snap){
+      if(snap.exists()){
+        var c = snap.val();
+        document.getElementById("checklist-enabled").checked = !!c.enabled;
+        if(c.title) document.getElementById("checklist-title").value = c.title;
+        document.getElementById("checklist-ready-items").value = (c.readyItems||[]).join("\n");
+        document.getElementById("checklist-warning-items").value = (c.warningItems||[]).join("\n");
+        document.getElementById("checklist-fail-message").value = c.failMessage || "";
+        if(c.encouragement) document.getElementById("checklist-encouragement").value = c.encouragement;
+      }
+    });
+  }
+  document.getElementById("checklist-modal").classList.add("open");
+}
+function closeChecklistModal(){
+  document.getElementById("checklist-modal").classList.remove("open");
+}
+function saveChecklist(){
+  if(!DB || !checklistEditingCat || !checklistEditingSubcat) return;
+  var key = sk(checklistEditingCat)+"__"+sk(checklistEditingSubcat);
+  var payload = {
+    catName: checklistEditingCat,
+    subcatName: checklistEditingSubcat,
+    enabled: document.getElementById("checklist-enabled").checked,
+    title: document.getElementById("checklist-title").value.trim(),
+    readyItems: document.getElementById("checklist-ready-items").value.split("\n").map(function(s){ return s.trim(); }).filter(function(s){ return s; }),
+    warningItems: document.getElementById("checklist-warning-items").value.split("\n").map(function(s){ return s.trim(); }).filter(function(s){ return s; }),
+    failMessage: document.getElementById("checklist-fail-message").value.trim(),
+    encouragement: document.getElementById("checklist-encouragement").value.trim(),
+    ts: Date.now()
+  };
+  DB.ref("weekChecklists/"+key).set(payload, function(e){
+    if(!e){ closeChecklistModal(); showOk("ok-adm-vid-bulk","Checklist saved!"); }
+  });
+}
+
 function handleTagSelect(){
   var sel = document.getElementById("v-tag-select");
   var txt = document.getElementById("v-tag");
@@ -3356,6 +3544,7 @@ function renderAdmVideoItemsGroup(items, catTag){
     h += "<span style='font-size:12px;font-weight:700;color:var(--accent);'>"+ex(s)+" <span style='font-weight:400;color:var(--sub);'>("+subItems.length+")</span></span>";
     if(s!=="General"){
       h += "<button type='button' onclick='openCatInfoModal(\""+catEsc+"\",\""+subEsc+"\")' style='width:22px;height:22px;padding:0;border:1px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);font-size:11px;cursor:pointer;flex-shrink:0;' title='Edit subcategory description/images'>✏️</button>";
+      h += "<button type='button' onclick='openChecklistModal(\""+catEsc+"\",\""+subEsc+"\")' style='width:22px;height:22px;padding:0;border:1px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);font-size:11px;cursor:pointer;flex-shrink:0;' title='Edit progression checklist for this week'>📋</button>";
     }
     h += "</div>";
     if(admVideoViewMode==="grid"){
@@ -5908,6 +6097,22 @@ function loadClientActivity(){
           }).join("") : "<p style='color:var(--sub);font-size:13px;'>No watch history recorded yet.</p>";
           h += "</div>";
 
+          DB.ref("checklistResponses/"+currentClientKey).once("value", function(clSnap){
+          var checklistEntries = [];
+          if(clSnap.exists()) clSnap.forEach(function(c){ checklistEntries.push({key:c.key, val:c.val()}); });
+          checklistEntries.sort(function(a,b){ return b.val.ts - a.val.ts; });
+          h += "<div class='admin-card' style='margin-bottom:1rem;'><h3>Progression Checklists ("+checklistEntries.length+")</h3>";
+          h += "<p class='tip' style='margin-bottom:8px;'>Self-reported readiness to move on, week by week.</p>";
+          h += checklistEntries.length ? checklistEntries.map(function(entry){
+            var parts = entry.key.split("__");
+            var label = parts.length===2 ? (parts[0].replace(/_/g," ")+" — "+parts[1].replace(/_/g," ")) : entry.key;
+            var pill = entry.val.passed
+              ? "<span style='color:#4a7c5c;font-weight:700;'>Ready ✓</span>"
+              : "<span style='color:#a13a2e;font-weight:700;'>Not yet</span>";
+            return "<p style='font-size:13px;padding:6px 0;border-bottom:0.5px solid var(--border);text-transform:capitalize;'><strong>"+ex(label)+"</strong> — "+pill+"<br/><span style='font-size:12px;color:var(--sub);text-transform:none;'>"+ago2fn(entry.val.ts)+"</span></p>";
+          }).join("") : "<p style='color:var(--sub);font-size:13px;'>No checklist responses yet.</p>";
+          h += "</div>";
+
           h += "<div class='admin-card' style='margin-bottom:1rem;'><h3>⭐ Favorited ("+favInfo.length+")</h3>";
           h += favInfo.length ? favInfo.map(renderRow).join("") : "<p style='color:var(--sub);font-size:13px;'>No favorites yet.</p>";
           h += "</div>";
@@ -5918,6 +6123,7 @@ function loadClientActivity(){
           computeClientStats(currentClientKey, currentClientName, function(stats){
             var statsInner = document.getElementById("cp-stats-inner");
             if(statsInner) statsInner.innerHTML = statsCardsHtml(stats);
+          });
           });
         });
       });
@@ -6957,6 +7163,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-fix-duplicate-name-archive</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-dashboard-forms-link</p>
 </body>
 </html>
