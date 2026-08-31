@@ -117,6 +117,14 @@ textarea.fi{min-height:75px;resize:vertical;}
 .name-pick{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:9px;}
 .name-pick label{display:flex;align-items:center;gap:6px;font-size:14px;color:#2a3a4a;cursor:pointer;background:#f8fafc;border:1.5px solid #d0dae4;border-radius:8px;padding:8px 14px;}
 .name-pick input[type=radio]{accent-color:#1a3a5c;width:16px;height:16px;}
+.cal-yr{display:flex;align-items:center;justify-content:center;gap:1rem;margin-bottom:1rem;}
+.cal-yr-btn{background:none;border:1px solid #d0dae4;border-radius:7px;padding:6px 12px;font-size:16px;cursor:pointer;color:#1a3a5c;}
+.cal-yr-lbl{font-size:16px;font-weight:700;color:#1a3a5c;font-family:Georgia,serif;min-width:60px;text-align:center;}
+.cal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.2rem;}
+.cal-month{background:#fff;border:1.5px solid #e0e8f0;border-radius:10px;padding:14px 6px;text-align:center;cursor:pointer;font-size:13px;font-weight:700;color:#2a3a4a;}
+.cal-month.on{background:#1a3a5c;color:#fff;border-color:#1a3a5c;}
+.cal-month .cal-cnt{display:block;font-size:11px;font-weight:400;color:#8aaac0;margin-top:3px;}
+.cal-month.on .cal-cnt{color:#8cc8a0;}
 </style>
 </head>
 <body>
@@ -173,6 +181,7 @@ textarea.fi{min-height:75px;resize:vertical;}
   <div class="nv">
     <button class="nb on" onclick="goSec('ideas',this)">💡 Ideas</button>
     <button class="nb" onclick="goSec('sched',this)">📅 Schedule</button>
+    <button class="nb" onclick="goSec('cal',this)">🗓️ Calendar</button>
     <button class="nb" onclick="goSec('rec',this)">🎬 Record</button>
     <button class="nb" onclick="goSec('settings',this)">⚙️ Settings</button>
   </div>
@@ -237,6 +246,19 @@ textarea.fi{min-height:75px;resize:vertical;}
         <button class="ab" id="sched-btn">Add to Schedule</button>
       </div>
       <div id="sched-el"><div class="em"><p>Loading...</p></div></div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="sc" id="sc-cal">
+      <p class="st">Content Calendar</p>
+      <p class="ss">Plan ahead — tap a month to add ideas for it</p>
+      <div class="cal-yr">
+        <button class="cal-yr-btn" onclick="calShiftYear(-1)">←</button>
+        <span class="cal-yr-lbl" id="cal-yr-lbl"></span>
+        <button class="cal-yr-btn" onclick="calShiftYear(1)">→</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div id="cal-detail"></div>
     </div>
 
     <!-- RECORD -->
@@ -437,6 +459,7 @@ function showPage(id) {
 function showHub() {
   showPage("pg-hub");
   loadPosts(); loadSched(); loadRec(); loadIdeas();
+  renderCalGrid(); loadCalCounts();
 }
 
 function ex(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
@@ -578,6 +601,113 @@ function loadSched(){
 
 function addSched(){ var txt=document.getElementById("s-txt").value.trim(); if(!txt){ alert("Please describe what's posting."); return; } if(!DB) return; DB.ref("nv5/sched").push({day:document.getElementById("s-day").value,txt:txt,plat:document.getElementById("s-plat").value,time:document.getElementById("s-time").value.trim(),ts:Date.now()},function(e){ if(!e){ document.getElementById("s-txt").value=""; document.getElementById("s-time").value=""; showOk("ok-sched","Added!"); } }); }
 function delSched(key){ if(!confirm("Remove?")) return; DB.ref("nv5/sched/"+key).remove(); }
+
+// CONTENT CALENDAR — plan ahead by month, separate from the weekly Schedule above
+var CAL_YEAR = new Date().getFullYear();
+var CAL_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+var calSelectedKey = null;
+var calCounts = {};
+
+function calShiftYear(dir){
+  CAL_YEAR += dir;
+  renderCalGrid();
+}
+
+function calMonthKey(year, monthIdx){
+  var mm = String(monthIdx+1);
+  if(mm.length<2) mm="0"+mm;
+  return year+"-"+mm;
+}
+
+function renderCalGrid(){
+  document.getElementById("cal-yr-lbl").textContent = CAL_YEAR;
+  var grid = document.getElementById("cal-grid");
+  var h = "";
+  CAL_MONTHS.forEach(function(name, idx){
+    var key = calMonthKey(CAL_YEAR, idx);
+    var cnt = calCounts[key] || 0;
+    var on = key===calSelectedKey ? "on" : "";
+    h += "<button class='cal-month "+on+"' onclick=\"calSelectMonth('"+key+"','"+name+"')\">"+name.substring(0,3)+"<span class='cal-cnt'>"+cnt+" idea"+(cnt===1?"":"s")+"</span></button>";
+  });
+  grid.innerHTML = h;
+}
+
+function loadCalCounts(){
+  if(!DB) return;
+  DB.ref("nv5/calendar").on("value", function(snap){
+    calCounts = {};
+    if(snap.exists()) snap.forEach(function(c){ calCounts[c.key] = c.numChildren(); });
+    renderCalGrid();
+    if(calSelectedKey) loadCalMonth(calSelectedKey);
+  });
+}
+
+function calSelectMonth(key, name){
+  calSelectedKey = key;
+  renderCalGrid();
+  loadCalMonth(key, name);
+}
+
+function loadCalMonth(key, name){
+  var detail = document.getElementById("cal-detail");
+  if(!name){
+    var idx = parseInt(key.split("-")[1],10)-1;
+    name = CAL_MONTHS[idx];
+  }
+  var h = "<div class='fc'>";
+  h += "<h3>Add an Idea for "+name+"</h3>";
+  h += "<div class='ok' id='ok-cal'>Added!</div>";
+  h += "<label class='lb2'>Idea</label>";
+  h += "<textarea class='fi' id='cal-txt' placeholder='e.g. Reel about seasonal allergy eye care'></textarea>";
+  h += "<label class='lb2'>Platform</label>";
+  h += "<select class='fi' id='cal-plat'>";
+  h += "<option value='Instagram'>Instagram</option><option value='TikTok'>TikTok</option><option value='Facebook'>Facebook</option><option value='All Platforms'>All Platforms</option>";
+  h += "</select>";
+  h += "<button class='ab' onclick=\"addCalIdea('"+key+"')\">Add Idea</button>";
+  h += "</div>";
+  h += "<div id='cal-list'><div class='em'><p>Loading...</p></div></div>";
+  detail.innerHTML = h;
+
+  if(!DB) return;
+  DB.ref("nv5/calendar/"+key).on("value", function(snap){
+    var listEl = document.getElementById("cal-list");
+    if(!listEl) return;
+    if(!snap.exists()){ listEl.innerHTML = "<div class='em'><p style='font-size:24px;margin-bottom:8px;'>💡</p><p>No ideas yet for "+name+".</p></div>"; return; }
+    var items = [];
+    snap.forEach(function(c){ var v=c.val(); v._k=c.key; items.push(v); });
+    items.sort(function(a,b){ return (a.ts||0)-(b.ts||0); });
+    var h2 = "";
+    items.forEach(function(it){
+      h2 += "<div class='ic'><div class='ic-top'>";
+      h2 += pb(it.plat)+" "+ex(it.txt);
+      h2 += "</div><div class='ic-actions'>";
+      h2 += "<button class='ia-btn ia-del' onclick=\"delCalIdea('"+key+"','"+it._k+"')\">Remove</button>";
+      h2 += "</div></div>";
+    });
+    listEl.innerHTML = h2;
+  });
+}
+
+function addCalIdea(key){
+  var txt = document.getElementById("cal-txt").value.trim();
+  if(!txt){ alert("Please describe the idea first."); return; }
+  if(!DB) return;
+  DB.ref("nv5/calendar/"+key).push({
+    txt: txt,
+    plat: document.getElementById("cal-plat").value,
+    ts: Date.now()
+  }, function(e){
+    if(!e){
+      document.getElementById("cal-txt").value="";
+      showOk("ok-cal","Added!");
+    }
+  });
+}
+
+function delCalIdea(key, ideaKey){
+  if(!confirm("Remove this idea?")) return;
+  DB.ref("nv5/calendar/"+key+"/"+ideaKey).remove();
+}
 
 // RECORD
 function goRecTab(name, btn){
