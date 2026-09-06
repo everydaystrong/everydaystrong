@@ -786,7 +786,7 @@ try {
     var sec = document.getElementById("site-announcements");
     if(!snap.exists()){ sec.style.display="none"; sec.innerHTML=""; return; }
     var items=[];
-    snap.forEach(function(c){ var a=c.val(); if(a.showOnWeb && !a.archived) items.push(a); });
+    snap.forEach(function(c){ var a=c.val(); if(a.showOnWeb && !a.archived && !(a.publishAt && a.publishAt>Date.now())) items.push(a); });
     items.sort(function(a,b){ if(b.pinned&&!a.pinned) return 1; if(a.pinned&&!b.pinned) return -1; return b.ts-a.ts; });
     if(!items.length){ sec.style.display="none"; sec.innerHTML=""; return; }
     sec.style.display="block";
@@ -995,6 +995,6 @@ document.addEventListener("click",function(e){
   }
 });
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-trim-photo-gallery</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-schedule-announcements</p>
 </body>
 </html>
