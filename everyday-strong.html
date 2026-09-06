@@ -1979,6 +1979,8 @@ function getDefaultCatImg(catName){
   if(n.indexOf("found")!==-1) return "media/foundations.jpeg";
   if(n.indexOf("reset")!==-1) return "media/reset-build.jpeg";
   if(n.indexOf("popular")!==-1) return "media/most-popular.jpeg";
+  if(n.indexOf("monday")!==-1) return "media/live-classes.jpeg";
+  if(n.indexOf("wednesday")!==-1) return "media/live-classes.jpeg";
   return null;
 }
 // Same idea, but for subcategories (Week 1, Week 2, etc.) — auto-guesses a
@@ -7188,6 +7190,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-schedule-announcements</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-share-live-classes-photo</p>
 </body>
 </html>
