@@ -1144,6 +1144,11 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
           <input type="datetime-local" class="form-input" id="a-publish-at" />
           <span style="font-size:11px;color:var(--sub);margin-top:4px;">Leave blank to post right away. If set, clients won't see it until this date/time — but only once someone actually opens the app after that time, since there's no scheduler running in the background.</span>
         </div>
+        <div class="form-row">
+          <span class="form-label">Expires (optional)</span>
+          <input type="datetime-local" class="form-input" id="a-expires-at" />
+          <span style="font-size:11px;color:var(--sub);margin-top:4px;">Leave blank to stay up until you archive it yourself. If set, it automatically stops showing to clients after this date/time — same "only when someone opens the app" timing as above.</span>
+        </div>
         <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">
           <input type="checkbox" id="a-pin" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
           <label for="a-pin" style="font-size:13px;color:var(--text);cursor:pointer;">Pin this announcement to the top</label>
@@ -2685,6 +2690,7 @@ function renderCompleted(){
 function annVisibleToUser(a){
   if(a.archived) return false;
   if(a.publishAt && a.publishAt > Date.now()) return false;
+  if(a.expiresAt && a.expiresAt < Date.now()) return false;
   // Everyone sees ALL announcements
   if(!a.audience || a.audience==="ALL") return true;
   // Full members only
@@ -2743,7 +2749,7 @@ function checkNewAnnouncements(){
     var lastCheck = metaSnap.val() || 0;
     DB.ref("announcements").orderByChild("ts").limitToLast(10).once("value",function(snap){
       hasNewAnn = false;
-      if(snap.exists()) snap.forEach(function(c){ var a=c.val(); if(!a.archived && a.ts>lastCheck && !(a.publishAt && a.publishAt>Date.now())) hasNewAnn = true; });
+      if(snap.exists()) snap.forEach(function(c){ var a=c.val(); if(!a.archived && a.ts>lastCheck && !(a.publishAt && a.publishAt>Date.now()) && !(a.expiresAt && a.expiresAt<Date.now())) hasNewAnn = true; });
       // Clients land directly on the Workouts tab after login/preview, so if
       // that's still the active tab when this resolves, there's nothing to
       // flag — clear it immediately instead of leaving a stale dot.
@@ -4089,7 +4095,10 @@ function renderAdmAnnList(items){
     var scheduledBadge = (a.publishAt && a.publishAt > Date.now())
       ? "<br/><span style='font-size:11px;color:var(--accent);font-weight:700;'>🕐 Scheduled for "+ex(new Date(a.publishAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))+"</span>"
       : "";
-    h+="<div class='list-item'><div class='list-item-left'><strong>"+ex(a.title)+"</strong><br/><span style='font-size:11px;color:var(--sub);'>"+ex(a.date)+"</span>"+scheduledBadge+"</div><div style='display:flex;gap:6px;'>"+actions+"</div></div>";
+    var expiredBadge = (a.expiresAt && a.expiresAt < Date.now())
+      ? "<br/><span style='font-size:11px;color:#a13a2e;font-weight:700;'>⏰ Expired "+ex(new Date(a.expiresAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))+"</span>"
+      : "";
+    h+="<div class='list-item'><div class='list-item-left'><strong>"+ex(a.title)+"</strong><br/><span style='font-size:11px;color:var(--sub);'>"+ex(a.date)+"</span>"+scheduledBadge+expiredBadge+"</div><div style='display:flex;gap:6px;'>"+actions+"</div></div>";
   });
   el.innerHTML = h;
 }
@@ -4116,6 +4125,7 @@ function editAnn(key){
     document.getElementById("a-pin").checked = !!a.pinned;
     document.getElementById("a-website").checked = !!a.showOnWeb;
     document.getElementById("a-publish-at").value = a.publishAt ? isoToLocalInput(a.publishAt) : "";
+    document.getElementById("a-expires-at").value = a.expiresAt ? isoToLocalInput(a.expiresAt) : "";
     document.getElementById("add-ann-btn").textContent = "Save Changes";
     document.getElementById("cancel-ann-edit-btn").style.display = "block";
     document.getElementById("a-title").scrollIntoView({behavior:"smooth", block:"start"});
@@ -4131,6 +4141,7 @@ function cancelAnnEdit(){
   document.getElementById("a-pin").checked=false;
   document.getElementById("a-website").checked=false;
   document.getElementById("a-publish-at").value="";
+  document.getElementById("a-expires-at").value="";
   document.getElementById("a-type").value="zoom";
   document.getElementById("add-ann-btn").textContent = "Post Announcement";
   document.getElementById("cancel-ann-edit-btn").style.display = "none";
@@ -4148,6 +4159,8 @@ function addAnn(){
   var showOnWeb=document.getElementById("a-website").checked;
   var publishAtRaw = document.getElementById("a-publish-at").value;
   var publishAt = publishAtRaw ? new Date(publishAtRaw).getTime() : null;
+  var expiresAtRaw = document.getElementById("a-expires-at").value;
+  var expiresAt = expiresAtRaw ? new Date(expiresAtRaw).getTime() : null;
 
   if(editingAnnKey){
     DB.ref("announcements/"+editingAnnKey).update({
@@ -4157,6 +4170,7 @@ function addAnn(){
       pinned: pinned || false,
       showOnWeb: showOnWeb || false,
       publishAt: publishAt,
+      expiresAt: expiresAt,
       ts: publishAt || Date.now()
     }, function(e){
       if(!e){
@@ -4175,7 +4189,8 @@ function addAnn(){
     program: prog || null,
     pinned: pinned || false,
     showOnWeb: showOnWeb || false,
-    publishAt: publishAt
+    publishAt: publishAt,
+    expiresAt: expiresAt
   }, function(e){
     if(!e){
       document.getElementById("a-title").value="";
@@ -4185,6 +4200,7 @@ function addAnn(){
       document.getElementById("a-pin").checked=false;
         document.getElementById("a-website").checked=false;
       document.getElementById("a-publish-at").value="";
+      document.getElementById("a-expires-at").value="";
       showOk("ok-ann", publishAt ? "Announcement scheduled!" : "Announcement posted!");
     }
   });
@@ -7190,6 +7206,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-share-live-classes-photo</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-announcement-expiration</p>
 </body>
 </html>
