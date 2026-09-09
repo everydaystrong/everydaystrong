@@ -746,8 +746,29 @@ function buildProgramSelect(cats){
       if(data["i-program"]) sel.value = data["i-program"];
     }
   } catch(e){}
-  sel.onchange = checkDiscountCode;
+  sel.onchange = function(){ checkDiscountCode(); toggleTrialForProgram(); };
   checkDiscountCode();
+  toggleTrialForProgram();
+}
+
+// Reset & Build is a one-time purchase, not something the 7-day-trial system
+// is meant for — the trial grants full access to everything on the site, which
+// is far more than a Reset & Build buyer should get. Hide the option entirely
+// when that program is selected, uncheck it if it was already checked, so it
+// can't accidentally be requested.
+function toggleTrialForProgram(){
+  var sel = document.getElementById("i-program");
+  var opt = sel.selectedOptions[0];
+  var progName = opt ? (opt.getAttribute("data-progname")||"").toLowerCase() : "";
+  var trialLabel = document.getElementById("trial-toggle-label");
+  var trialBox = document.getElementById("i-trial-request");
+  if(!trialLabel || !trialBox) return;
+  if(progName.indexOf("reset")!==-1){
+    trialLabel.style.display = "none";
+    trialBox.checked = false;
+  } else if(!isExistingClientMode){
+    trialLabel.style.display = "flex";
+  }
 }
 
 // ── Discount codes ──────────────────────────────────────────────────
@@ -1169,6 +1190,6 @@ function submitWaiver(){
   }
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-skip-program-for-existing</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-hide-trial-for-reset-build</p>
 </body>
 </html>
