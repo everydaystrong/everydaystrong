@@ -1986,6 +1986,8 @@ function getDefaultCatImg(catName){
   if(n.indexOf("popular")!==-1) return "media/most-popular.jpeg";
   if(n.indexOf("monday")!==-1) return "media/live-classes.jpeg";
   if(n.indexOf("wednesday")!==-1) return "media/live-classes.jpeg";
+  if(n.indexOf("gentle")!==-1) return "media/gentle-strength.jpeg";
+  if(n.indexOf("lower")!==-1) return "media/lower-body.jpeg";
   return null;
 }
 // Same idea, but for subcategories (Week 1, Week 2, etc.) — auto-guesses a
@@ -7206,6 +7208,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-announcement-expiration</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-gentle-lower-body-photos</p>
 </body>
 </html>
