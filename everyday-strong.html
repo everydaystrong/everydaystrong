@@ -2205,9 +2205,9 @@ function openPopularCategory(){
   window.scrollTo(0,0);
 }
 
-// USER DATA — favorites & completed now live in Firebase (not just localStorage)
-// so admin can see them and they sync across a client's devices. Kept as an
-// in-memory cache for fast synchronous rendering, loaded once at login.
+// USER DATA — favorites & completed live in Firebase so admin can see them
+// and they sync across a client's devices. Kept as an in-memory cache for
+// fast synchronous rendering, loaded once at login.
 var myFavorites = {};
 var myCompleted = {};
 
@@ -2224,21 +2224,18 @@ function loadMyUserData(callback){
 function getUserData(type, videoKey){
   if(type==="fav") return myFavorites[videoKey] || null;
   if(type==="completed") return myCompleted[videoKey] || null;
-  try{ var d=JSON.parse(localStorage.getItem("es_"+currentUserKey+"_"+type)||"{}"); return d[videoKey]||null; } catch(e){ return null; }
+  return null;
 }
 function setUserData(type, videoKey, val){
-  if(type==="fav" || type==="completed"){
-    var cache = type==="fav" ? myFavorites : myCompleted;
-    if(val===null) delete cache[videoKey]; else cache[videoKey]=val;
-    if(DB && currentUserKey) DB.ref("userdata/"+currentUserKey+"/"+(type==="fav"?"favorites":"completed")+"/"+videoKey).set(val===null?null:true);
-    return;
-  }
-  try{ var d=JSON.parse(localStorage.getItem("es_"+currentUserKey+"_"+type)||"{}"); if(val===null) delete d[videoKey]; else d[videoKey]=val; localStorage.setItem("es_"+currentUserKey+"_"+type,JSON.stringify(d)); } catch(e){}
+  if(type!=="fav" && type!=="completed") return;
+  var cache = type==="fav" ? myFavorites : myCompleted;
+  if(val===null) delete cache[videoKey]; else cache[videoKey]=val;
+  if(DB && currentUserKey) DB.ref("userdata/"+currentUserKey+"/"+(type==="fav"?"favorites":"completed")+"/"+videoKey).set(val===null?null:true);
 }
 function getAllUserData(type){
   if(type==="fav") return myFavorites;
   if(type==="completed") return myCompleted;
-  try{ return JSON.parse(localStorage.getItem("es_"+currentUserKey+"_"+type)||"{}"); } catch(e){ return {}; }
+  return {};
 }
 
 // OPEN CATEGORY
@@ -7208,6 +7205,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-gentle-lower-body-photos</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-userdata-cleanup</p>
 </body>
 </html>
