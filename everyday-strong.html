@@ -1054,6 +1054,13 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
           <span class="form-label">Filter by Group/Tag</span>
           <input class="form-input" id="group-filter-input" placeholder="e.g. LO Community" style="text-transform:none;" oninput="renderClientList()" />
         </div>
+        <div class="form-row" style="margin-bottom:1rem;">
+          <span class="form-label">Filter by Program/Access</span>
+          <select class="form-input" id="access-filter-select" onchange="renderClientList()">
+            <option value="all">All Programs</option>
+            <option value="full">Full Membership</option>
+          </select>
+        </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;margin-top:1rem;">
           <button class="comm-cat-btn on" data-filter="all" onclick="filterClients('all',this)">All</button>
           <button class="comm-cat-btn" data-filter="active" onclick="filterClients('active',this)">Active</button>
@@ -5304,6 +5311,8 @@ function renderClientList(){
   el.innerHTML = "";
   var groupFilterEl = document.getElementById("group-filter-input");
   var groupFilterText = groupFilterEl ? groupFilterEl.value.trim().toLowerCase() : "";
+  var accessFilterEl = document.getElementById("access-filter-select");
+  var accessFilter = accessFilterEl ? accessFilterEl.value : "all";
   var items = allClientsData.filter(function(cd){
     var inactive = cd.inactive||false;
     var trialExpired = cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt;
@@ -5312,6 +5321,15 @@ function renderClientList(){
     var isTrial = cd.trial&&!expired;
     var isUnpaid = (cd.paymentStatus||"unpaid")==="unpaid";
     if(groupFilterText && (cd.group||"").toLowerCase().indexOf(groupFilterText)===-1) return false;
+    if(accessFilter && accessFilter!=="all"){
+      var isFullAccess = !cd.access || cd.access==="ALL";
+      if(accessFilter==="full"){ if(!isFullAccess) return false; }
+      else {
+        if(isFullAccess) return false;
+        var accessArr = Array.isArray(cd.access) ? cd.access : [cd.access];
+        if(accessArr.indexOf(accessFilter)===-1) return false;
+      }
+    }
     if(clientFilter==="archived") return cd._archived;
     if(cd._archived) return false;
     if(clientFilter==="all") return true;
@@ -6019,6 +6037,7 @@ function createCodeFromSubmission(name, preferredCode){
 
 function loadClients(){
   if(!DB) return;
+  populateAccessFilterOptions();
   DB.ref("codes").on("value",function(snap){
     allClientsData=[];
     snap.forEach(function(c){
@@ -6036,6 +6055,26 @@ function loadClients(){
       });
       renderClientList();
     });
+  });
+}
+
+// Builds the Program/Access dropdown from the same video category tags used
+// for manually setting a client's access, so the two stay in sync automatically
+// as programs are added or renamed. Keeps whatever the admin already had
+// selected, so re-running this on every client load doesn't reset their filter.
+function populateAccessFilterOptions(){
+  if(!DB) return;
+  var sel = document.getElementById("access-filter-select");
+  if(!sel) return;
+  var prevValue = sel.value;
+  DB.ref("videos").once("value",function(snap){
+    var cats=[];
+    if(snap.exists()) snap.forEach(function(c){ var t=c.val().tag; if(t&&cats.indexOf(t)===-1) cats.push(t); });
+    cats.sort();
+    var html = "<option value=\"all\">All Programs</option><option value=\"full\">Full Membership</option>";
+    html += cats.map(function(c){ return "<option value=\""+ex(c)+"\">"+ex(c)+"</option>"; }).join("");
+    sel.innerHTML = html;
+    if(cats.indexOf(prevValue)!==-1 || prevValue==="all" || prevValue==="full") sel.value = prevValue;
   });
 }
 
@@ -7205,6 +7244,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-userdata-cleanup</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-client-program-filter</p>
 </body>
 </html>
