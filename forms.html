@@ -751,24 +751,12 @@ function buildProgramSelect(cats){
   toggleTrialForProgram();
 }
 
-// Reset & Build is a one-time purchase, not something the 7-day-trial system
-// is meant for — the trial grants full access to everything on the site, which
-// is far more than a Reset & Build buyer should get. Hide the option entirely
-// when that program is selected, uncheck it if it was already checked, so it
-// can't accidentally be requested.
+// The trial now only grants access to the program the client selected, not
+// full site access, so there's no reason to hide it for any program anymore.
 function toggleTrialForProgram(){
-  var sel = document.getElementById("i-program");
-  var opt = sel.selectedOptions[0];
-  var progName = opt ? (opt.getAttribute("data-progname")||"").toLowerCase() : "";
   var trialLabel = document.getElementById("trial-toggle-label");
-  var trialBox = document.getElementById("i-trial-request");
-  if(!trialLabel || !trialBox) return;
-  if(progName.indexOf("reset")!==-1){
-    trialLabel.style.display = "none";
-    trialBox.checked = false;
-  } else if(!isExistingClientMode){
-    trialLabel.style.display = "flex";
-  }
+  if(!trialLabel) return;
+  if(!isExistingClientMode){ trialLabel.style.display = "flex"; }
 }
 
 // ── Discount codes ──────────────────────────────────────────────────
@@ -1064,12 +1052,13 @@ function reserveUniqueCode(candidate, attemptsLeft, callback, name){
   }, function(){ callback(null); });
 }
 
-function autoActivateTrial(name, email, preferredCode, program, callback){
+function autoActivateTrial(name, email, preferredCode, progName, callback){
   var candidate = preferredCode || generateFallbackCode(name);
+  var access = progName ? [progName] : "ALL";
   reserveUniqueCode(candidate, 5, function(finalCode){
     if(!finalCode){ callback(null); return; }
     firebase.database(fbApp).ref("codes").push({
-      name:name, code:finalCode, access:"ALL", trial:true,
+      name:name, code:finalCode, access:access, trial:true,
       expiresAt: Date.now()+7*24*60*60*1000,
       paymentStatus:"unpaid", inactive:false
     }, function(e){
@@ -1149,6 +1138,8 @@ function submitWaiver(){
   var trialRequested = document.getElementById("i-trial-request") && document.getElementById("i-trial-request").checked;
   var preferredCode = val("i-preferredcode").trim().toUpperCase().replace(/[^A-Z0-9]/g,"");
   var program = val("i-program");
+  var progSelForTrial = document.getElementById("i-program");
+  var progNameForAccess = (progSelForTrial && progSelForTrial.selectedOptions[0]) ? (progSelForTrial.selectedOptions[0].getAttribute("data-progname")||"") : "";
 
   function finishUp(activatedCode){
     var successBox = document.getElementById("ok-waiver");
@@ -1157,7 +1148,7 @@ function submitWaiver(){
       params.subject = "New TRIAL Client (auto-activated) - "+name;
       params.message = body;
       successBox.querySelector("h3").textContent = "All Forms Complete! Your Dashboard is Ready! 🎉";
-      successBox.querySelector("p").innerHTML = "You're all set! Your 7-day trial is active right now — log into your dashboard with code <strong>"+activatedCode+"</strong> at the top of this site. During your trial you'll see every class and program, even ones outside what you selected above. Payment isn't due until your trial ends.";
+      successBox.querySelector("p").innerHTML = "You're all set! Your 7-day trial is active right now — log into your dashboard with code <strong>"+activatedCode+"</strong> at the top of this site. Your trial gives you access to the program you selected above. Payment isn't due until your trial ends.";
     } else {
       params.message = body;
     }
@@ -1172,7 +1163,7 @@ function submitWaiver(){
           to_email: email,
           subject: activatedCode ? "Your Everyday Strong dashboard is ready!" : "You are all set with Everyday Strong!",
           message: activatedCode
-            ? ("Hi "+name+"!\n\nYour 7-day free trial is active right now — no waiting needed!\n\nYour dashboard access code: "+activatedCode+"\n\nLog in anytime at https://everydaystrongfit.com/everyday-strong.html with that code.\n\nDuring your trial, you have full access to every class and program so you can see everything Everyday Strong offers, even if you only expressed interest in one program above. After your trial, your ongoing access will be based on the membership you choose.\n\nPayment is due every Sunday for the upcoming week once your trial ends. Pay via Venmo @hduff13\n\nWelcome to the Everyday Strong family!\nHeather\nEveryday Strong\nEverydaystrongteam@gmail.com")
+            ? ("Hi "+name+"!\n\nYour 7-day free trial is active right now — no waiting needed!\n\nYour dashboard access code: "+activatedCode+"\n\nLog in anytime at https://everydaystrongfit.com/everyday-strong.html with that code.\n\nYour trial gives you access to the program you selected. After your trial, your ongoing access will be based on the membership you choose.\n\nPayment is due every Sunday for the upcoming week once your trial ends. Pay via Venmo @hduff13\n\nWelcome to the Everyday Strong family!\nHeather\nEveryday Strong\nEverydaystrongteam@gmail.com")
             : ("Hi "+name+"!\n\nAll three of your Everyday Strong forms have been received and you are officially enrolled!\n\nWhat happens next:\n- Heather will review your forms and reach out shortly\n- Payment is due every Sunday for the upcoming week\n- Pay via Venmo @hduff13\n- Your Zoom link will be available on your member dashboard once payment is confirmed\n\nWelcome to the Everyday Strong family!\nHeather\nEveryday Strong\nEverydaystrongteam@gmail.com"),
           client_name: "Everyday Strong",
           client_email: email
@@ -1184,12 +1175,12 @@ function submitWaiver(){
   }
 
   if(trialRequested){
-    autoActivateTrial(name, email, preferredCode, program, finishUp);
+    autoActivateTrial(name, email, preferredCode, progNameForAccess, finishUp);
   } else {
     finishUp(null);
   }
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-hide-trial-for-reset-build</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-scoped-trial-access</p>
 </body>
 </html>
