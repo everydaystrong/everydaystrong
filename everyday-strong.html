@@ -2548,6 +2548,7 @@ function checkFormsReminder(){
 document.getElementById("forms-reminder-btn").onclick = function(){
   var params = new URLSearchParams();
   params.set("name", currentUser||"");
+  params.set("key", currentUserKey||"");
   window.open("forms.html?"+params.toString(), "_blank");
 };
 
@@ -5919,6 +5920,7 @@ function renderSubmissionsList(){
     var groupActions = submissionFilter==="deleted" ? "" :
       "<div style='display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;'>"+
       "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='createCodeFromSubmission(\""+ex(name).replace(/"/g,"&quot;")+"\",\""+ex(cachedPreferredCodeByNorm[norm]||"").replace(/"/g,"&quot;")+"\")'>+ Create Client Code</button>"+
+      "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:0;' onclick='linkSubmissionToExistingClient(\""+norm+"\",\""+ex(name).replace(/"/g,"&quot;")+"\")'>Link to Existing Client</button>"+
       mergeBtn+
       "</div>";
 
@@ -5945,6 +5947,48 @@ function restoreSubmission(clientKey, entryKey){
 function permanentlyDeleteSubmission(clientKey, entryKey, name){
   if(!confirm("Permanently delete this submission from "+name+"? This can't be undone.")) return;
   DB.ref("client_forms/"+clientKey+"/"+entryKey).remove();
+}
+
+// Links a name-matched submission group onto an EXISTING client's real code
+// key instead of the name-derived key it was saved under — for the common
+// case where someone filled out forms for a client Heather already created
+// a code for, and their name didn't line up exactly with the code record.
+function linkSubmissionToExistingClient(norm, name){
+  if(!DB) return;
+  var code = prompt("Enter this client's existing access code to link their forms to it:");
+  if(!code) return;
+  code = code.trim().toUpperCase();
+  DB.ref("codes").orderByChild("code").equalTo(code).once("value", function(snap){
+    if(!snap.exists()){
+      alert("No client found with that access code. Double check it and try again.");
+      return;
+    }
+    var targetKey = null;
+    snap.forEach(function(c){ targetKey = c.key; });
+    var keysToMove = {};
+    cachedAllSubmissions.forEach(function(s){
+      var rawName = (s.data && s.data.Name) || "";
+      if(sk(rawName)===norm) keysToMove[s._clientKey] = true;
+    });
+    var sourceKeyList = Object.keys(keysToMove).filter(function(k){ return k!==targetKey; });
+    if(!sourceKeyList.length){ alert("Already linked to that client."); return; }
+    if(!confirm('Move all forms for "'+name+'" onto the client code '+code+'? This can\'t be undone.')) return;
+    var remaining = sourceKeyList.length;
+    sourceKeyList.forEach(function(srcKey){
+      DB.ref("client_forms/"+srcKey).once("value", function(fsnap){
+        if(fsnap.exists()){
+          fsnap.forEach(function(entry){ DB.ref("client_forms/"+targetKey).push(entry.val()); });
+        }
+        DB.ref("client_forms/"+srcKey).remove(function(){
+          remaining--;
+          if(remaining===0){
+            alert("Linked! Their forms now live under their existing client code.");
+            loadClients();
+          }
+        });
+      });
+    });
+  });
 }
 
 function mergeSubmissionGroup(norm){
@@ -7244,6 +7288,6 @@ document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-client-program-filter</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-link-client-forms</p>
 </body>
 </html>

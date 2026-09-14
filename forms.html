@@ -605,11 +605,13 @@ document.addEventListener("DOMContentLoaded", function(){
 // they already have an access code and are already an active client, so
 // asking them to pick a new code or request a trial would be confusing.
 var isExistingClientMode = false;
+var existingClientKey = "";
 function setupExistingClientMode(){
   var params = new URLSearchParams(window.location.search);
   var existingName = params.get("name");
   if(!existingName) return;
   isExistingClientMode = true;
+  existingClientKey = params.get("key") || "";
   var parts = existingName.trim().split(" ");
   var first = parts.shift() || "";
   var last = parts.join(" ");
@@ -909,11 +911,15 @@ populateDobDropdowns("w-dob");
 function esKey(s){ var r="",str=String(s); for(var i=0;i<str.length;i++){ var c=str[i]; r+=(c==="."||c==="#"||c==="$"||c==="["||c==="]"||c==="/")?"_":c; } return r; }
 // All three form steps (Intake, Agreement, Waiver) must land under the SAME
 // client_forms key or they show up as separate entries in New Submissions.
-// Prefer the Intake name (fname+lname) since it's present in the same session
-// for all three steps — falls back to whatever name field this step has,
-// normalized (trimmed, collapsed whitespace, lowercased) so small typing
-// differences like extra spaces or capitalization don't split the entry.
+// For a pre-created client completing forms from their dashboard, that means
+// their actual code key (passed in via the URL), not a name-derived key —
+// otherwise their forms never link up to the client record Heather already
+// made. Everyone else falls back to the Intake name (fname+lname), present
+// in the same session for all three steps, normalized (trimmed, collapsed
+// whitespace, lowercased) so small typing differences like extra spaces or
+// capitalization don't split the entry.
 function clientFormKey(fallbackName){
+  if(isExistingClientMode && existingClientKey) return existingClientKey;
   var fn = val("i-fname"), ln = val("i-lname");
   var base = (fn || ln) ? (fn+" "+ln) : fallbackName;
   var normalized = String(base).trim().replace(/\s+/g," ").toLowerCase();
@@ -1181,6 +1187,6 @@ function submitWaiver(){
   }
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-scoped-trial-access</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-link-client-forms</p>
 </body>
 </html>
