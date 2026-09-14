@@ -831,6 +831,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
       <button class="tab-btn" id="atab-checkins">Check-ins</button>
       <button class="tab-btn" id="atab-messages">Messages<span id="msg-tab-dot" style="display:none;width:8px;height:8px;background:#c05040;border-radius:50%;margin-left:5px;vertical-align:middle;"></span></button>
       <button class="tab-btn" id="atab-comments">Comments<span id="comments-tab-dot" style="display:none;width:8px;height:8px;background:#c05040;border-radius:50%;margin-left:5px;vertical-align:middle;"></span></button>
+      <button class="tab-btn" id="atab-insights">Activity Insights</button>
     </div>
 
 
@@ -1052,14 +1053,11 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         </div>
         <div class="form-row" style="margin-bottom:1rem;">
           <span class="form-label">Filter by Group/Tag</span>
-          <input class="form-input" id="group-filter-input" placeholder="e.g. LO Community" style="text-transform:none;" oninput="renderClientList()" />
+          <div class="program-checkboxes" id="group-filter-checkboxes"><p class="tip">No groups yet.</p></div>
         </div>
         <div class="form-row" style="margin-bottom:1rem;">
           <span class="form-label">Filter by Program/Access</span>
-          <select class="form-input" id="access-filter-select" onchange="renderClientList()">
-            <option value="all">All Programs</option>
-            <option value="full">Full Membership</option>
-          </select>
+          <div class="program-checkboxes" id="access-filter-checkboxes"><p class="tip">Loading...</p></div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;margin-top:1rem;">
           <button class="comm-cat-btn on" data-filter="all" onclick="filterClients('all',this)">All</button>
@@ -1454,6 +1452,23 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <div id="membership-report-output" style="margin-top:1rem;"></div>
       </div>
     </div>
+    <div class="tab-content" id="atc-insights">
+      <div class="admin-card" style="margin-bottom:1rem;">
+        <h3>Most Common Clicks</h3>
+        <p class="tip" style="margin-bottom:10px;">All time totals across every client, kept even after the detailed log below is trimmed.</p>
+        <div id="insights-stats-output"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+      </div>
+      <div class="admin-card">
+        <h3>Client Activity Log</h3>
+        <p class="tip" style="margin-bottom:10px;">Every click, watch, and tap, timestamped. Kept for the last 12 months, then trimmed automatically.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;">
+          <input class="form-input" id="insights-client-search" placeholder="Filter by client name" style="flex:1;min-width:160px;text-transform:none;" oninput="renderInsightsLog()" />
+          <input class="form-input" id="insights-text-search" placeholder="Filter by what was clicked" style="flex:1;min-width:160px;text-transform:none;" oninput="renderInsightsLog()" />
+        </div>
+        <div id="insights-log-output"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+        <p class="tip" id="insights-log-note" style="margin-top:10px;"></p>
+      </div>
+    </div>
     <div class="tab-content" id="atc-testimonials">
       <div class="admin-card">
         <h3>Add Testimonial</h3>
@@ -1598,6 +1613,42 @@ try {
   DB.ref("adminPass").once("value",function(s){ if(s.exists()) adminPass=s.val(); adminPassLoaded=true; });
   DB.ref("siteConfig/imgVersion").once("value",function(s){ if(s.exists()) imgCacheVersion=s.val(); });
 } catch(e){ adminPassLoaded=true; }
+
+// CLICK TRACKING: logs every click a logged in client makes anywhere on
+// their dashboard, for the admin Activity Insights tab. Two writes per
+// click: a timestamped entry under clickLog (trimmed to the last 12 months,
+// see pruneOldClickLog) and a running total under clickStats (kept forever,
+// tiny, so "most common clicks" stays accurate even after old detail is
+// trimmed). Never logs admin's own clicks, currentUserKey is only ever set
+// during a real or preview client session, and never logs preview mode,
+// so demo clicks don't pollute real client analytics.
+function logClickEvent(label, elId){
+  if(!DB || !currentUserKey || previewingAsClient || !label) return;
+  var ts = Date.now();
+  DB.ref("clickLog").push({clientKey: currentUserKey, clientName: currentUser||"", ts: ts, label: label, elId: elId||null});
+  var statKey = sk(label);
+  if(statKey){
+    DB.ref("clickStats/"+statKey).transaction(function(cur){
+      cur = cur || {count:0, label:label, lastTs:0};
+      cur.count = (cur.count||0)+1;
+      cur.label = label;
+      cur.lastTs = ts;
+      return cur;
+    });
+  }
+}
+document.addEventListener("click", function(e){
+  if(!currentUserKey || previewingAsClient || !DB) return;
+  var el = e.target.closest("button, a, [onclick], [data-track]");
+  if(!el) return;
+  // Video opens are logged separately inside openVideo() with the actual
+  // video title, which is more useful than whatever text is on the card,
+  // so skip here to avoid counting a video click twice.
+  var onclickAttr = el.getAttribute("onclick") || "";
+  if(onclickAttr.indexOf("openVideo(") !== -1) return;
+  var label = el.getAttribute("data-track") || (el.textContent||"").trim().replace(/\s+/g," ").slice(0,60) || el.id || el.tagName;
+  logClickEvent(label, el.id||"");
+}, true);
 
 // Email notifications for dashboard activity
 var EMAILJS_PUBLIC_KEY = "Df_RHTxaHGQXv0-yY";
@@ -2488,9 +2539,9 @@ function buildVideoCard(v){
   h+="</div>";
   h+="<div class='video-info'><div class='video-title'>"+ex(v.title)+"</div>";
   h+="<div class='video-actions'>";
-  h+="<button class='vact-btn "+(isFav?"active":"")+"' onclick='toggleFav(\""+v._k+"\")' title='Favorite'>"+(isFav?"⭐":"☆")+"</button>";
-  h+="<button class='vact-btn "+(isDone?"active":"")+"' onclick='toggleDone(\""+v._k+"\")' title='Mark complete'>"+(isDone?"✅":"○ Done")+"</button>";
-  h+="<button class='vact-btn' onclick='toggleComments(\""+v._k+"\")' title='Comments'>Comments</button>";
+  h+="<button class='vact-btn "+(isFav?"active":"")+"' onclick='toggleFav(\""+v._k+"\")' title='Favorite' data-track='Toggle Favorite'>"+(isFav?"⭐":"☆")+"</button>";
+  h+="<button class='vact-btn "+(isDone?"active":"")+"' onclick='toggleDone(\""+v._k+"\")' title='Mark complete' data-track='Toggle Mark Complete'>"+(isDone?"✅":"○ Done")+"</button>";
+  h+="<button class='vact-btn' onclick='toggleComments(\""+v._k+"\")' title='Comments' data-track='Open Comments'>Comments</button>";
   h+="</div>";
   h+="<div class='note-box' id='nb-"+v._k+"'>";
   h+="<div id='comments-list-"+v._k+"' style='margin-bottom:8px;'></div>";
@@ -2521,6 +2572,7 @@ function openVideo(url, videoKey, desc){
         tag: watchedVid ? (watchedVid.tag||"") : "",
         ts: Date.now()
       });
+      logClickEvent("Watch: "+(watchedVid ? watchedVid.title : "video"), "video:"+videoKey);
     }
   }
 }
@@ -5298,6 +5350,8 @@ function loadDashboard(){
 
 
 var clientFilter = "all";
+var groupFilterSelections = [];
+var accessFilterSelections = [];
 var allClientsData = [];
 
 function filterClients(filter, btn){
@@ -5310,10 +5364,6 @@ function filterClients(filter, btn){
 function renderClientList(){
   var el = document.getElementById("clients-list");
   el.innerHTML = "";
-  var groupFilterEl = document.getElementById("group-filter-input");
-  var groupFilterText = groupFilterEl ? groupFilterEl.value.trim().toLowerCase() : "";
-  var accessFilterEl = document.getElementById("access-filter-select");
-  var accessFilter = accessFilterEl ? accessFilterEl.value : "all";
   var items = allClientsData.filter(function(cd){
     var inactive = cd.inactive||false;
     var trialExpired = cd.trial&&cd.expiresAt&&Date.now()>cd.expiresAt;
@@ -5321,15 +5371,15 @@ function renderClientList(){
     var expired = trialExpired||customExpired;
     var isTrial = cd.trial&&!expired;
     var isUnpaid = (cd.paymentStatus||"unpaid")==="unpaid";
-    if(groupFilterText && (cd.group||"").toLowerCase().indexOf(groupFilterText)===-1) return false;
-    if(accessFilter && accessFilter!=="all"){
+    if(groupFilterSelections.length && groupFilterSelections.indexOf(cd.group||"")===-1) return false;
+    if(accessFilterSelections.length){
       var isFullAccess = !cd.access || cd.access==="ALL";
-      if(accessFilter==="full"){ if(!isFullAccess) return false; }
-      else {
-        if(isFullAccess) return false;
-        var accessArr = Array.isArray(cd.access) ? cd.access : [cd.access];
-        if(accessArr.indexOf(accessFilter)===-1) return false;
-      }
+      var accessArr = Array.isArray(cd.access) ? cd.access : (cd.access ? [cd.access] : []);
+      var accessMatches = accessFilterSelections.some(function(sel){
+        if(sel==="full") return isFullAccess;
+        return !isFullAccess && accessArr.indexOf(sel)!==-1;
+      });
+      if(!accessMatches) return false;
     }
     if(clientFilter==="archived") return cd._archived;
     if(cd._archived) return false;
@@ -6097,29 +6147,61 @@ function loadClients(){
         cd._archived=true;
         allClientsData.push(cd);
       });
+      populateGroupFilterOptions();
       renderClientList();
     });
   });
 }
 
-// Builds the Program/Access dropdown from the same video category tags used
+// Builds the Program/Access checkboxes from the same video category tags used
 // for manually setting a client's access, so the two stay in sync automatically
-// as programs are added or renamed. Keeps whatever the admin already had
-// selected, so re-running this on every client load doesn't reset their filter.
+// as programs are added or renamed. Selections live in accessFilterSelections
+// (not read off the checkboxes themselves) so they survive this list being
+// rebuilt every time the client data refreshes.
 function populateAccessFilterOptions(){
   if(!DB) return;
-  var sel = document.getElementById("access-filter-select");
-  if(!sel) return;
-  var prevValue = sel.value;
+  var box = document.getElementById("access-filter-checkboxes");
+  if(!box) return;
   DB.ref("videos").once("value",function(snap){
     var cats=[];
     if(snap.exists()) snap.forEach(function(c){ var t=c.val().tag; if(t&&cats.indexOf(t)===-1) cats.push(t); });
     cats.sort();
-    var html = "<option value=\"all\">All Programs</option><option value=\"full\">Full Membership</option>";
-    html += cats.map(function(c){ return "<option value=\""+ex(c)+"\">"+ex(c)+"</option>"; }).join("");
-    sel.innerHTML = html;
-    if(cats.indexOf(prevValue)!==-1 || prevValue==="all" || prevValue==="full") sel.value = prevValue;
+    var all = ["full"].concat(cats);
+    var labels = {"full":"Full Membership"};
+    box.innerHTML = all.map(function(v){
+      var checked = accessFilterSelections.indexOf(v)!==-1 ? "checked" : "";
+      var label = labels[v] || v;
+      return "<label style='display:flex;align-items:center;gap:6px;padding:4px 0;font-size:13px;cursor:pointer;'><input type='checkbox' value=\""+ex(v)+"\" "+checked+" onchange='toggleAccessFilter(\""+ex(v).replace(/"/g,"&quot;")+"\",this.checked)' /> "+ex(label)+"</label>";
+    }).join("");
   });
+}
+function toggleAccessFilter(v, on){
+  var idx = accessFilterSelections.indexOf(v);
+  if(on && idx===-1) accessFilterSelections.push(v);
+  else if(!on && idx!==-1) accessFilterSelections.splice(idx,1);
+  renderClientList();
+}
+
+// Builds the Group/Tag checkboxes from whatever group values actually exist
+// among current clients, same persistent-selection approach as the access
+// checkboxes above.
+function populateGroupFilterOptions(){
+  var box = document.getElementById("group-filter-checkboxes");
+  if(!box) return;
+  var groups = [];
+  allClientsData.forEach(function(cd){ if(cd.group && groups.indexOf(cd.group)===-1) groups.push(cd.group); });
+  groups.sort();
+  if(!groups.length){ box.innerHTML = "<p class='tip'>No groups yet.</p>"; return; }
+  box.innerHTML = groups.map(function(g){
+    var checked = groupFilterSelections.indexOf(g)!==-1 ? "checked" : "";
+    return "<label style='display:flex;align-items:center;gap:6px;padding:4px 0;font-size:13px;cursor:pointer;'><input type='checkbox' value=\""+ex(g)+"\" "+checked+" onchange='toggleGroupFilter(\""+ex(g).replace(/"/g,"&quot;")+"\",this.checked)' /> "+ex(g)+"</label>";
+  }).join("");
+}
+function toggleGroupFilter(g, on){
+  var idx = groupFilterSelections.indexOf(g);
+  if(on && idx===-1) groupFilterSelections.push(g);
+  else if(!on && idx!==-1) groupFilterSelections.splice(idx,1);
+  renderClientList();
 }
 
 function openClientProfile(name, codeKey){
@@ -7287,7 +7369,80 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
+document.getElementById("atab-insights").onclick=function(){ setAdmTab("insights",this); loadInsightsTab(); };
+
+// ACTIVITY INSIGHTS: most common clicks (all time, cheap counters) and the
+// detailed click by click log (rolling 12 month window, trimmed on open).
+var cachedInsightsLog = [];
+
+function loadInsightsTab(){
+  if(!DB) return;
+  loadInsightsStats();
+  loadInsightsLog();
+}
+
+function loadInsightsStats(){
+  var el = document.getElementById("insights-stats-output");
+  el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>Loading...</p>";
+  DB.ref("clickStats").once("value", function(snap){
+    var rows = [];
+    if(snap.exists()) snap.forEach(function(c){ var v=c.val()||{}; rows.push({label:v.label||c.key, count:v.count||0, lastTs:v.lastTs||0}); });
+    rows.sort(function(a,b){ return b.count-a.count; });
+    if(!rows.length){ el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>No click activity recorded yet.</p>"; return; }
+    el.innerHTML = rows.slice(0,25).map(function(r,i){
+      return "<div style='display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid var(--border);'>"+
+        "<span style='font-size:13px;'>"+(i+1)+". "+ex(r.label)+"</span>"+
+        "<span style='font-size:12px;color:var(--sub);'>"+r.count+"x, last "+ago2fn(r.lastTs)+"</span></div>";
+    }).join("");
+  });
+}
+
+// Runs every time the tab opens rather than on a schedule — this platform
+// has no background scheduler, so cleanup can only happen when a page with
+// this code is actually open.
+function pruneOldClickLog(){
+  if(!DB) return;
+  var cutoff = Date.now() - 365*24*60*60*1000;
+  DB.ref("clickLog").orderByChild("ts").endAt(cutoff).once("value", function(snap){
+    snap.forEach(function(c){ DB.ref("clickLog/"+c.key).remove(); });
+  });
+}
+
+function loadInsightsLog(){
+  var el = document.getElementById("insights-log-output");
+  el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>Loading...</p>";
+  pruneOldClickLog();
+  DB.ref("clickLog").orderByChild("ts").limitToLast(2000).once("value", function(snap){
+    var rows = [];
+    if(snap.exists()) snap.forEach(function(c){ rows.push(c.val()); });
+    rows.sort(function(a,b){ return b.ts-a.ts; });
+    cachedInsightsLog = rows;
+    renderInsightsLog();
+  });
+}
+
+function renderInsightsLog(){
+  var el = document.getElementById("insights-log-output");
+  var note = document.getElementById("insights-log-note");
+  if(!el) return;
+  var clientText = (document.getElementById("insights-client-search").value||"").trim().toLowerCase();
+  var labelText = (document.getElementById("insights-text-search").value||"").trim().toLowerCase();
+  var items = cachedInsightsLog.filter(function(r){
+    if(clientText && (r.clientName||"").toLowerCase().indexOf(clientText)===-1) return false;
+    if(labelText && (r.label||"").toLowerCase().indexOf(labelText)===-1) return false;
+    return true;
+  });
+  if(!items.length){ el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>No matching activity.</p>"; note.textContent=""; return; }
+  var shown = items.slice(0,300);
+  el.innerHTML = shown.map(function(r){
+    var d2 = new Date(r.ts);
+    return "<div style='padding:6px 0;border-bottom:0.5px solid var(--border);'>"+
+      "<span style='font-size:13px;'><strong>"+ex(r.clientName||"Unknown")+"</strong> · "+ex(r.label||"")+"</span><br/>"+
+      "<span style='font-size:12px;color:var(--sub);'>"+d2.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})+" at "+d2.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})+"</span></div>";
+  }).join("");
+  note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your search to see more specific results.") : "";
+}
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-link-client-forms</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-activity-insights</p>
 </body>
 </html>
