@@ -737,6 +737,20 @@ try {
   var landingDB = firebase.database(landingApp);
   try { emailjs.init("Df_RHTxaHGQXv0-yY"); } catch(e){}
 
+  // PUBLIC SITE CLICK TRACKING: same clickLog the dashboard writes to, so
+  // the admin Activity Log tab shows both in one place, filterable by
+  // Dashboard vs Public Site. No client identity here, visitors aren't
+  // logged in, so these entries just carry source:"public".
+  document.addEventListener("click", function(e){
+    var el = e.target.closest("button, a, [onclick], [data-track]");
+    if(!el) return;
+    var label = el.getAttribute("data-track") || (el.textContent||"").trim().replace(/\s+/g," ").slice(0,60) || el.id || el.tagName;
+    if(!label) return;
+    var onclickAttr = el.getAttribute("onclick") || "";
+    var type = el.getAttribute("data-track-type") || (onclickAttr.toLowerCase().indexOf("submit")!==-1 ? "Form" : "Other");
+    landingDB.ref("clickLog").push({source:"public", clientKey:null, clientName:null, ts:Date.now(), type:type, label:label, elId:el.id||null});
+  }, true);
+
   // Load programs — only replace the static pricing cards if programs have
   // actually been published from admin (showWeb:true). Otherwise leave the
   // hardcoded pricing above exactly as-is so the page is never left blank.
@@ -995,6 +1009,6 @@ document.addEventListener("click",function(e){
   }
 });
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-08-16-announcement-expiration</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-public-activity-tracking</p>
 </body>
 </html>

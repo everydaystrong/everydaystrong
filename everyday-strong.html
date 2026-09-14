@@ -1453,17 +1453,22 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
       </div>
     </div>
     <div class="tab-content" id="atc-insights">
-      <div class="admin-card" style="margin-bottom:1rem;">
-        <h3>Most Common Clicks</h3>
-        <p class="tip" style="margin-bottom:10px;">All time totals across every client, kept even after the detailed log below is trimmed.</p>
-        <div id="insights-stats-output"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
-      </div>
       <div class="admin-card">
-        <h3>Client Activity Log</h3>
-        <p class="tip" style="margin-bottom:10px;">Every click, watch, and tap, timestamped. Kept for the last 12 months, then trimmed automatically.</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;">
+        <h3>Activity Log</h3>
+        <p class="tip" style="margin-bottom:10px;">A running, live updating feed of every click, watch, and tap, across the dashboard and the public site. Kept for the last 12 months, then trimmed automatically. Filter it to see what's common.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
           <input class="form-input" id="insights-client-search" placeholder="Filter by client name" style="flex:1;min-width:160px;text-transform:none;" oninput="renderInsightsLog()" />
           <input class="form-input" id="insights-text-search" placeholder="Filter by what was clicked" style="flex:1;min-width:160px;text-transform:none;" oninput="renderInsightsLog()" />
+        </div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;">
+          <div>
+            <span class="form-label" style="display:block;margin-bottom:4px;">Where</span>
+            <div id="insights-source-checkboxes" style="display:flex;gap:12px;"></div>
+          </div>
+          <div style="flex:1;min-width:220px;">
+            <span class="form-label" style="display:block;margin-bottom:4px;">Type of click</span>
+            <div id="insights-type-checkboxes" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+          </div>
         </div>
         <div id="insights-log-output"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
         <p class="tip" id="insights-log-note" style="margin-top:10px;"></p>
@@ -1615,27 +1620,33 @@ try {
 } catch(e){ adminPassLoaded=true; }
 
 // CLICK TRACKING: logs every click a logged in client makes anywhere on
-// their dashboard, for the admin Activity Insights tab. Two writes per
-// click: a timestamped entry under clickLog (trimmed to the last 12 months,
-// see pruneOldClickLog) and a running total under clickStats (kept forever,
-// tiny, so "most common clicks" stays accurate even after old detail is
-// trimmed). Never logs admin's own clicks, currentUserKey is only ever set
-// during a real or preview client session, and never logs preview mode,
-// so demo clicks don't pollute real client analytics.
-function logClickEvent(label, elId){
-  if(!DB || !currentUserKey || previewingAsClient || !label) return;
-  var ts = Date.now();
-  DB.ref("clickLog").push({clientKey: currentUserKey, clientName: currentUser||"", ts: ts, label: label, elId: elId||null});
-  var statKey = sk(label);
-  if(statKey){
-    DB.ref("clickStats/"+statKey).transaction(function(cur){
-      cur = cur || {count:0, label:label, lastTs:0};
-      cur.count = (cur.count||0)+1;
-      cur.label = label;
-      cur.lastTs = ts;
-      return cur;
-    });
-  }
+// their dashboard, into a single running log the admin Activity Insights
+// tab reads live. Each entry gets a rough type (Video, Favorite, Complete,
+// Comment, Navigation, Form, Other) so the log can be filtered by kind of
+// click, not just searched by text. Trimmed to the last 12 months, see
+// pruneOldClickLog. Never logs admin's own clicks, currentUserKey is only
+// ever set during a real or preview client session, and never logs preview
+// mode, so demo clicks don't pollute real client activity.
+function inferClickType(onclickAttr){
+  if(onclickAttr.indexOf("openVideo(")!==-1) return "Video";
+  if(onclickAttr.indexOf("toggleFav(")!==-1) return "Favorite";
+  if(onclickAttr.indexOf("toggleDone(")!==-1) return "Complete";
+  if(onclickAttr.indexOf("toggleComments(")!==-1 || onclickAttr.indexOf("postComment(")!==-1 || onclickAttr.indexOf("saveCommentEdit(")!==-1) return "Comment";
+  if(onclickAttr.indexOf("switchPortalTab(")!==-1) return "Navigation";
+  if(onclickAttr.toLowerCase().indexOf("submit")!==-1) return "Form";
+  return "Other";
+}
+function logClickEvent(label, elId, type, source, clientKey, clientName){
+  if(!DB || !label) return;
+  DB.ref("clickLog").push({
+    source: source||"dashboard",
+    clientKey: clientKey||null,
+    clientName: clientName||null,
+    ts: Date.now(),
+    type: type||"Other",
+    label: label,
+    elId: elId||null
+  });
 }
 document.addEventListener("click", function(e){
   if(!currentUserKey || previewingAsClient || !DB) return;
@@ -1647,8 +1658,10 @@ document.addEventListener("click", function(e){
   var onclickAttr = el.getAttribute("onclick") || "";
   if(onclickAttr.indexOf("openVideo(") !== -1) return;
   var label = el.getAttribute("data-track") || (el.textContent||"").trim().replace(/\s+/g," ").slice(0,60) || el.id || el.tagName;
-  logClickEvent(label, el.id||"");
+  var type = el.getAttribute("data-track-type") || inferClickType(onclickAttr);
+  logClickEvent(label, el.id||"", type, "dashboard", currentUserKey, currentUser);
 }, true);
+
 
 // Email notifications for dashboard activity
 var EMAILJS_PUBLIC_KEY = "Df_RHTxaHGQXv0-yY";
@@ -2572,7 +2585,7 @@ function openVideo(url, videoKey, desc){
         tag: watchedVid ? (watchedVid.tag||"") : "",
         ts: Date.now()
       });
-      logClickEvent("Watch: "+(watchedVid ? watchedVid.title : "video"), "video:"+videoKey);
+      logClickEvent("Watch: "+(watchedVid ? watchedVid.title : "video"), "video:"+videoKey, "Video", "dashboard", currentUserKey, currentUser);
     }
   }
 }
@@ -7371,33 +7384,59 @@ document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
 document.getElementById("atab-insights").onclick=function(){ setAdmTab("insights",this); loadInsightsTab(); };
 
-// ACTIVITY INSIGHTS: most common clicks (all time, cheap counters) and the
-// detailed click by click log (rolling 12 month window, trimmed on open).
+// ACTIVITY LOG: a single running feed of clicks across both the dashboard
+// and the public site, filterable by client name, free text, source, and
+// type. Uses a live listener (.on, not .once) so it updates in real time
+// while this tab is open, instead of only showing a snapshot from when it
+// was opened. Rolling 12 month window, trimmed on open, see pruneOldClickLog.
 var cachedInsightsLog = [];
+var insightsSourceSelections = ["dashboard","public"];
+var insightsTypeSelections = ["Video","Favorite","Complete","Comment","Navigation","Form","Other"];
+var ALL_CLICK_TYPES = ["Video","Favorite","Complete","Comment","Navigation","Form","Other"];
 
 function loadInsightsTab(){
   if(!DB) return;
-  loadInsightsStats();
-  loadInsightsLog();
-}
-
-function loadInsightsStats(){
-  var el = document.getElementById("insights-stats-output");
-  el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>Loading...</p>";
-  DB.ref("clickStats").once("value", function(snap){
+  populateInsightsFilterCheckboxes();
+  pruneOldClickLog();
+  DB.ref("clickLog").orderByChild("ts").limitToLast(2000).on("value", function(snap){
     var rows = [];
-    if(snap.exists()) snap.forEach(function(c){ var v=c.val()||{}; rows.push({label:v.label||c.key, count:v.count||0, lastTs:v.lastTs||0}); });
-    rows.sort(function(a,b){ return b.count-a.count; });
-    if(!rows.length){ el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>No click activity recorded yet.</p>"; return; }
-    el.innerHTML = rows.slice(0,25).map(function(r,i){
-      return "<div style='display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid var(--border);'>"+
-        "<span style='font-size:13px;'>"+(i+1)+". "+ex(r.label)+"</span>"+
-        "<span style='font-size:12px;color:var(--sub);'>"+r.count+"x, last "+ago2fn(r.lastTs)+"</span></div>";
-    }).join("");
+    if(snap.exists()) snap.forEach(function(c){ rows.push(c.val()); });
+    rows.sort(function(a,b){ return b.ts-a.ts; });
+    cachedInsightsLog = rows;
+    renderInsightsLog();
   });
 }
 
-// Runs every time the tab opens rather than on a schedule — this platform
+function populateInsightsFilterCheckboxes(){
+  var srcBox = document.getElementById("insights-source-checkboxes");
+  if(srcBox && !srcBox.innerHTML){
+    srcBox.innerHTML = [["dashboard","Dashboard"],["public","Public Site"]].map(function(pair){
+      var checked = insightsSourceSelections.indexOf(pair[0])!==-1 ? "checked" : "";
+      return "<label style='display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;'><input type='checkbox' value=\""+pair[0]+"\" "+checked+" onchange='toggleInsightsSource(\""+pair[0]+"\",this.checked)' /> "+pair[1]+"</label>";
+    }).join("");
+  }
+  var typeBox = document.getElementById("insights-type-checkboxes");
+  if(typeBox && !typeBox.innerHTML){
+    typeBox.innerHTML = ALL_CLICK_TYPES.map(function(t){
+      var checked = insightsTypeSelections.indexOf(t)!==-1 ? "checked" : "";
+      return "<label style='display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;'><input type='checkbox' value=\""+ex(t)+"\" "+checked+" onchange='toggleInsightsType(\""+ex(t)+"\",this.checked)' /> "+ex(t)+"</label>";
+    }).join("");
+  }
+}
+function toggleInsightsSource(v, on){
+  var idx = insightsSourceSelections.indexOf(v);
+  if(on && idx===-1) insightsSourceSelections.push(v);
+  else if(!on && idx!==-1) insightsSourceSelections.splice(idx,1);
+  renderInsightsLog();
+}
+function toggleInsightsType(v, on){
+  var idx = insightsTypeSelections.indexOf(v);
+  if(on && idx===-1) insightsTypeSelections.push(v);
+  else if(!on && idx!==-1) insightsTypeSelections.splice(idx,1);
+  renderInsightsLog();
+}
+
+// Runs every time the tab opens rather than on a schedule, this platform
 // has no background scheduler, so cleanup can only happen when a page with
 // this code is actually open.
 function pruneOldClickLog(){
@@ -7408,19 +7447,6 @@ function pruneOldClickLog(){
   });
 }
 
-function loadInsightsLog(){
-  var el = document.getElementById("insights-log-output");
-  el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>Loading...</p>";
-  pruneOldClickLog();
-  DB.ref("clickLog").orderByChild("ts").limitToLast(2000).once("value", function(snap){
-    var rows = [];
-    if(snap.exists()) snap.forEach(function(c){ rows.push(c.val()); });
-    rows.sort(function(a,b){ return b.ts-a.ts; });
-    cachedInsightsLog = rows;
-    renderInsightsLog();
-  });
-}
-
 function renderInsightsLog(){
   var el = document.getElementById("insights-log-output");
   var note = document.getElementById("insights-log-note");
@@ -7428,6 +7454,8 @@ function renderInsightsLog(){
   var clientText = (document.getElementById("insights-client-search").value||"").trim().toLowerCase();
   var labelText = (document.getElementById("insights-text-search").value||"").trim().toLowerCase();
   var items = cachedInsightsLog.filter(function(r){
+    if(insightsSourceSelections.indexOf(r.source||"dashboard")===-1) return false;
+    if(insightsTypeSelections.indexOf(r.type||"Other")===-1) return false;
     if(clientText && (r.clientName||"").toLowerCase().indexOf(clientText)===-1) return false;
     if(labelText && (r.label||"").toLowerCase().indexOf(labelText)===-1) return false;
     return true;
@@ -7436,13 +7464,14 @@ function renderInsightsLog(){
   var shown = items.slice(0,300);
   el.innerHTML = shown.map(function(r){
     var d2 = new Date(r.ts);
+    var who = r.source==="public" ? "Site Visitor" : (r.clientName||"Unknown");
     return "<div style='padding:6px 0;border-bottom:0.5px solid var(--border);'>"+
-      "<span style='font-size:13px;'><strong>"+ex(r.clientName||"Unknown")+"</strong> · "+ex(r.label||"")+"</span><br/>"+
+      "<span style='font-size:13px;'><strong>"+ex(who)+"</strong> · "+ex(r.type||"Other")+" · "+ex(r.label||"")+"</span><br/>"+
       "<span style='font-size:12px;color:var(--sub);'>"+d2.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})+" at "+d2.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})+"</span></div>";
   }).join("");
-  note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your search to see more specific results.") : "";
+  note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-activity-insights</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-activity-log-running-feed</p>
 </body>
 </html>
