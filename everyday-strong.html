@@ -1739,20 +1739,21 @@ function lookupClientEmail(clientKey, callback){
   });
 }
 
-function notifyClientIfOk(clientKey, subject, message){
-  if(!DB || !clientKey) return;
+function notifyClientIfOk(clientKey, subject, message, callback){
+  callback = callback || function(){};
+  if(!DB || !clientKey){ callback(false,"no client key"); return; }
   DB.ref("client_forms/"+clientKey).once("value", function(snap){
-    if(!snap.exists()) return;
+    if(!snap.exists()){ callback(false,"no forms on file"); return; }
     var best = null, bestTs = -1;
     snap.forEach(function(c){
       var v = c.val();
       if(v && v.formType==="Intake Form" && v.ts > bestTs){ best = v; bestTs = v.ts; }
     });
-    if(!best || !best.data || !best.data.Email) return;
+    if(!best || !best.data || !best.data.Email){ callback(false,"no email on file"); return; }
     var d = best.data;
-    if(d["OK to Contact"] !== "Yes") return;
+    if(d["OK to Contact"] !== "Yes"){ callback(false,"not okay to contact"); return; }
     var method = d["Preferred Contact Method"];
-    if(method === "Text/Phone") return; // respect their preference — don't email
+    if(method === "Text/Phone"){ callback(false,"prefers text/phone"); return; } // respect their preference, don't email
     try {
       emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
         to_email: d.Email,
@@ -1761,7 +1762,8 @@ function notifyClientIfOk(clientKey, subject, message){
         client_name: "Everyday Strong",
         client_email: d.Email
       });
-    } catch(e){ console.error("Client notification email failed:", e); }
+      callback(true,"sent");
+    } catch(e){ console.error("Client notification email failed:", e); callback(false,"send failed"); }
   });
 }
 
@@ -6779,33 +6781,59 @@ function sendBulkMessage(){
     var picked = Object.keys(bulkSpecificChecks).filter(function(n){ return bulkSpecificChecks[n]; });
     if(!picked.length){ alert("Check off at least one client first."); return; }
     if(!confirm("Send this message to "+picked.length+" specific client"+(picked.length!==1?"s":"")+"?")) return;
+    var emailedCount=0, skippedReasons=[];
+    var remaining=picked.length;
     picked.forEach(function(n){
       DB.ref("messages/"+sk(n)).push({from:"Heather",text:txt,ts:Date.now(),fromClient:false});
-      notifyClientIfOk(sk(n), "New message from Heather", "Heather sent you a message:\n\n"+txt+"\n\nLog in to your dashboard to reply: https://everydaystrongfit.com/everyday-strong.html");
+      notifyClientIfOk(sk(n), "New message from Heather", "Heather sent you a message:\n\n"+txt+"\n\nLog in to your dashboard to reply: https://everydaystrongfit.com/everyday-strong.html", function(sent,reason){
+        if(sent) emailedCount++; else skippedReasons.push(n+": "+reason);
+        remaining--;
+        if(remaining===0) reportBulkSendResult(picked.length, emailedCount, skippedReasons);
+      });
     });
     document.getElementById("bulk-text").value="";
-    showOk("ok-bulk-msg","Message sent to "+picked.length+" client"+(picked.length!==1?"s":"")+"!");
     return;
   }
   if(!confirm("Send this message to all "+aud+" clients?")) return;
   if(!DB) return;
   DB.ref("codes").once("value",function(snap){
     if(!snap.exists()) return;
-    var count=0;
+    var targets=[];
     snap.forEach(function(c){
       var cd=c.val();
       if(isClientBlocked(cd)) return;
       if(aud==="trial"&&!cd.trial) return;
       if(aud==="full"&&cd.trial) return;
-      DB.ref("messages/"+sk(cd.name)).push({
-        from:"Heather",text:txt,ts:Date.now(),fromClient:false
+      targets.push(cd.name);
+    });
+    var emailedCount=0, skippedReasons=[];
+    var remaining=targets.length;
+    if(!remaining){ showOk("ok-bulk-msg","No matching clients found."); return; }
+    targets.forEach(function(name){
+      DB.ref("messages/"+sk(name)).push({ from:"Heather",text:txt,ts:Date.now(),fromClient:false });
+      notifyClientIfOk(sk(name), "New message from Heather", "Heather sent you a message:\n\n"+txt+"\n\nLog in to your dashboard to reply: https://everydaystrongfit.com/everyday-strong.html", function(sent,reason){
+        if(sent) emailedCount++; else skippedReasons.push(name+": "+reason);
+        remaining--;
+        if(remaining===0) reportBulkSendResult(targets.length, emailedCount, skippedReasons);
       });
-      notifyClientIfOk(sk(cd.name), "New message from Heather", "Heather sent you a message:\n\n"+txt+"\n\nLog in to your dashboard to reply: https://everydaystrongfit.com/everyday-strong.html");
-      count++;
     });
     document.getElementById("bulk-text").value="";
-    showOk("ok-bulk-msg","Message sent to "+count+" clients!");
   });
+}
+
+// Shows exactly what happened with each send, since the message itself
+// always lands in the dashboard, but the email side depends on each
+// client's own contact answers on their Intake Form.
+function reportBulkSendResult(totalCount, emailedCount, skippedReasons){
+  var msg = "Message sent to "+totalCount+" client"+(totalCount!==1?"s":"")+". "+
+    emailedCount+" also got an email";
+  if(skippedReasons.length){
+    msg += ", "+skippedReasons.length+" did not:\n\n"+skippedReasons.join("\n");
+  } else {
+    msg += ".";
+  }
+  showOk("ok-bulk-msg", "Message sent to "+totalCount+" client"+(totalCount!==1?"s":"")+", "+emailedCount+" also emailed.");
+  if(skippedReasons.length) alert(msg);
 }
 
 // MONTHLY REPORT
@@ -7623,6 +7651,6 @@ function renderInsightsLog(){
   note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-zoom-auto-attendance</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-email-status-reporting</p>
 </body>
 </html>
