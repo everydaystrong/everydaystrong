@@ -1871,7 +1871,7 @@ if(isDark) document.getElementById("dark-btn").textContent="Light Mode";
 var currentPortalTab="all";
 function switchPortalTab(name,btn){
   currentPortalTab=name;
-  if(name==="all"){ clearNewAnnouncementsBadge(); }
+  if(name==="all"){ clearNewAnnouncementsBadge(); clearNewCommentsBadge(); }
   document.querySelectorAll(".portal-tab").forEach(function(t){ t.style.display="none"; });
   document.getElementById("tab-"+name).style.display="block";
   var sel = document.getElementById("portal-nav-select");
@@ -1917,6 +1917,7 @@ function previewAsClient(){
   loadStreak();
   checkNewAnnouncements();
   checkNewMessages();
+  checkNewComments();
   checkBirthday();
   loadGoal();
   loadMyCheckins();
@@ -1964,6 +1965,7 @@ function doLogin(){
       loadStreak();
       checkNewAnnouncements();
       checkNewMessages();
+      checkNewComments();
       checkBirthday();
       loadGoal();
       loadMyCheckins();
@@ -2820,12 +2822,13 @@ function annVisibleToUser(a){
 
 var hasNewAnn = false;
 var hasNewMsg = false;
+var hasNewComment = false;
 function updateNavDot(){
   var dot = document.getElementById("nav-dropdown-dot");
-  if(dot) dot.style.display = (hasNewAnn || hasNewMsg) ? "inline-block" : "none";
+  if(dot) dot.style.display = (hasNewAnn || hasNewMsg || hasNewComment) ? "inline-block" : "none";
   var allOpt = document.querySelector('#portal-nav-select option[value="all"]');
   var msgOpt = document.querySelector('#portal-nav-select option[value="msg"]');
-  if(allOpt) allOpt.textContent = hasNewAnn ? "\u25CF Workouts" : "Workouts";
+  if(allOpt) allOpt.textContent = (hasNewAnn || hasNewComment) ? "\u25CF Workouts" : "Workouts";
   if(msgOpt) msgOpt.textContent = hasNewMsg ? "\u25CF Messages" : "Messages";
 }
 
@@ -2876,6 +2879,39 @@ function clearNewAnnouncementsBadge(){
   if(!currentUserKey||!DB) return;
   DB.ref("userdata/"+currentUserKey+"/lastAnnCheck").set(Date.now());
   hasNewAnn = false;
+  updateNavDot();
+}
+
+// A reply only counts as "new" for threads this client has actually
+// commented on themselves — scans every video's comments since replies
+// aren't tied to one specific video the way messages and announcements are.
+function checkNewComments(){
+  if(!DB || !currentUserKey || !currentUser) return;
+  DB.ref("userdata/"+currentUserKey+"/lastCommentCheck").once("value",function(metaSnap){
+    var lastCheck = metaSnap.val() || 0;
+    DB.ref("videoComments").once("value",function(snap){
+      hasNewComment = false;
+      if(snap.exists()){
+        snap.forEach(function(videoNode){
+          var iCommented = false, newerFromOthers = false;
+          videoNode.forEach(function(c){
+            var v = c.val();
+            if(!v) return;
+            if(v.name===currentUser) iCommented = true;
+            if(v.name!==currentUser && v.ts>lastCheck) newerFromOthers = true;
+          });
+          if(iCommented && newerFromOthers) hasNewComment = true;
+        });
+      }
+      if(hasNewComment && currentPortalTab==="all"){ clearNewCommentsBadge(); return; }
+      updateNavDot();
+    });
+  });
+}
+function clearNewCommentsBadge(){
+  if(!currentUserKey||!DB) return;
+  DB.ref("userdata/"+currentUserKey+"/lastCommentCheck").set(Date.now());
+  hasNewComment = false;
   updateNavDot();
 }
 
@@ -5529,7 +5565,7 @@ function loadClientForms(){
   el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Loading...</p>";
   // A form's storage key can end up slightly different from this client's
   // actual key (typo, middle name, extra space, etc. at the time they filled
-  // it out) — so instead of only trusting an exact key match, we scan every
+  // it out), so instead of only trusting an exact key match, we scan every
   // client_forms entry and also match by the name actually written on the
   // form. This is the same mismatch pattern the New Submissions merge logic
   // already accounts for; this makes the individual client page just as safe.
@@ -5543,7 +5579,7 @@ function loadClientForms(){
           if(!f) return;
           var nameOnForm = f.data && f.data.Name;
           var matchesByName = nameOnForm && sk(nameOnForm)===currentClientKey;
-          if(matchesByKey || matchesByName) entries.push(f);
+          if(matchesByKey || matchesByName) entries.push({f:f, parentKey:clientNode.key, entryKey:c.key});
         });
       });
     }
@@ -5552,9 +5588,11 @@ function loadClientForms(){
         "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;' onclick='repairClientForms()'>Look for Stray Forms</button>";
       return;
     }
-    entries.sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
-    var h="";
-    entries.forEach(function(f){
+    entries.sort(function(a,b){ return (b.f.ts||0)-(a.f.ts||0); });
+    var bestIntake = entries.filter(function(e){ return e.f.formType==="Intake Form"; })[0];
+    var h = bestIntake ? renderContactInfoCard(bestIntake) : "";
+    entries.forEach(function(e){
+      var f=e.f;
       var d=new Date(f.ts).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
       h+="<div style='background:var(--inp);border-radius:10px;padding:1rem;margin-bottom:10px;'>";
       h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'>";
@@ -5576,9 +5614,71 @@ function loadClientForms(){
   });
 }
 
+var demoEditEntry = null;
+
+// A read only view of the fields the rest of the app actually relies on
+// (Name, Email, Phone, DOB, contact preference), pulled from the newest
+// Intake Form, with an Edit toggle. Editing writes straight back onto that
+// same Intake Form entry, since that's the one notifications, the Forms
+// tab, and the forms reminder banner all read from.
+function renderContactInfoCard(entryWrap){
+  demoEditEntry = entryWrap;
+  var d = entryWrap.f.data || {};
+  return "<div id='cp-contact-card' style='background:var(--card);border:1.5px solid var(--accent);border-radius:10px;padding:1rem;margin-bottom:14px;'>"+
+    "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'>"+
+    "<strong style='font-size:14px;color:var(--text);'>Contact Info</strong>"+
+    "<button class='action-btn sec' style='font-size:12px;padding:5px 12px;width:auto;' onclick='toggleDemoEdit(true)'>Edit</button></div>"+
+    "<div id='cp-contact-view'>"+
+    "<p style='font-size:13px;margin-bottom:3px;'><strong>Name:</strong> "+ex(d.Name||"")+"</p>"+
+    "<p style='font-size:13px;margin-bottom:3px;'><strong>Email:</strong> "+ex(d.Email||"")+"</p>"+
+    "<p style='font-size:13px;margin-bottom:3px;'><strong>Phone:</strong> "+ex(d.Phone||"")+"</p>"+
+    "<p style='font-size:13px;margin-bottom:3px;'><strong>DOB:</strong> "+ex(d.DOB||"")+"</p>"+
+    "<p style='font-size:13px;margin-bottom:3px;'><strong>OK to Contact:</strong> "+ex(d["OK to Contact"]||"")+"</p>"+
+    "<p style='font-size:13px;'><strong>Preferred Contact Method:</strong> "+ex(d["Preferred Contact Method"]||"")+"</p>"+
+    "</div>"+
+    "<div id='cp-contact-edit' style='display:none;'>"+
+    "<div class='form-row'><span class='form-label'>Name</span><input class='form-input' id='cd-name' value=\""+ex(d.Name||"").replace(/"/g,"&quot;")+"\" style='text-transform:none;' /></div>"+
+    "<div class='form-row'><span class='form-label'>Email</span><input class='form-input' id='cd-email' value=\""+ex(d.Email||"").replace(/"/g,"&quot;")+"\" style='text-transform:none;' /></div>"+
+    "<div class='form-row'><span class='form-label'>Phone</span><input class='form-input' id='cd-phone' value=\""+ex(d.Phone||"").replace(/"/g,"&quot;")+"\" style='text-transform:none;' /></div>"+
+    "<div class='form-row'><span class='form-label'>DOB</span><input class='form-input' id='cd-dob' value=\""+ex(d.DOB||"").replace(/"/g,"&quot;")+"\" style='text-transform:none;' /></div>"+
+    "<div class='form-row'><span class='form-label'>OK to Contact</span><select class='form-select' id='cd-okcontact'>"+
+      ["Yes","No"].map(function(o){ return "<option value='"+o+"'"+(d["OK to Contact"]===o?" selected":"")+">"+o+"</option>"; }).join("")+
+    "</select></div>"+
+    "<div class='form-row'><span class='form-label'>Preferred Contact Method</span><select class='form-select' id='cd-method'>"+
+      ["Dashboard Messaging","Email","Text/Phone"].map(function(o){ return "<option value='"+o+"'"+(d["Preferred Contact Method"]===o?" selected":"")+">"+o+"</option>"; }).join("")+
+    "</select></div>"+
+    "<div style='display:flex;gap:8px;margin-top:8px;'>"+
+    "<button class='action-btn' style='font-size:13px;padding:8px 14px;width:auto;' onclick='saveClientDemographics()'>Save</button>"+
+    "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;' onclick='toggleDemoEdit(false)'>Cancel</button>"+
+    "</div></div></div>";
+}
+function toggleDemoEdit(editing){
+  var v=document.getElementById("cp-contact-view"), e=document.getElementById("cp-contact-edit");
+  if(!v||!e) return;
+  v.style.display = editing ? "none" : "block";
+  e.style.display = editing ? "block" : "none";
+}
+function saveClientDemographics(){
+  if(!DB||!demoEditEntry) return;
+  var updates = {
+    Name: document.getElementById("cd-name").value.trim(),
+    Email: document.getElementById("cd-email").value.trim(),
+    Phone: document.getElementById("cd-phone").value.trim(),
+    DOB: document.getElementById("cd-dob").value.trim(),
+    "OK to Contact": document.getElementById("cd-okcontact").value,
+    "Preferred Contact Method": document.getElementById("cd-method").value
+  };
+  if(!updates.Name || !updates.Email){ alert("Name and email can't be blank."); return; }
+  DB.ref("client_forms/"+demoEditEntry.parentKey+"/"+demoEditEntry.entryKey+"/data").update(updates, function(err){
+    if(err){ alert("Couldn't save. Please try again."); return; }
+    alert("Contact info updated!");
+    loadClientForms();
+  });
+}
+
 // Recovery tool for forms that ended up stored under the wrong key (the
 // bug in an earlier version of linkSubmissionToExistingClient did exactly
-// this — it filed forms under a client's raw access code key instead of
+// this: it filed forms under a client's raw access code key instead of
 // their name based key). Looks under this client's actual code key, and
 // under any node whose entries name-match this client, then consolidates
 // everything onto the one correct key the rest of the app expects.
@@ -7698,6 +7798,6 @@ function renderInsightsLog(){
   note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-fix-client-forms-key</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-comment-reply-badge</p>
 </body>
 </html>
