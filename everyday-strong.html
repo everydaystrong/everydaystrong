@@ -1661,6 +1661,33 @@ function logClickEvent(label, elId, type, source, clientKey, clientName){
     elId: elId||null
   });
 }
+// Best effort attendance from a Zoom link click. This can only see that
+// someone clicked the link, not whether Zoom itself counted them as
+// attending (that data lives in Zoom's own reports, not here). Meant as a
+// head start on the attendance checklist, not a replacement for reviewing
+// it before saving.
+function markZoomLinkAttendance(){
+  if(!DB || !currentUserKey || !currentUser || previewingAsClient) return;
+  var now = new Date();
+  var y=now.getFullYear(), m=now.getMonth()+1, d=now.getDate();
+  var dateStr = y+"-"+(m<10?"0":"")+m+"-"+(d<10?"0":"")+d;
+  var dayNames=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  var dayName = dayNames[now.getDay()];
+  DB.ref("attendance/"+dateStr.replace(/-/g,"")).transaction(function(cur){
+    if(!cur) cur = {date:dateStr, day:dayName, attended:[], ts:Date.now()};
+    var list = cur.attended || [];
+    if(list.indexOf(currentUser)===-1) list.push(currentUser);
+    cur.attended = list;
+    cur.ts = Date.now();
+    return cur;
+  });
+}
+document.addEventListener("click", function(e){
+  if(!currentUserKey || previewingAsClient || !DB) return;
+  var zoomEl = e.target.closest("[data-zoom-attendance]");
+  if(zoomEl) markZoomLinkAttendance();
+}, true);
+
 document.addEventListener("click", function(e){
   if(!currentUserKey || previewingAsClient || !DB) return;
   var el = e.target.closest("button, a, [onclick], [data-track]");
@@ -2863,7 +2890,10 @@ function loadAnnouncements(){
     if(!items.length){ sec.innerHTML=""; return; }
     var h="<p class='section-title' style='margin-bottom:0.8rem;'>Announcements</p>";
     items.forEach(function(a){
-      var b=ex(a.body).replace(/https?:\/\/[^\s<]+/g,function(u){ return "<a href='"+u+"' target='_blank'>"+u+"</a>"; });
+      var b=ex(a.body).replace(/https?:\/\/[^\s<]+/g,function(u){
+        var extraAttr = a.type==="zoom" ? " data-zoom-attendance=\"1\"" : "";
+        return "<a href='"+u+"' target='_blank'"+extraAttr+">"+u+"</a>";
+      });
       h+="<div class='announce-card'>";
       h+="<div class='announce-header'>"+(a.pinned?"PINNED: ":"")+( lb[a.type]||"Announcement")+"</div>";
       h+="<div class='announce-body'><strong>"+ex(a.title)+"</strong><br/>"+b+"</div>";
@@ -2901,7 +2931,17 @@ document.getElementById("atab-featured").onclick=function(){ setAdmTab("featured
 document.getElementById("add-test-btn").onclick=addTestimonial;
 document.getElementById("add-feat-btn").onclick=addFeaturedPhoto;
 document.getElementById("atab-recipes-admin").onclick=function(){ setAdmTab("recipes-admin",this); loadAdminRecipes(); };
-document.getElementById("atab-attendance").onclick=function(){ setAdmTab("attendance",this); loadAttendanceClients(); loadAttendanceHistory(); };
+document.getElementById("atab-attendance").onclick=function(){
+  setAdmTab("attendance",this);
+  var dateEl = document.getElementById("att-date");
+  if(!dateEl.value){
+    var now=new Date();
+    dateEl.value = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
+  }
+  loadAttendanceClients();
+  loadAttendanceHistory();
+};
+document.getElementById("att-date").onchange = loadAttendanceClients;
 document.getElementById("add-recipe-btn").onclick=addRecipe;
 document.getElementById("atab-bulk").onclick=function(){ setAdmTab("bulk",this); };
 document.getElementById("atab-report").onclick=function(){ setAdmTab("report",this); initReportYears(); };
@@ -6593,26 +6633,42 @@ var attendanceChecks = {};
 
 function loadAttendanceClients(){
   if(!DB) return;
-  DB.ref("codes").once("value",function(snap){
-    var el=document.getElementById("att-client-list");
-    el.innerHTML="";
-    attendanceChecks={};
-    if(!snap.exists()) return;
-    snap.forEach(function(c){
-      var cd=c.val();
-      if(isClientBlocked(cd)) return;
-      var row=document.createElement("label");
-      row.style.cssText="display:flex;align-items:center;gap:8px;padding:8px;background:var(--inp);border-radius:8px;cursor:pointer;font-size:14px;color:var(--text);";
-      var cb=document.createElement("input");
-      cb.type="checkbox";
-      cb.style.cssText="width:16px;height:16px;accent-color:var(--accent);";
-      cb.setAttribute("data-name",cd.name);
-      cb.onchange=function(){ attendanceChecks[this.getAttribute("data-name")]=this.checked; };
-      row.appendChild(cb);
-      row.appendChild(document.createTextNode(cd.name));
-      el.appendChild(row);
+  var date = document.getElementById("att-date").value;
+  var dateKey = date ? date.replace(/-/g,"") : null;
+  var buildRows = function(existingAttended){
+    DB.ref("codes").once("value",function(snap){
+      var el=document.getElementById("att-client-list");
+      el.innerHTML="";
+      attendanceChecks={};
+      (existingAttended||[]).forEach(function(n){ attendanceChecks[n]=true; });
+      if(!snap.exists()) return;
+      snap.forEach(function(c){
+        var cd=c.val();
+        if(isClientBlocked(cd)) return;
+        var row=document.createElement("label");
+        row.style.cssText="display:flex;align-items:center;gap:8px;padding:8px;background:var(--inp);border-radius:8px;cursor:pointer;font-size:14px;color:var(--text);";
+        var cb=document.createElement("input");
+        cb.type="checkbox";
+        cb.style.cssText="width:16px;height:16px;accent-color:var(--accent);";
+        cb.setAttribute("data-name",cd.name);
+        cb.checked = !!attendanceChecks[cd.name];
+        cb.onchange=function(){ attendanceChecks[this.getAttribute("data-name")]=this.checked; };
+        row.appendChild(cb);
+        row.appendChild(document.createTextNode(cd.name));
+        el.appendChild(row);
+      });
     });
-  });
+  };
+  if(dateKey){
+    // Pulls in whatever's already saved for this date first, including
+    // anyone the Zoom link click already marked present, so opening this
+    // form and hitting Save can't silently erase it.
+    DB.ref("attendance/"+dateKey).once("value", function(s){
+      buildRows(s.exists() ? (s.val().attended||[]) : []);
+    });
+  } else {
+    buildRows([]);
+  }
 }
 
 function saveAttendance(){
@@ -6624,7 +6680,12 @@ function saveAttendance(){
   DB.ref("attendance/"+date.replace(/-/g,"")).set({
     date:date, day:day, attended:attended, ts:Date.now()
   }, function(e){
-    if(!e){ showOk("ok-attendance","Attendance saved!"); loadAttendanceHistory(); }
+    if(!e){
+      showOk("ok-attendance","Attendance saved!");
+      attendanceChecks={};
+      loadAttendanceClients();
+      loadAttendanceHistory();
+    }
   });
 }
 
@@ -7562,6 +7623,6 @@ function renderInsightsLog(){
   note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-bulk-message-email</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-zoom-auto-attendance</p>
 </body>
 </html>
