@@ -5547,7 +5547,11 @@ function loadClientForms(){
         });
       });
     }
-    if(!entries.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No forms submitted yet.</p>"; return; }
+    if(!entries.length){
+      el.innerHTML="<p style='color:var(--sub);font-size:13px;margin-bottom:8px;'>No forms submitted yet.</p>"+
+        "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;' onclick='repairClientForms()'>Look for Stray Forms</button>";
+      return;
+    }
     entries.sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
     var h="";
     entries.forEach(function(f){
@@ -5572,7 +5576,45 @@ function loadClientForms(){
   });
 }
 
-// codes/ entries use random Firebase push IDs as their key — NOT sk(name) —
+// Recovery tool for forms that ended up stored under the wrong key (the
+// bug in an earlier version of linkSubmissionToExistingClient did exactly
+// this — it filed forms under a client's raw access code key instead of
+// their name based key). Looks under this client's actual code key, and
+// under any node whose entries name-match this client, then consolidates
+// everything onto the one correct key the rest of the app expects.
+function repairClientForms(){
+  if(!DB||!currentClientKey) return;
+  resolveClientCodeKey(function(realCodeKey){
+    DB.ref("client_forms").once("value", function(allSnap){
+      var strayKeys = {};
+      if(allSnap.exists()){
+        allSnap.forEach(function(clientNode){
+          if(clientNode.key===currentClientKey) return;
+          if(realCodeKey && clientNode.key===realCodeKey){ strayKeys[clientNode.key]=true; return; }
+          clientNode.forEach(function(c){
+            var f=c.val();
+            var nameOnForm = f && f.data && f.data.Name;
+            if(nameOnForm && sk(nameOnForm)===currentClientKey) strayKeys[clientNode.key]=true;
+          });
+        });
+      }
+      var keys = Object.keys(strayKeys);
+      if(!keys.length){ alert("No stray forms found for this client."); return; }
+      var remaining = keys.length;
+      keys.forEach(function(srcKey){
+        DB.ref("client_forms/"+srcKey).once("value", function(fsnap){
+          if(fsnap.exists()){
+            fsnap.forEach(function(entry){ DB.ref("client_forms/"+currentClientKey).push(entry.val()); });
+          }
+          DB.ref("client_forms/"+srcKey).remove(function(){
+            remaining--;
+            if(remaining===0){ alert("Fixed! Their forms are back where the app expects them."); loadClientForms(); }
+          });
+        });
+      });
+    });
+  });
+}
 // so any codes/ read or write must first look up the real key by matching
 // name, same pattern editCurrentClientAccess() already uses.
 function resolveClientCodeKey(callback){
@@ -6067,10 +6109,10 @@ function permanentlyDeleteSubmission(clientKey, entryKey, name){
   DB.ref("client_forms/"+clientKey+"/"+entryKey).remove();
 }
 
-// Links a name-matched submission group onto an EXISTING client's real code
-// key instead of the name-derived key it was saved under — for the common
-// case where someone filled out forms for a client Heather already created
-// a code for, and their name didn't line up exactly with the code record.
+// Links a name-matched submission group onto an existing client's own
+// name-derived key, for the common case where someone filled out forms for
+// a client Heather already created a code for, and their name didn't line
+// up exactly with the code record.
 function linkSubmissionToExistingClient(norm, name){
   if(!DB) return;
   var code = prompt("Enter this client's existing access code to link their forms to it:");
@@ -6081,8 +6123,13 @@ function linkSubmissionToExistingClient(norm, name){
       alert("No client found with that access code. Double check it and try again.");
       return;
     }
-    var targetKey = null;
-    snap.forEach(function(c){ targetKey = c.key; });
+    var foundName = null;
+    snap.forEach(function(c){ foundName = c.val().name; });
+    // client_forms is keyed by sk(name) everywhere in this app (the Forms
+    // tab, email notifications, the forms reminder banner all look it up
+    // this way) — the code's own Firebase key is a different, unrelated
+    // value and must never be used here.
+    var targetKey = sk(foundName);
     var keysToMove = {};
     cachedAllSubmissions.forEach(function(s){
       var rawName = (s.data && s.data.Name) || "";
@@ -6090,7 +6137,7 @@ function linkSubmissionToExistingClient(norm, name){
     });
     var sourceKeyList = Object.keys(keysToMove).filter(function(k){ return k!==targetKey; });
     if(!sourceKeyList.length){ alert("Already linked to that client."); return; }
-    if(!confirm('Move all forms for "'+name+'" onto the client code '+code+'? This can\'t be undone.')) return;
+    if(!confirm('Move all forms for "'+name+'" onto '+foundName+"'s client record? This can't be undone.")) return;
     var remaining = sourceKeyList.length;
     sourceKeyList.forEach(function(srcKey){
       DB.ref("client_forms/"+srcKey).once("value", function(fsnap){
@@ -6100,7 +6147,7 @@ function linkSubmissionToExistingClient(norm, name){
         DB.ref("client_forms/"+srcKey).remove(function(){
           remaining--;
           if(remaining===0){
-            alert("Linked! Their forms now live under their existing client code.");
+            alert("Linked! Their forms now live under their existing client record.");
             loadClients();
           }
         });
@@ -7651,6 +7698,6 @@ function renderInsightsLog(){
   note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-email-status-reporting</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-fix-client-forms-key</p>
 </body>
 </html>
