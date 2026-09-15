@@ -1403,21 +1403,34 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     <div class="tab-content" id="atc-bulk">
       <div class="admin-card">
         <h3>Message All Clients</h3>
-        <p style="font-size:13px;color:var(--sub);margin-bottom:1rem;">Send a message that appears in every active client's Messages tab at once.</p>
-        <div class="ok-msg" id="ok-bulk-msg">Message sent to all clients!</div>
+        <p style="font-size:13px;color:var(--sub);margin-bottom:1rem;">Send a message that appears in every active client's Messages tab at once, or pick specific people instead.</p>
+        <div class="ok-msg" id="ok-bulk-msg">Message sent!</div>
         <div class="form-row">
           <span class="form-label">Send To</span>
           <select class="form-select" id="bulk-audience">
             <option value="all">All Active Clients</option>
             <option value="trial">Trial Members Only</option>
             <option value="full">Full Members Only</option>
+            <option value="specific">Specific Clients</option>
           </select>
+        </div>
+        <div id="bulk-specific-picker" style="display:none;margin-bottom:1rem;">
+          <div class="form-row">
+            <span class="form-label">Load From a Class Night (optional)</span>
+            <select class="form-select" id="bulk-attendance-date">
+              <option value="">Pick a recent class to check off who attended</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <span class="form-label">Who Gets This</span>
+            <div class="program-checkboxes" id="bulk-specific-checkboxes" style="max-height:220px;"><p class="tip">Loading clients...</p></div>
+          </div>
         </div>
         <div class="form-row">
           <span class="form-label">Message</span>
-          <textarea class="form-textarea" id="bulk-text" placeholder="Type your message to all clients..." style="min-height:120px;"></textarea>
+          <textarea class="form-textarea" id="bulk-text" placeholder="Type your message..." style="min-height:120px;"></textarea>
         </div>
-        <button class="action-btn" id="bulk-send-btn">Send to All Clients</button>
+        <button class="action-btn" id="bulk-send-btn">Send Message</button>
       </div>
     </div>
 
@@ -6626,17 +6639,93 @@ function loadAttendanceHistory(){
     items.forEach(function(a){
       h+="<div style='padding:10px 0;border-bottom:0.5px solid var(--border);'>";
       h+="<strong style='font-size:14px;'>"+ex(a.day)+" "+ex(a.date)+"</strong> <span style='font-size:12px;color:var(--sub);'>"+((a.attended||[]).length)+" attended</span><br/>";
-      h+="<span style='font-size:12px;color:var(--sub);'>"+(a.attended||[]).map(ex).join(", ")+"</span></div>";
+      h+="<span style='font-size:12px;color:var(--sub);'>"+(a.attended||[]).map(ex).join(", ")+"</span>";
+      if((a.attended||[]).length){
+        h+="<br/><button class='action-btn sec' style='font-size:12px;padding:6px 12px;width:auto;margin-top:6px;' onclick='messageAttendanceDate(\""+ex(a.date)+"\")'>Message These Clients</button>";
+      }
+      h+="</div>";
     });
     el.innerHTML=h;
   });
 }
 
 // BULK MESSAGE
+var bulkSpecificChecks = {};
+
+document.getElementById("bulk-audience").onchange = function(){
+  var picker = document.getElementById("bulk-specific-picker");
+  if(this.value==="specific"){
+    picker.style.display = "block";
+    populateBulkSpecificPicker();
+  } else {
+    picker.style.display = "none";
+  }
+};
+
+function populateBulkSpecificPicker(){
+  if(!DB) return;
+  var dateSel = document.getElementById("bulk-attendance-date");
+  var box = document.getElementById("bulk-specific-checkboxes");
+  DB.ref("codes").once("value", function(snap){
+    var names = [];
+    if(snap.exists()) snap.forEach(function(c){ var cd=c.val(); if(!isClientBlocked(cd)) names.push(cd.name); });
+    names.sort();
+    box.innerHTML = names.map(function(n){
+      var checked = bulkSpecificChecks[n] ? "checked" : "";
+      return "<label style='display:flex;align-items:center;gap:6px;padding:4px 0;font-size:13px;cursor:pointer;'><input type='checkbox' "+checked+" onchange='bulkSpecificChecks[\""+ex(n).replace(/"/g,"&quot;")+"\"]=this.checked' /> "+ex(n)+"</label>";
+    }).join("") || "<p class='tip'>No clients found.</p>";
+  });
+  DB.ref("attendance").orderByChild("ts").limitToLast(10).once("value", function(snap){
+    var items=[];
+    if(snap.exists()) snap.forEach(function(c){ items.push(c.val()); });
+    items.sort(function(a,b){ return b.ts-a.ts; });
+    dateSel.innerHTML = "<option value=''>Pick a recent class to check off who attended</option>"+
+      items.map(function(a){ return "<option value=\""+ex(a.date)+"\">"+ex(a.day)+" "+ex(a.date)+" ("+((a.attended||[]).length)+" attended)</option>"; }).join("");
+  });
+}
+
+function applyAttendanceDateToPicker(date){
+  if(!date || !DB) return;
+  DB.ref("attendance/"+date.replace(/-/g,"")).once("value", function(snap){
+    var a = snap.val();
+    var attended = (a && a.attended) || [];
+    bulkSpecificChecks = {};
+    attended.forEach(function(n){ bulkSpecificChecks[n]=true; });
+    populateBulkSpecificPicker();
+  });
+}
+document.getElementById("bulk-attendance-date").onchange = function(){
+  applyAttendanceDateToPicker(this.value);
+};
+
+// Jumps here from an Attendance history row, pre-loaded to that night.
+function messageAttendanceDate(date){
+  document.getElementById("atab-bulk").click();
+  document.getElementById("bulk-audience").value = "specific";
+  document.getElementById("bulk-specific-picker").style.display = "block";
+  populateBulkSpecificPicker();
+  setTimeout(function(){
+    document.getElementById("bulk-attendance-date").value = date;
+    applyAttendanceDateToPicker(date);
+  }, 300);
+}
+
 function sendBulkMessage(){
   var txt=document.getElementById("bulk-text").value.trim();
   var aud=document.getElementById("bulk-audience").value;
   if(!txt){ alert("Please write a message."); return; }
+  if(aud==="specific"){
+    var picked = Object.keys(bulkSpecificChecks).filter(function(n){ return bulkSpecificChecks[n]; });
+    if(!picked.length){ alert("Check off at least one client first."); return; }
+    if(!confirm("Send this message to "+picked.length+" specific client"+(picked.length!==1?"s":"")+"?")) return;
+    picked.forEach(function(n){
+      DB.ref("messages/"+sk(n)).push({from:"Heather",text:txt,ts:Date.now(),fromClient:false});
+      notifyClientIfOk(sk(n), "New message from Heather", "Heather sent you a message:\n\n"+txt+"\n\nLog in to your dashboard to reply: https://everydaystrongfit.com/everyday-strong.html");
+    });
+    document.getElementById("bulk-text").value="";
+    showOk("ok-bulk-msg","Message sent to "+picked.length+" client"+(picked.length!==1?"s":"")+"!");
+    return;
+  }
   if(!confirm("Send this message to all "+aud+" clients?")) return;
   if(!DB) return;
   DB.ref("codes").once("value",function(snap){
@@ -6650,6 +6739,7 @@ function sendBulkMessage(){
       DB.ref("messages/"+sk(cd.name)).push({
         from:"Heather",text:txt,ts:Date.now(),fromClient:false
       });
+      notifyClientIfOk(sk(cd.name), "New message from Heather", "Heather sent you a message:\n\n"+txt+"\n\nLog in to your dashboard to reply: https://everydaystrongfit.com/everyday-strong.html");
       count++;
     });
     document.getElementById("bulk-text").value="";
@@ -7472,6 +7562,6 @@ function renderInsightsLog(){
   note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-activity-log-running-feed</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-bulk-message-email</p>
 </body>
 </html>
