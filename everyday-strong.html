@@ -1472,23 +1472,26 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     <div class="tab-content" id="atc-insights">
       <div class="admin-card">
         <h3>Activity Log</h3>
-        <p class="tip" style="margin-bottom:10px;">A running, live updating feed of every click, watch, and tap, across the dashboard and the public site. Kept for the last 12 months, then trimmed automatically. Filter it to see what's common.</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-          <input class="form-input" id="insights-client-search" placeholder="Filter by client name" style="flex:1;min-width:160px;text-transform:none;" oninput="renderInsightsLog()" />
-          <input class="form-input" id="insights-text-search" placeholder="Filter by what was clicked" style="flex:1;min-width:160px;text-transform:none;" oninput="renderInsightsLog()" />
-        </div>
-        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;">
-          <div>
-            <span class="form-label" style="display:block;margin-bottom:4px;">Where</span>
-            <div id="insights-source-checkboxes" style="display:flex;gap:12px;"></div>
+        <p class="tip" style="margin-bottom:10px;" id="insights-intro-text">A running feed of client clicks and watches, across the dashboard and the public site. Kept for the last 12 months, then trimmed automatically.</p>
+        <button class="action-btn" id="insights-show-btn" style="padding:10px 18px;" onclick="showInsightsLog()">View Activity Log</button>
+        <div id="insights-log-container" style="display:none;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+            <input class="form-input" id="insights-client-search" placeholder="Filter by client name" style="flex:1;min-width:160px;text-transform:none;" oninput="renderInsightsLog()" />
+            <input class="form-input" id="insights-text-search" placeholder="Filter by what was clicked" style="flex:1;min-width:160px;text-transform:none;" oninput="renderInsightsLog()" />
           </div>
-          <div style="flex:1;min-width:220px;">
-            <span class="form-label" style="display:block;margin-bottom:4px;">Type of click</span>
-            <div id="insights-type-checkboxes" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;">
+            <div>
+              <span class="form-label" style="display:block;margin-bottom:4px;">Where</span>
+              <div id="insights-source-checkboxes" style="display:flex;gap:12px;"></div>
+            </div>
+            <div style="flex:1;min-width:220px;">
+              <span class="form-label" style="display:block;margin-bottom:4px;">Type of click</span>
+              <div id="insights-type-checkboxes" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+            </div>
           </div>
+          <div id="insights-log-output"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
+          <p class="tip" id="insights-log-note" style="margin-top:10px;"></p>
         </div>
-        <div id="insights-log-output"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
-        <p class="tip" id="insights-log-note" style="margin-top:10px;"></p>
       </div>
     </div>
     <div class="tab-content" id="atc-testimonials">
@@ -7881,7 +7884,13 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
-document.getElementById("atab-insights").onclick=function(){ setAdmTab("insights",this); loadInsightsTab(); };
+document.getElementById("atab-insights").onclick=function(){ setAdmTab("insights",this); };
+
+function showInsightsLog(){
+  document.getElementById("insights-show-btn").style.display="none";
+  document.getElementById("insights-log-container").style.display="block";
+  loadInsightsTab();
+}
 
 // ACTIVITY LOG: a single running feed of clicks across both the dashboard
 // and the public site, filterable by client name, free text, source, and
@@ -7971,6 +7980,6 @@ function renderInsightsLog(){
   note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-multi-select-video-filters</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-16-opt-in-activity-log</p>
 </body>
 </html>
