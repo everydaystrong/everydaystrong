@@ -4225,8 +4225,26 @@ function delCode(key, name){
 // ANNOUNCEMENTS
 var annFilter = "active";
 
+// Runs every time the announcements list opens rather than on a schedule,
+// this platform has no background scheduler, so an expired announcement
+// only actually gets archived the next time someone with this code open
+// is around to trigger it.
+function autoArchiveExpiredAnn(){
+  if(!DB) return;
+  DB.ref("announcements").once("value", function(snap){
+    if(!snap.exists()) return;
+    snap.forEach(function(c){
+      var a = c.val();
+      if(a.expiresAt && a.expiresAt < Date.now() && !a.archived){
+        DB.ref("announcements/"+c.key).update({archived:true});
+      }
+    });
+  });
+}
+
 function loadAdmAnn(){
   if(!DB) return;
+  autoArchiveExpiredAnn();
   DB.ref("announcements").on("value",function(snap){
     var cnt=0,items=[];
     if(snap.exists()){ snap.forEach(function(c){ var a=c.val(); a._k=c.key; items.unshift(a); if(!a.archived) cnt++; }); }
@@ -4973,7 +4991,12 @@ function loadMessages(){
   DB.ref("messages/"+sk(currentUser)).on("value",function(snap){
     var el=document.getElementById("msg-thread");
     if(!snap.exists()){ el.innerHTML="<div style='text-align:center;padding:2rem;color:var(--sub);font-size:14px;'>No messages yet — send Heather a message above!</div>"; return; }
-    var items=[]; snap.forEach(function(c){ items.push(c.val()); });
+    var items=[]; var toMarkRead=[];
+    snap.forEach(function(c){
+      var m=c.val();
+      items.push(m);
+      if(!m.fromClient && !m.read) toMarkRead.push(c.key);
+    });
     items.sort(function(a,b){ return a.ts-b.ts; });
     var h="";
     items.forEach(function(m){
@@ -4986,6 +5009,11 @@ function loadMessages(){
     });
     el.innerHTML=h;
     el.scrollTop=el.scrollHeight;
+    // Marking these read re-triggers this same listener once, harmlessly —
+    // toMarkRead comes back empty on that next pass since read is now true.
+    if(toMarkRead.length){
+      toMarkRead.forEach(function(k){ DB.ref("messages/"+sk(currentUser)+"/"+k).update({read:true, readAt:Date.now()}); });
+    }
   });
 }
 
@@ -5118,8 +5146,9 @@ function loadAdminMessages(){
       var d=new Date(t.latest.ts).toLocaleDateString("en-US",{month:"short",day:"numeric"});
       var displayName = t.latest.fromClient ? (t.latest.from||t.key) : t.key;
       var unread = !!t.latest.fromClient; // client sent last message — awaiting your reply
+      var readTag = (!t.latest.fromClient) ? (" <span style='font-size:11px;color:var(--sub);'>· "+(t.latest.read?"Read":"Delivered")+"</span>") : "";
       h+="<div style='padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;' onclick='openAdminThread(\""+ex(t.key)+"\",\""+ex(displayName).replace(/"/g,"&quot;")+"\")'>"+
-        "<div><strong>"+ex(displayName)+"</strong>"+(unread?" <span style='width:8px;height:8px;background:#c05040;border-radius:50%;display:inline-block;margin-left:4px;vertical-align:middle;'></span>":"")+" <span style='color:var(--sub);font-size:11px;'>"+d+"</span><br/>"+
+        "<div><strong>"+ex(displayName)+"</strong>"+(unread?" <span style='width:8px;height:8px;background:#c05040;border-radius:50%;display:inline-block;margin-left:4px;vertical-align:middle;'></span>":"")+" <span style='color:var(--sub);font-size:11px;'>"+d+"</span>"+readTag+"<br/>"+
         "<span style='font-size:13px;color:var(--sub);'>"+ex((t.latest.text||"").substring(0,50))+"</span></div>"+
         "<span style='color:var(--accent);font-size:13px;white-space:nowrap;'>View →</span></div>";
     });
@@ -5144,7 +5173,8 @@ function openAdminThread(clientKey, displayName){
       h+="<div style='display:flex;flex-direction:column;align-items:"+(isClient?"flex-start":"flex-end")+";margin-bottom:8px;'>";
       h+="<div style='background:"+(isClient?"var(--inp)":"var(--accent)")+";color:"+(isClient?"var(--text)":"#fff")+";border-radius:10px;padding:8px 12px;max-width:80%;font-size:13px;'>";
       h+=ex(m.text)+"</div>";
-      h+="<span style='font-size:10px;color:var(--sub);margin-top:2px;'>"+new Date(m.ts).toLocaleString()+"</span></div>";
+      var readTag = (!isClient) ? (" · "+(m.read?"Read"+(m.readAt?" "+ago2fn(m.readAt):""):"Delivered")) : "";
+      h+="<span style='font-size:10px;color:var(--sub);margin-top:2px;'>"+new Date(m.ts).toLocaleString()+ex(readTag)+"</span></div>";
     });
     el.innerHTML=h;
     el.scrollTop = el.scrollHeight;
@@ -6591,7 +6621,8 @@ function loadClientMsgs(){
       h+="<div style='margin-bottom:8px;display:flex;flex-direction:column;align-items:"+(isClient?"flex-start":"flex-end")+";'>";
       h+="<div style='background:"+(isClient?"var(--inp)":"var(--accent)")+";color:"+(isClient?"var(--text)":"#fff")+";border-radius:10px;padding:8px 12px;max-width:80%;font-size:13px;'>";
       h+=ex(m.text)+"</div>";
-      h+="<span style='font-size:10px;color:var(--sub);margin-top:2px;'>"+ago2fn(m.ts)+"</span></div>";
+      var readTag = (!isClient) ? (" · "+(m.read?"Read"+(m.readAt?" "+ago2fn(m.readAt):""):"Delivered")) : "";
+      h+="<span style='font-size:10px;color:var(--sub);margin-top:2px;'>"+ago2fn(m.ts)+ex(readTag)+"</span></div>";
     });
     h+="</div>";
     h+="<div style='display:flex;gap:8px;flex-wrap:wrap;'><input class='form-input' id='cp-reply-inp' placeholder='Reply...' style='flex:1;font-size:13px;padding:8px 12px;min-width:150px;' /><button class='action-btn' style='font-size:12px;padding:8px 14px;' onclick='sendClientReply()'>Send</button><button class='action-btn sec' style='font-size:12px;padding:8px 14px;' onclick='sendClientReplyByEmail()'>Email Instead</button></div>";
@@ -7798,6 +7829,6 @@ function renderInsightsLog(){
   note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-comment-reply-badge</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-auto-archive-and-read-receipts</p>
 </body>
 </html>
