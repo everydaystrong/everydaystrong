@@ -538,7 +538,8 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
       <div id="cat-view">
         <div class="equip-search-wrap" style="margin-bottom:1.2rem;">
           <input class="inp" id="equip-search-input" placeholder="Search by title, category, or equipment (e.g. dumbbells, bands, none)" oninput="onEquipSearchInput()" />
-          <div id="equip-search-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
+          <button type="button" id="global-filter-btn" onclick="toggleGlobalFilterPanel()" style="margin-top:10px;background:var(--card);border:1.5px solid var(--accent);color:var(--accent);border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">Filter+</button>
+          <div id="global-filter-panel" style="display:none;margin-top:10px;background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:14px;"></div>
         </div>
         <div id="equip-search-results" style="display:none;">
           <p class="section-sub" id="equip-search-sub"></p>
@@ -552,7 +553,10 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <p class="section-sub" id="vid-sub"></p>
         <p id="cat-desc-text" style="display:none;color:var(--sub);font-size:13px;margin:-6px 0 14px;white-space:pre-wrap;"></p>
         <div id="subcat-grid" class="cat-grid" style="display:none;"></div>
-        <div id="focus-filters" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
+        <div id="focus-filters" style="display:none;margin-bottom:14px;">
+          <button type="button" id="cat-filter-btn" onclick="toggleCatFilterPanel()" style="background:var(--card);border:1.5px solid var(--accent);color:var(--accent);border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">Filter+</button>
+          <div id="cat-filter-panel" style="display:none;margin-top:10px;background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:14px;"></div>
+        </div>
         <div class="video-grid" id="video-grid"></div>
         <div id="week-checklist-card" style="display:none;"></div>
       </div>
@@ -2119,41 +2123,92 @@ function getDefaultSubcatImg(catName, subcatName){
   return "media/"+slugifyForFilename(catName)+"-"+slugifyForFilename(subcatName)+".jpeg";
 }
 
-// EQUIPMENT SEARCH — lets a client find videos by what equipment they have,
-// across every category at once, either by tapping a chip or typing.
-var currentEquipSearchTag = null;
-function renderEquipSearchChips(){
-  var wrap = document.getElementById("equip-search-chips");
-  if(!wrap) return;
-  var tags = {};
-  allVideos.forEach(function(v){ normalizeFocus(v.equipment).forEach(function(e){ tags[e]=true; }); });
-  var keys = Object.keys(tags).sort();
-  if(!keys.length){ wrap.innerHTML=""; return; }
-  wrap.innerHTML = keys.map(function(e){
-    var on = currentEquipSearchTag===e;
-    return "<button type='button' class='focus-chip"+(on?" on":"")+"' onclick='setEquipSearchChip(\""+ex(e).replace(/"/g,"&quot;")+"\")'>"+ex(e)+"</button>";
+// GLOBAL FILTER PANEL — Type (category), Equipment, Body Parts, all
+// multi select. Checking more than one option within a group broadens the
+// match (OR); having selections in more than one group narrows it (AND).
+// Combines with the free text search box too, both must match.
+var globalFilters = {type:[], equipment:[], focus:[]};
+function renderFilterCheckboxGroup(label, groupKey, options, stateArr, toggleFnName){
+  if(!options.length) return "";
+  var h = "<div style='margin-bottom:12px;'><span class='form-label' style='display:block;margin-bottom:6px;'>"+ex(label)+"</span>";
+  h += "<div style='display:flex;flex-wrap:wrap;gap:10px;'>";
+  h += options.map(function(o){
+    var checked = stateArr.indexOf(o)!==-1 ? "checked" : "";
+    return "<label style='display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;'><input type='checkbox' "+checked+" onchange='"+toggleFnName+"(\""+ex(o).replace(/"/g,"&quot;")+"\",this.checked)' /> "+ex(o)+"</label>";
   }).join("");
+  h += "</div></div>";
+  return h;
 }
-function setEquipSearchChip(tag){
-  currentEquipSearchTag = currentEquipSearchTag===tag ? null : tag;
+function toggleGlobalFilterPanel(){
+  var panel = document.getElementById("global-filter-panel");
+  if(!panel) return;
+  if(panel.style.display!=="none"){ panel.style.display="none"; return; }
+  renderGlobalFilterPanel();
+  panel.style.display = "block";
+}
+function renderGlobalFilterPanel(){
+  var panel = document.getElementById("global-filter-panel");
+  if(!panel) return;
+  var types={}, equips={}, focuses={};
+  allVideos.forEach(function(v){
+    var tag=v.tag||"Uncategorized";
+    if(!canAccess(tag)) return;
+    types[tag]=true;
+    normalizeFocus(v.equipment).forEach(function(e){ equips[e]=true; });
+    normalizeFocus(v.focus).forEach(function(f){ focuses[f]=true; });
+  });
+  var h = renderFilterCheckboxGroup("Type", "type", Object.keys(types).sort(), globalFilters.type, "toggleGlobalFilter_type");
+  h += renderFilterCheckboxGroup("Equipment", "equipment", Object.keys(equips).sort(), globalFilters.equipment, "toggleGlobalFilter_equipment");
+  h += renderFilterCheckboxGroup("Body Parts", "focus", Object.keys(focuses).sort(), globalFilters.focus, "toggleGlobalFilter_focus");
+  h += "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;' onclick='clearGlobalFilters()'>Clear Filters</button>";
+  panel.innerHTML = h;
+}
+function toggleGlobalFilter_type(v,on){ toggleInArray(globalFilters.type,v,on); renderGlobalFilterPanel(); runEquipSearch(); }
+function toggleGlobalFilter_equipment(v,on){ toggleInArray(globalFilters.equipment,v,on); renderGlobalFilterPanel(); runEquipSearch(); }
+function toggleGlobalFilter_focus(v,on){ toggleInArray(globalFilters.focus,v,on); renderGlobalFilterPanel(); runEquipSearch(); }
+function toggleInArray(arr,v,on){
+  var idx=arr.indexOf(v);
+  if(on && idx===-1) arr.push(v);
+  else if(!on && idx!==-1) arr.splice(idx,1);
+}
+function clearGlobalFilters(){
+  globalFilters={type:[],equipment:[],focus:[]};
+  renderGlobalFilterPanel();
   runEquipSearch();
+}
+function globalFiltersActive(){
+  return globalFilters.type.length || globalFilters.equipment.length || globalFilters.focus.length;
+}
+function updateGlobalFilterBtnLabel(){
+  var btn = document.getElementById("global-filter-btn");
+  if(!btn) return;
+  var n = globalFilters.type.length + globalFilters.equipment.length + globalFilters.focus.length;
+  btn.textContent = n ? "Filter+ ("+n+")" : "Filter+";
 }
 function onEquipSearchInput(){ runEquipSearch(); }
 function runEquipSearch(){
+  updateGlobalFilterBtnLabel();
   var q = document.getElementById("equip-search-input").value.trim().toLowerCase();
   var resultsEl = document.getElementById("equip-search-results");
   var gridEl = document.getElementById("cat-grid");
-  renderEquipSearchChips();
-  if(!q && !currentEquipSearchTag){ resultsEl.style.display="none"; gridEl.style.display=""; return; }
+  if(!q && !globalFiltersActive()){ resultsEl.style.display="none"; gridEl.style.display=""; return; }
   var vids = allVideos.filter(function(v){
+    var tag = v.tag||"Uncategorized";
+    if(!canAccess(tag)) return false;
+    if(globalFilters.type.length && globalFilters.type.indexOf(tag)===-1) return false;
     var eq = normalizeFocus(v.equipment);
-    if(currentEquipSearchTag) return eq.indexOf(currentEquipSearchTag)!==-1;
-    var eqMatch = eq.some(function(e){ return e.toLowerCase().indexOf(q)!==-1; });
-    var titleMatch = (v.title||"").toLowerCase().indexOf(q)!==-1;
-    var tagMatch = (v.tag||"").toLowerCase().indexOf(q)!==-1;
-    return eqMatch || titleMatch || tagMatch;
+    if(globalFilters.equipment.length && !globalFilters.equipment.some(function(e){ return eq.indexOf(e)!==-1; })) return false;
+    var fo = normalizeFocus(v.focus);
+    if(globalFilters.focus.length && !globalFilters.focus.some(function(f){ return fo.indexOf(f)!==-1; })) return false;
+    if(q){
+      var eqMatch = eq.some(function(e){ return e.toLowerCase().indexOf(q)!==-1; });
+      var titleMatch = (v.title||"").toLowerCase().indexOf(q)!==-1;
+      var tagMatch = tag.toLowerCase().indexOf(q)!==-1;
+      if(!eqMatch && !titleMatch && !tagMatch) return false;
+    }
+    return true;
   });
-  document.getElementById("equip-search-sub").textContent = vids.length+" video"+(vids.length!==1?"s":"")+" matching"+(currentEquipSearchTag?" \""+currentEquipSearchTag+"\"":(q?" \""+q+"\"":""));
+  document.getElementById("equip-search-sub").textContent = vids.length+" video"+(vids.length!==1?"s":"")+" matching";
   document.getElementById("equip-search-grid").innerHTML = renderVideoCards(vids);
   resultsEl.style.display="block";
   gridEl.style.display="none";
@@ -2161,7 +2216,8 @@ function runEquipSearch(){
 
 function renderCategories(){
   var equipInput=document.getElementById("equip-search-input");
-  if(equipInput && (equipInput.value.trim()||currentEquipSearchTag)) runEquipSearch(); else renderEquipSearchChips();
+  updateGlobalFilterBtnLabel();
+  if(equipInput && (equipInput.value.trim()||globalFiltersActive())) runEquipSearch();
   var grid=document.getElementById("cat-grid");
   var cats={};
   allVideos.forEach(function(v){
@@ -2267,7 +2323,7 @@ function renderCategories(){
 function openMergedCategories(){
   currentCat="__ALL__";
   currentSubcat=null;
-  currentFocusFilter=null;
+  catFilters={equipment:[],focus:[]};
   document.getElementById("cat-view").style.display="none";
   document.getElementById("vid-view").style.display="block";
   document.getElementById("vid-title").textContent="Live Classes";
@@ -2306,7 +2362,7 @@ function refreshPopularVideos(callback){
 function openPopularCategory(){
   currentCat="__POPULAR__";
   currentSubcat=null;
-  currentFocusFilter=null;
+  catFilters={equipment:[],focus:[]};
   document.getElementById("cat-view").style.display="none";
   document.getElementById("vid-view").style.display="block";
   document.getElementById("vid-title").textContent="⭐ Most Popular";
@@ -2355,7 +2411,7 @@ function getAllUserData(type){
 
 // OPEN CATEGORY
 var currentCatVids = [];
-var currentFocusFilter = null;
+var catFilters = {equipment:[], focus:[]};
 var currentSubcat = null;
 var currentDisplayVids = [];
 
@@ -2363,7 +2419,7 @@ function openCategory(cat){
   if(!canAccess(cat)) return;
   currentCat=cat;
   currentSubcat=null;
-  currentFocusFilter=null;
+  catFilters={equipment:[],focus:[]};
   document.getElementById("cat-view").style.display="none";
   document.getElementById("vid-view").style.display="block";
   document.getElementById("vid-title").textContent=cat;
@@ -2439,7 +2495,7 @@ function renderSubcatTiles(){
 
 function openSubcat(subcat){
   currentSubcat = subcat;
-  currentFocusFilter = null;
+  catFilters={equipment:[],focus:[]};
   document.getElementById("subcat-grid").style.display="none";
   document.getElementById("vid-title").textContent = currentCat+" — "+subcat;
   document.getElementById("back-btn").textContent="← Back to "+currentCat;
@@ -2551,27 +2607,62 @@ function showChecklistResult(c, passed){
 function renderFocusFilters(){
   var wrap = document.getElementById("focus-filters");
   document.getElementById("video-grid").style.display="";
-  var focuses = {};
-  currentDisplayVids.forEach(function(v){ normalizeFocus(v.focus).forEach(function(f){ focuses[f]=true; }); });
-  var keys = Object.keys(focuses).sort();
-  if(!keys.length){ wrap.style.display="none"; wrap.innerHTML=""; return; }
-  wrap.style.display="flex";
-  var h = "<button class='focus-chip"+(currentFocusFilter===null?" on":"")+"' onclick='setFocusFilter(null)'>All</button>";
-  keys.forEach(function(f){
-    h += "<button class='focus-chip"+(currentFocusFilter===f?" on":"")+"' onclick='setFocusFilter(\""+ex(f).replace(/"/g,"&quot;")+"\")'>"+ex(f)+"</button>";
+  var catPanel = document.getElementById("cat-filter-panel");
+  if(catPanel) catPanel.style.display="none";
+  var equips = {}, focuses = {};
+  currentDisplayVids.forEach(function(v){
+    normalizeFocus(v.equipment).forEach(function(e){ equips[e]=true; });
+    normalizeFocus(v.focus).forEach(function(f){ focuses[f]=true; });
   });
-  wrap.innerHTML = h;
+  if(!Object.keys(equips).length && !Object.keys(focuses).length){ wrap.style.display="none"; return; }
+  wrap.style.display="block";
+  updateCatFilterBtnLabel();
 }
-
-function setFocusFilter(f){
-  currentFocusFilter = f;
-  renderFocusFilters();
+function toggleCatFilterPanel(){
+  var panel = document.getElementById("cat-filter-panel");
+  if(!panel) return;
+  if(panel.style.display!=="none"){ panel.style.display="none"; return; }
+  renderCatFilterPanel();
+  panel.style.display = "block";
+}
+function renderCatFilterPanel(){
+  var panel = document.getElementById("cat-filter-panel");
+  if(!panel) return;
+  var equips = {}, focuses = {};
+  currentDisplayVids.forEach(function(v){
+    normalizeFocus(v.equipment).forEach(function(e){ equips[e]=true; });
+    normalizeFocus(v.focus).forEach(function(f){ focuses[f]=true; });
+  });
+  var h = renderFilterCheckboxGroup("Equipment", "equipment", Object.keys(equips).sort(), catFilters.equipment, "toggleCatFilter_equipment");
+  h += renderFilterCheckboxGroup("Body Parts", "focus", Object.keys(focuses).sort(), catFilters.focus, "toggleCatFilter_focus");
+  h += "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;' onclick='clearCatFilters()'>Clear Filters</button>";
+  panel.innerHTML = h;
+}
+function toggleCatFilter_equipment(v,on){ toggleInArray(catFilters.equipment,v,on); renderCatFilterPanel(); updateCatFilterBtnLabel(); renderFilteredVideos(); }
+function toggleCatFilter_focus(v,on){ toggleInArray(catFilters.focus,v,on); renderCatFilterPanel(); updateCatFilterBtnLabel(); renderFilteredVideos(); }
+function clearCatFilters(){
+  catFilters={equipment:[],focus:[]};
+  renderCatFilterPanel();
+  updateCatFilterBtnLabel();
   renderFilteredVideos();
+}
+function catFiltersActive(){ return catFilters.equipment.length || catFilters.focus.length; }
+function updateCatFilterBtnLabel(){
+  var btn = document.getElementById("cat-filter-btn");
+  if(!btn) return;
+  var n = catFilters.equipment.length + catFilters.focus.length;
+  btn.textContent = n ? "Filter+ ("+n+")" : "Filter+";
 }
 
 function renderFilteredVideos(){
-  var vids = currentFocusFilter ? currentDisplayVids.filter(function(v){ return normalizeFocus(v.focus).indexOf(currentFocusFilter)!==-1; }) : currentDisplayVids;
-  document.getElementById("vid-sub").textContent=vids.length+" video"+(vids.length!==1?"s":"")+(currentFocusFilter?" · "+currentFocusFilter:"");
+  var vids = currentDisplayVids.filter(function(v){
+    var eq = normalizeFocus(v.equipment);
+    if(catFilters.equipment.length && !catFilters.equipment.some(function(e){ return eq.indexOf(e)!==-1; })) return false;
+    var fo = normalizeFocus(v.focus);
+    if(catFilters.focus.length && !catFilters.focus.some(function(f){ return fo.indexOf(f)!==-1; })) return false;
+    return true;
+  });
+  document.getElementById("vid-sub").textContent=vids.length+" video"+(vids.length!==1?"s":"");
   document.getElementById("video-grid").innerHTML=renderVideoCards(vids);
 }
 
@@ -2768,7 +2859,7 @@ function refreshCard(key){
 function goBack(){
   if(currentSubcat){
     currentSubcat = null;
-    currentFocusFilter = null;
+    catFilters={equipment:[],focus:[]};
     document.getElementById("focus-filters").style.display="none";
     document.getElementById("video-grid").style.display="none";
     document.getElementById("video-grid").innerHTML="";
@@ -5615,7 +5706,10 @@ function loadClientForms(){
     }
     if(!entries.length){
       el.innerHTML="<p style='color:var(--sub);font-size:13px;margin-bottom:8px;'>No forms submitted yet.</p>"+
-        "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;' onclick='repairClientForms()'>Look for Stray Forms</button>";
+        "<div style='display:flex;gap:8px;flex-wrap:wrap;'>"+
+        "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;' onclick='repairClientForms()'>Look for Stray Forms</button>"+
+        "<button class='action-btn' style='font-size:13px;padding:8px 14px;width:auto;' onclick='renderAddContactInfoForm()'>Add Contact Info</button>"+
+        "</div>";
       return;
     }
     entries.sort(function(a,b){ return (b.f.ts||0)-(a.f.ts||0); });
@@ -5651,6 +5745,54 @@ var demoEditEntry = null;
 // Intake Form, with an Edit toggle. Editing writes straight back onto that
 // same Intake Form entry, since that's the one notifications, the Forms
 // tab, and the forms reminder banner all read from.
+// For a client who never filled out the digital intake form, a paper
+// client from before this system existed being the common case. Builds a
+// real Intake Form entry from scratch, in the exact shape forms.html
+// creates one, so it's indistinguishable afterward: it shows up in the
+// Forms tab, feeds email notifications, everything treats it the same.
+function renderAddContactInfoForm(){
+  var el=document.getElementById("cp-forms");
+  if(!el) return;
+  el.innerHTML =
+    "<div style='background:var(--card);border:1.5px solid var(--accent);border-radius:10px;padding:1rem;'>"+
+    "<strong style='font-size:14px;color:var(--text);display:block;margin-bottom:10px;'>Add Contact Info</strong>"+
+    "<div class='form-row'><span class='form-label'>Name</span><input class='form-input' id='cd-name' style='text-transform:none;' /></div>"+
+    "<div class='form-row'><span class='form-label'>Email</span><input class='form-input' id='cd-email' style='text-transform:none;' /></div>"+
+    "<div class='form-row'><span class='form-label'>Phone</span><input class='form-input' id='cd-phone' style='text-transform:none;' /></div>"+
+    "<div class='form-row'><span class='form-label'>DOB</span><input class='form-input' id='cd-dob' style='text-transform:none;' /></div>"+
+    "<div class='form-row'><span class='form-label'>OK to Contact</span><select class='form-select' id='cd-okcontact'>"+
+      ["Yes","No"].map(function(o){ return "<option value='"+o+"'>"+o+"</option>"; }).join("")+
+    "</select></div>"+
+    "<div class='form-row'><span class='form-label'>Preferred Contact Method</span><select class='form-select' id='cd-method'>"+
+      ["Dashboard Messaging","Email","Text/Phone"].map(function(o){ return "<option value='"+o+"'>"+o+"</option>"; }).join("")+
+    "</select></div>"+
+    "<div style='display:flex;gap:8px;margin-top:8px;'>"+
+    "<button class='action-btn' style='font-size:13px;padding:8px 14px;width:auto;' onclick='saveNewContactInfo()'>Save</button>"+
+    "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;' onclick='loadClientForms()'>Cancel</button>"+
+    "</div></div>";
+}
+function saveNewContactInfo(){
+  if(!DB||!currentClientKey) return;
+  var data = {
+    Name: document.getElementById("cd-name").value.trim(),
+    Email: document.getElementById("cd-email").value.trim(),
+    Phone: document.getElementById("cd-phone").value.trim(),
+    DOB: document.getElementById("cd-dob").value.trim(),
+    "OK to Contact": document.getElementById("cd-okcontact").value,
+    "Preferred Contact Method": document.getElementById("cd-method").value
+  };
+  if(!data.Name || !data.Email){ alert("Name and email can't be blank."); return; }
+  DB.ref("client_forms/"+currentClientKey).push({
+    formType: "Intake Form",
+    ts: Date.now(),
+    data: data
+  }, function(err){
+    if(err){ alert("Couldn't save. Please try again."); return; }
+    alert("Contact info added!");
+    loadClientForms();
+  });
+}
+
 function renderContactInfoCard(entryWrap){
   demoEditEntry = entryWrap;
   var d = entryWrap.f.data || {};
@@ -7829,6 +7971,6 @@ function renderInsightsLog(){
   note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-auto-archive-and-read-receipts</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-multi-select-video-filters</p>
 </body>
 </html>
