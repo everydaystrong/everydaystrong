@@ -461,6 +461,10 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
       <span class="form-label">Referred By (optional)</span>
       <input class="form-input" id="ec-referredby" style="text-transform:none;" placeholder="e.g. Sarah M." />
     </div>
+    <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;margin-top:10px;">
+      <input type="checkbox" id="ec-testaccount" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+      <label for="ec-testaccount" style="font-size:13px;color:var(--text);cursor:pointer;">This is my own account for testing, not a real client</label>
+    </div>
     <div style="position:sticky;bottom:0;background:var(--card);padding-top:10px;z-index:5;box-shadow:0 -8px 12px -8px rgba(0,0,0,0.25);">
     <button class="action-btn" onclick="saveCodeEdit()" style="width:100%;">Save Changes</button>
     <button class="action-btn sec" id="ec-pause-btn" onclick="togglePauseEditingClient()" style="width:100%;margin-top:8px;">⏸️ Pause Access</button>
@@ -1053,6 +1057,10 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
             <input class="form-input" id="c-referredby" style="text-transform:none;" placeholder="e.g. Sarah M." />
             <p class="tip" style="margin-top:4px;">Name of the existing client who referred them, if any. Powers the Referrals dashboard card.</p>
           </div>
+          <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;margin-top:10px;">
+            <input type="checkbox" id="c-testaccount" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+            <label for="c-testaccount" style="font-size:13px;color:var(--text);cursor:pointer;">This is my own account for testing, not a real client</label>
+          </div>
           <button class="action-btn" id="add-code-btn" style="margin-top:10px;">Create Code</button>
         </div>
         <div class="form-row" style="margin-bottom:1rem;">
@@ -1488,6 +1496,9 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
               <span class="form-label" style="display:block;margin-bottom:4px;">Type of click</span>
               <div id="insights-type-checkboxes" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
             </div>
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="insights-show-mine" onchange="toggleInsightsShowMine(this.checked)" /> Include my own testing activity</label>
           </div>
           <div id="insights-log-output"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
           <p class="tip" id="insights-log-note" style="margin-top:10px;"></p>
@@ -3109,6 +3120,7 @@ function editCode(key){
     document.getElementById("ec-expdate").value = cd.customExpiresAt ? new Date(cd.customExpiresAt).toISOString().slice(0,10) : "";
     document.getElementById("ec-group").value = cd.group || "";
     document.getElementById("ec-referredby").value = cd.referredBy || "";
+    document.getElementById("ec-testaccount").checked = !!cd.isTestAccount;
     var isAll = cd.access==="ALL" || !cd.access;
     document.getElementById("ec-access-type").value = isAll ? "ALL" : "PROGRAMS";
     document.getElementById("ec-program-picker").style.display = isAll ? "none" : "block";
@@ -3179,10 +3191,11 @@ function saveCodeEdit(){
   var customExpiresAt = expDateVal ? new Date(expDateVal+"T23:59:59").getTime() : null;
   var group = document.getElementById("ec-group").value.trim();
   var referredBy = document.getElementById("ec-referredby").value.trim();
+  var isTestAccount = document.getElementById("ec-testaccount").checked;
   DB.ref("codes/"+editingCodeKey).once("value", function(snap){
     var existing = snap.val() || {};
     var expiresAt = isTrial ? (existing.expiresAt || (Date.now()+7*24*60*60*1000)) : null;
-    DB.ref("codes/"+editingCodeKey).update({name:n, code:c, access:access, trial:isTrial, expiresAt:expiresAt, customExpiresAt:customExpiresAt, group:group||null, referredBy:referredBy||null}, function(e){
+    DB.ref("codes/"+editingCodeKey).update({name:n, code:c, access:access, trial:isTrial, expiresAt:expiresAt, customExpiresAt:customExpiresAt, group:group||null, referredBy:referredBy||null, isTestAccount:isTestAccount||null}, function(e){
       if(!e){ closeEditCode(); }
       else{ alert("Something went wrong saving. Please try again."); }
     });
@@ -4257,9 +4270,10 @@ function addCode(){
   var customExpiresAt = expDateVal ? new Date(expDateVal+"T23:59:59").getTime() : null;
   var group = document.getElementById("c-group").value.trim();
   var referredBy = document.getElementById("c-referredby").value.trim();
+  var isTestAccount = document.getElementById("c-testaccount").checked;
   DB.ref("codes").orderByChild("code").equalTo(c).once("value",function(snap){
     if(snap.exists()){ alert("That code already exists."); return; }
-    DB.ref("codes").push({name:n,code:c,access:access,trial:isTrial||false,expiresAt:expiresAt,customExpiresAt:customExpiresAt,group:group||null,referredBy:referredBy||null,ts:Date.now(),inactive:false},function(e){
+    DB.ref("codes").push({name:n,code:c,access:access,trial:isTrial||false,expiresAt:expiresAt,customExpiresAt:customExpiresAt,group:group||null,referredBy:referredBy||null,isTestAccount:isTestAccount||null,ts:Date.now(),inactive:false},function(e){
       if(!e){
         var label=isTrial?" (7-day trial)":"";
         showOk("ok-code","Code for "+n+": "+c+label);
@@ -4270,6 +4284,7 @@ function addCode(){
         document.getElementById("c-expdate").value="";
         document.getElementById("c-group").value="";
         document.getElementById("c-referredby").value="";
+        document.getElementById("c-testaccount").checked=false;
         document.getElementById("program-picker").style.display="none";
       }
     });
@@ -7819,8 +7834,8 @@ document.getElementById("login-btn").onclick=doLogin;
 document.getElementById("code-in").onkeydown=function(e){ if(e.key==="Enter") doLogin(); };
 document.getElementById("admin-link").onclick=doAdmin;
 document.getElementById("preview-client-btn").onclick=previewAsClient;
-document.getElementById("back-to-admin-btn").onclick=function(){ previewingAsClient=false; document.getElementById("back-to-admin-btn").style.display="none"; sp("pg-admin"); };
-document.getElementById("signout-btn").onclick=function(){ previewingAsClient=false; document.getElementById("back-to-admin-btn").style.display="none"; sp("pg-login"); document.getElementById("code-in").value=""; document.getElementById("login-err").style.display="none"; };
+document.getElementById("back-to-admin-btn").onclick=function(){ previewingAsClient=false; currentUserKey=null; currentUser=null; document.getElementById("back-to-admin-btn").style.display="none"; sp("pg-admin"); };
+document.getElementById("signout-btn").onclick=function(){ previewingAsClient=false; currentUserKey=null; currentUser=null; document.getElementById("back-to-admin-btn").style.display="none"; sp("pg-login"); document.getElementById("code-in").value=""; document.getElementById("login-err").style.display="none"; };
 document.getElementById("exit-btn").onclick=function(){ sp("pg-login"); };
 document.getElementById("add-video-btn").onclick=addVideo;
 document.getElementById("bulk-preview-btn").onclick=previewBulkVideos;
@@ -7901,11 +7916,17 @@ var cachedInsightsLog = [];
 var insightsSourceSelections = ["dashboard","public"];
 var insightsTypeSelections = ["Video","Favorite","Complete","Comment","Navigation","Form","Other"];
 var ALL_CLICK_TYPES = ["Video","Favorite","Complete","Comment","Navigation","Form","Other"];
+var insightsTestAccountNames = [];
+var insightsShowMine = false;
 
 function loadInsightsTab(){
   if(!DB) return;
   populateInsightsFilterCheckboxes();
   pruneOldClickLog();
+  DB.ref("codes").once("value", function(snap){
+    insightsTestAccountNames = [];
+    if(snap.exists()) snap.forEach(function(c){ if(c.val().isTestAccount) insightsTestAccountNames.push(c.val().name); });
+  });
   DB.ref("clickLog").orderByChild("ts").limitToLast(2000).on("value", function(snap){
     var rows = [];
     if(snap.exists()) snap.forEach(function(c){ rows.push(c.val()); });
@@ -7913,6 +7934,10 @@ function loadInsightsTab(){
     cachedInsightsLog = rows;
     renderInsightsLog();
   });
+}
+function toggleInsightsShowMine(on){
+  insightsShowMine = on;
+  renderInsightsLog();
 }
 
 function populateInsightsFilterCheckboxes(){
@@ -7964,6 +7989,7 @@ function renderInsightsLog(){
   var items = cachedInsightsLog.filter(function(r){
     if(insightsSourceSelections.indexOf(r.source||"dashboard")===-1) return false;
     if(insightsTypeSelections.indexOf(r.type||"Other")===-1) return false;
+    if(!insightsShowMine && insightsTestAccountNames.indexOf(r.clientName)!==-1) return false;
     if(clientText && (r.clientName||"").toLowerCase().indexOf(clientText)===-1) return false;
     if(labelText && (r.label||"").toLowerCase().indexOf(labelText)===-1) return false;
     return true;
@@ -7980,6 +8006,6 @@ function renderInsightsLog(){
   note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-16-opt-in-activity-log</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.18</p>
 </body>
 </html>
