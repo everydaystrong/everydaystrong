@@ -179,7 +179,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 .stat-label{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;font-family:Arial,sans-serif;}
 
 /* MESSAGES */
-.msg-bubble{background:var(--inp);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:14px;color:var(--text);}
+.msg-bubble{background:var(--inp);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:14px;color:var(--text);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
 .msg-bubble.mine{background:var(--accent);color:#fff;margin-left:2rem;}
 .msg-bubble.heather{background:#a76a5b;color:#fff;margin-right:2rem;}
 .msg-who{font-size:11px;font-weight:700;margin-bottom:4px;opacity:0.8;}
@@ -1205,6 +1205,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
           <button class="action-btn sec" style="width:auto;margin-bottom:0;font-size:13px;padding:7px 12px;" onclick="closeAdminThread()">← Back to Messages</button>
           <h3 id="admin-thread-name" style="margin-bottom:0;"></h3>
+          <button class="action-btn sec" style="width:auto;margin-bottom:0;font-size:13px;padding:7px 12px;color:#c05040;border-color:#c05040;" onclick="deleteWholeThread()">Delete Thread</button>
         </div>
         <div id="admin-thread-messages" style="max-height:400px;overflow-y:auto;margin-bottom:1rem;"></div>
         <div class="ok-msg" id="ok-admin-reply">Reply sent!</div>
@@ -5095,14 +5096,78 @@ function sendMessage(){
   });
 }
 
+// MESSAGE CONTEXT MENU — press and hold on mobile, right click on desktop,
+// same interaction as texting. canEdit/canDelete are passed in by whichever
+// view rendered the bubble, since permissions differ: a client can delete
+// any message in their own thread but only edit their own; Heather can edit
+// or delete anything from either admin view.
+var msgLongPressTimer = null;
+function startLongPress(e, threadPath, msgKey, canEdit, canDelete){
+  var touch = e.touches && e.touches[0];
+  var x = touch ? touch.clientX : 100, y = touch ? touch.clientY : 100;
+  msgLongPressTimer = setTimeout(function(){
+    showMsgMenuAt(x, y, threadPath, msgKey, canEdit, canDelete);
+  }, 500);
+}
+function cancelLongPress(){
+  if(msgLongPressTimer){ clearTimeout(msgLongPressTimer); msgLongPressTimer=null; }
+}
+function showMsgMenu(e, threadPath, msgKey, canEdit, canDelete){
+  if(e && e.preventDefault) e.preventDefault();
+  var x = (e && e.clientX!==undefined) ? e.clientX : 100;
+  var y = (e && e.clientY!==undefined) ? e.clientY : 100;
+  showMsgMenuAt(x, y, threadPath, msgKey, canEdit, canDelete);
+}
+function showMsgMenuAt(x, y, threadPath, msgKey, canEdit, canDelete){
+  closeMsgMenu();
+  if(!canEdit && !canDelete) return;
+  var menu = document.createElement("div");
+  menu.id = "msg-context-menu";
+  menu.style.cssText = "position:fixed;left:"+x+"px;top:"+y+"px;background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.25);z-index:999;overflow:hidden;min-width:120px;";
+  var html = "";
+  if(canEdit) html += "<div style='padding:10px 16px;font-size:14px;cursor:pointer;' onclick='startMsgEdit(\""+threadPath+"\",\""+msgKey+"\")'>Edit</div>";
+  if(canDelete) html += "<div style='padding:10px 16px;font-size:14px;cursor:pointer;color:#c05040;' onclick='deleteMsg(\""+threadPath+"\",\""+msgKey+"\")'>Delete</div>";
+  menu.innerHTML = html;
+  document.body.appendChild(menu);
+  setTimeout(function(){
+    document.addEventListener("click", closeMsgMenu, {once:true});
+    document.addEventListener("touchstart", closeMsgMenu, {once:true});
+  }, 50);
+}
+function closeMsgMenu(){
+  var m = document.getElementById("msg-context-menu");
+  if(m) m.remove();
+}
+function startMsgEdit(threadPath, msgKey){
+  closeMsgMenu();
+  if(!DB) return;
+  DB.ref(threadPath+"/"+msgKey).once("value", function(snap){
+    var m = snap.val();
+    if(!m) return;
+    var newText = prompt("Edit message:", m.text||"");
+    if(newText===null) return;
+    newText = newText.trim();
+    if(!newText) return;
+    DB.ref(threadPath+"/"+msgKey).update({text:newText, edited:true});
+  });
+}
+function deleteMsg(threadPath, msgKey){
+  closeMsgMenu();
+  if(!DB) return;
+  if(!confirm("Delete this message?")) return;
+  DB.ref(threadPath+"/"+msgKey).remove();
+}
+
 function loadMessages(){
   if(!DB||!currentUser) return;
-  DB.ref("messages/"+sk(currentUser)).on("value",function(snap){
+  var threadPath = "messages/"+sk(currentUser);
+  DB.ref(threadPath).on("value",function(snap){
     var el=document.getElementById("msg-thread");
     if(!snap.exists()){ el.innerHTML="<div style='text-align:center;padding:2rem;color:var(--sub);font-size:14px;'>No messages yet — send Heather a message above!</div>"; return; }
     var items=[]; var toMarkRead=[];
     snap.forEach(function(c){
       var m=c.val();
+      m._k=c.key;
       items.push(m);
       if(!m.fromClient && !m.read) toMarkRead.push(c.key);
     });
@@ -5110,9 +5175,12 @@ function loadMessages(){
     var h="";
     items.forEach(function(m){
       var isMe=m.fromClient;
-      h+="<div class='msg-bubble "+(isMe?"mine":"heather")+"'>";
+      // Clients can delete any message in their own thread, but only edit
+      // their own — editing what Heather said isn't something a client
+      // should be able to do.
+      h+="<div class='msg-bubble "+(isMe?"mine":"heather")+"' oncontextmenu='showMsgMenu(event,\""+threadPath+"\",\""+m._k+"\","+(isMe?"true":"false")+",true)' ontouchstart='startLongPress(event,\""+threadPath+"\",\""+m._k+"\","+(isMe?"true":"false")+",true)' ontouchend='cancelLongPress()' ontouchmove='cancelLongPress()'>";
       h+="<div class='msg-who'>"+(isMe?ex(m.from):"Heather — Instructor")+"</div>";
-      h+=ex(m.text);
+      h+=ex(m.text)+(m.edited?" <span style='font-size:11px;color:var(--sub);'>(edited)</span>":"");
       h+="<div class='msg-when'>"+ago2fn(m.ts)+"</div>";
       h+="</div>";
     });
@@ -5121,7 +5189,7 @@ function loadMessages(){
     // Marking these read re-triggers this same listener once, harmlessly —
     // toMarkRead comes back empty on that next pass since read is now true.
     if(toMarkRead.length){
-      toMarkRead.forEach(function(k){ DB.ref("messages/"+sk(currentUser)+"/"+k).update({read:true, readAt:Date.now()}); });
+      toMarkRead.forEach(function(k){ DB.ref(threadPath+"/"+k).update({read:true, readAt:Date.now()}); });
     }
   });
 }
@@ -5270,23 +5338,34 @@ function openAdminThread(clientKey, displayName){
   document.getElementById("admin-msg-inbox-card").style.display="none";
   document.getElementById("admin-msg-thread-card").style.display="block";
   document.getElementById("admin-thread-name").textContent = displayName;
-  DB.ref("messages/"+clientKey).on("value", function(snap){
+  var threadPath = "messages/"+clientKey;
+  DB.ref(threadPath).on("value", function(snap){
     var el = document.getElementById("admin-thread-messages");
     if(!el) return;
     if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No messages yet.</p>"; return; }
-    var msgs=[]; snap.forEach(function(m){ msgs.push(m.val()); });
+    var msgs=[]; snap.forEach(function(m){ var v=m.val(); v._k=m.key; msgs.push(v); });
     msgs.sort(function(a,b){ return a.ts-b.ts; });
     var h="";
     msgs.forEach(function(m){
       var isClient = m.fromClient;
-      h+="<div style='display:flex;flex-direction:column;align-items:"+(isClient?"flex-start":"flex-end")+";margin-bottom:8px;'>";
-      h+="<div style='background:"+(isClient?"var(--inp)":"var(--accent)")+";color:"+(isClient?"var(--text)":"#fff")+";border-radius:10px;padding:8px 12px;max-width:80%;font-size:13px;'>";
+      // Heather can edit or delete any message here, client or her own.
+      h+="<div style='display:flex;flex-direction:column;align-items:"+(isClient?"flex-start":"flex-end")+";margin-bottom:8px;' oncontextmenu='showMsgMenu(event,\""+threadPath+"\",\""+m._k+"\",true,true)' ontouchstart='startLongPress(event,\""+threadPath+"\",\""+m._k+"\",true,true)' ontouchend='cancelLongPress()' ontouchmove='cancelLongPress()'>";
+      h+="<div style='background:"+(isClient?"var(--inp)":"var(--accent)")+";color:"+(isClient?"var(--text)":"#fff")+";border-radius:10px;padding:8px 12px;max-width:80%;font-size:13px;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;'>";
       h+=ex(m.text)+"</div>";
       var readTag = (!isClient) ? (" · "+(m.read?"Read"+(m.readAt?" "+ago2fn(m.readAt):""):"Delivered")) : "";
-      h+="<span style='font-size:10px;color:var(--sub);margin-top:2px;'>"+new Date(m.ts).toLocaleString()+ex(readTag)+"</span></div>";
+      var editedTag = m.edited ? " · edited" : "";
+      h+="<span style='font-size:10px;color:var(--sub);margin-top:2px;'>"+new Date(m.ts).toLocaleString()+ex(readTag)+ex(editedTag)+"</span></div>";
     });
     el.innerHTML=h;
     el.scrollTop = el.scrollHeight;
+  });
+}
+
+function deleteWholeThread(){
+  if(!currentAdminThreadKey || !DB) return;
+  if(!confirm("Delete this entire conversation? This can't be undone.")) return;
+  DB.ref("messages/"+currentAdminThreadKey).remove(function(e){
+    if(!e) closeAdminThread();
   });
 }
 
@@ -6771,23 +6850,32 @@ function loadClientMsgs(){
   if(!DB||!currentClientKey) return;
   var el=document.getElementById("cp-msgs");
   el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Loading...</p>";
-  DB.ref("messages/"+currentClientKey).on("value",function(snap){
+  var threadPath = "messages/"+currentClientKey;
+  DB.ref(threadPath).on("value",function(snap){
     if(!snap.exists()){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No messages yet.</p>"; return; }
-    var items=[]; snap.forEach(function(c){ items.push(c.val()); });
+    var items=[]; snap.forEach(function(c){ var v=c.val(); v._k=c.key; items.push(v); });
     items.sort(function(a,b){ return a.ts-b.ts; });
     var h="<div style='max-height:300px;overflow-y:auto;margin-bottom:10px;'>";
     items.forEach(function(m){
       var isClient=m.fromClient;
-      h+="<div style='margin-bottom:8px;display:flex;flex-direction:column;align-items:"+(isClient?"flex-start":"flex-end")+";'>";
-      h+="<div style='background:"+(isClient?"var(--inp)":"var(--accent)")+";color:"+(isClient?"var(--text)":"#fff")+";border-radius:10px;padding:8px 12px;max-width:80%;font-size:13px;'>";
+      h+="<div style='margin-bottom:8px;display:flex;flex-direction:column;align-items:"+(isClient?"flex-start":"flex-end")+";' oncontextmenu='showMsgMenu(event,\""+threadPath+"\",\""+m._k+"\",true,true)' ontouchstart='startLongPress(event,\""+threadPath+"\",\""+m._k+"\",true,true)' ontouchend='cancelLongPress()' ontouchmove='cancelLongPress()'>";
+      h+="<div style='background:"+(isClient?"var(--inp)":"var(--accent)")+";color:"+(isClient?"var(--text)":"#fff")+";border-radius:10px;padding:8px 12px;max-width:80%;font-size:13px;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;'>";
       h+=ex(m.text)+"</div>";
       var readTag = (!isClient) ? (" · "+(m.read?"Read"+(m.readAt?" "+ago2fn(m.readAt):""):"Delivered")) : "";
-      h+="<span style='font-size:10px;color:var(--sub);margin-top:2px;'>"+ago2fn(m.ts)+ex(readTag)+"</span></div>";
+      var editedTag = m.edited ? " · edited" : "";
+      h+="<span style='font-size:10px;color:var(--sub);margin-top:2px;'>"+ago2fn(m.ts)+ex(readTag)+ex(editedTag)+"</span></div>";
     });
     h+="</div>";
     h+="<div style='display:flex;gap:8px;flex-wrap:wrap;'><input class='form-input' id='cp-reply-inp' placeholder='Reply...' style='flex:1;font-size:13px;padding:8px 12px;min-width:150px;' /><button class='action-btn' style='font-size:12px;padding:8px 14px;' onclick='sendClientReply()'>Send</button><button class='action-btn sec' style='font-size:12px;padding:8px 14px;' onclick='sendClientReplyByEmail()'>Email Instead</button></div>";
+    h+="<button class='action-btn sec' style='font-size:12px;padding:8px 14px;margin-top:8px;color:#c05040;border-color:#c05040;' onclick='deleteClientProfileThread()'>Delete Entire Thread</button>";
     el.innerHTML=h;
   });
+}
+
+function deleteClientProfileThread(){
+  if(!currentClientKey || !DB) return;
+  if(!confirm("Delete this entire conversation? This can't be undone.")) return;
+  DB.ref("messages/"+currentClientKey).remove();
 }
 
 function sendClientReply(){
@@ -8006,6 +8094,6 @@ function renderInsightsLog(){
   note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.18</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.19</p>
 </body>
 </html>
