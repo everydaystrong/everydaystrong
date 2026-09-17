@@ -5777,6 +5777,84 @@ function deleteArchivedClientForever(archivedKey, name){
   });
 }
 
+// For an existing client, uploads straight onto their own record, no name
+// typing or separate New Submissions linking needed since the client is
+// already known. Reuses compressImageFile() from the paper form upload
+// above for photos; PDFs can't go through that (it's canvas based, images
+// only) so those are read as is, with a size check since an uncompressed
+// PDF can get large fast once base64 encoded into the database.
+var uploadFormFiles = [];
+function renderUploadFormBox(){
+  var el = document.getElementById("cp-forms");
+  if(!el) return;
+  uploadFormFiles = [];
+  el.innerHTML =
+    "<div style='background:var(--card);border:1.5px solid var(--accent);border-radius:10px;padding:1rem;'>"+
+    "<strong style='font-size:14px;color:var(--text);display:block;margin-bottom:10px;'>Upload Form Photo/PDF</strong>"+
+    "<div class='form-row'><span class='form-label'>Photo(s) or PDF(s) of the form</span>"+
+    "<input type='file' id='upload-form-files-input' accept='image/*,application/pdf' capture='environment' multiple style='margin-top:6px;' /></div>"+
+    "<div id='upload-form-preview' style='display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;'></div>"+
+    "<div style='display:flex;gap:8px;margin-top:10px;'>"+
+    "<button class='action-btn' style='font-size:13px;padding:8px 14px;width:auto;' id='upload-form-save-btn' onclick='saveUploadedForm()'>Save</button>"+
+    "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;' onclick='loadClientForms()'>Cancel</button>"+
+    "</div></div>";
+  document.getElementById("upload-form-files-input").addEventListener("change", function(e){
+    var files = Array.from(e.target.files || []);
+    var preview = document.getElementById("upload-form-preview");
+    uploadFormFiles = [];
+    if(!files.length){ preview.innerHTML=""; return; }
+    preview.innerHTML = "<p class='tip'>Processing...</p>";
+    var results = new Array(files.length);
+    var remaining = files.length;
+    files.forEach(function(file, idx){
+      if(file.type === "application/pdf"){
+        if(file.size > 4*1024*1024){
+          results[idx] = null;
+          remaining--;
+          if(remaining===0) finishUploadPreview(results);
+          alert(file.name+" is too large (over 4MB). Try a smaller scan, or split multi page PDFs.");
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(e2){
+          results[idx] = {kind:"pdf", name:file.name, dataUrl:e2.target.result};
+          remaining--;
+          if(remaining===0) finishUploadPreview(results);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        compressImageFile(file, function(dataUrl){
+          results[idx] = {kind:"image", name:file.name, dataUrl:dataUrl};
+          remaining--;
+          if(remaining===0) finishUploadPreview(results);
+        });
+      }
+    });
+  });
+}
+function finishUploadPreview(results){
+  uploadFormFiles = results.filter(Boolean);
+  var preview = document.getElementById("upload-form-preview");
+  if(!preview) return;
+  preview.innerHTML = uploadFormFiles.map(function(f){
+    if(f.kind==="image") return "<img src='"+f.dataUrl+"' style='width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border);' />";
+    return "<span style='font-size:12px;padding:8px 10px;background:var(--inp);border-radius:6px;'>"+ex(f.name)+"</span>";
+  }).join("");
+}
+function saveUploadedForm(){
+  if(!DB||!currentClientKey) return;
+  if(!uploadFormFiles.length){ alert("Please add at least one photo or PDF."); return; }
+  var photos = uploadFormFiles.filter(function(f){ return f.kind==="image"; }).map(function(f){ return f.dataUrl; });
+  var files = uploadFormFiles.filter(function(f){ return f.kind==="pdf"; }).map(function(f){ return {name:f.name, dataUrl:f.dataUrl}; });
+  var payload = { formType: "Uploaded Form", ts: Date.now(), data: { Name: currentClientName } };
+  if(photos.length) payload.photos = photos;
+  if(files.length) payload.files = files;
+  DB.ref("client_forms/"+currentClientKey).push(payload, function(e){
+    if(e){ alert("Something went wrong saving. Please try again."); return; }
+    loadClientForms();
+  });
+}
+
 function loadClientForms(){
   if(!DB||!currentClientKey) return;
   var el=document.getElementById("cp-forms");
@@ -5806,12 +5884,14 @@ function loadClientForms(){
         "<div style='display:flex;gap:8px;flex-wrap:wrap;'>"+
         "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;' onclick='repairClientForms()'>Look for Stray Forms</button>"+
         "<button class='action-btn' style='font-size:13px;padding:8px 14px;width:auto;' onclick='renderAddContactInfoForm()'>Add Contact Info</button>"+
+        "<button class='action-btn' style='font-size:13px;padding:8px 14px;width:auto;' onclick='renderUploadFormBox()'>Upload Form Photo/PDF</button>"+
         "</div>";
       return;
     }
     entries.sort(function(a,b){ return (b.f.ts||0)-(a.f.ts||0); });
     var bestIntake = entries.filter(function(e){ return e.f.formType==="Intake Form"; })[0];
     var h = bestIntake ? renderContactInfoCard(bestIntake) : "";
+    h += "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:14px;' onclick='renderUploadFormBox()'>Upload Form Photo/PDF</button>";
     entries.forEach(function(e){
       var f=e.f;
       var d=new Date(f.ts).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
@@ -5822,6 +5902,11 @@ function loadClientForms(){
       if(f.photos && f.photos.length){
         h+="<div style='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;'>"+
           f.photos.map(function(src){ return "<img src='"+src+"' onclick=\"openPhotoLightbox(this.src)\" style='width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;' />"; }).join("")+
+          "</div>";
+      }
+      if(f.files && f.files.length){
+        h+="<div style='display:flex;flex-direction:column;gap:6px;margin-bottom:8px;'>"+
+          f.files.map(function(file){ return "<a href='"+file.dataUrl+"' download='"+ex(file.name)+"' style='font-size:13px;color:var(--accent);'>"+ex(file.name)+"</a>"; }).join("")+
           "</div>";
       }
       if(f.data){
@@ -8094,6 +8179,6 @@ function renderInsightsLog(){
   note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.19</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.20</p>
 </body>
 </html>
