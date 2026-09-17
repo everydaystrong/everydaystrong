@@ -5890,7 +5890,7 @@ function loadClientForms(){
     }
     entries.sort(function(a,b){ return (b.f.ts||0)-(a.f.ts||0); });
     var bestIntake = entries.filter(function(e){ return e.f.formType==="Intake Form"; })[0];
-    var h = bestIntake ? renderContactInfoCard(bestIntake) : "";
+    var h = bestIntake ? renderContactInfoCard(bestIntake) : "<button class='action-btn' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:14px;' onclick='renderAddContactInfoForm()'>Add Contact Info</button>";
     h += "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:14px;' onclick='renderUploadFormBox()'>Upload Form Photo/PDF</button>";
     entries.forEach(function(e){
       var f=e.f;
@@ -8179,6 +8179,6 @@ function renderInsightsLog(){
   note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.20</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.21</p>
 </body>
 </html>
