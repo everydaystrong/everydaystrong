@@ -6399,6 +6399,7 @@ function initSubmissionsBadge(){
         var key = clientNode.key;
         clientNode.forEach(function(entry){
           var v = entry.val();
+          if(v && v.formType==="Uploaded Form") return;
           if(v){
             v._clientKey = key;
             v._entryKey = entry.key;
@@ -8179,6 +8180,6 @@ function renderInsightsLog(){
   note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.21</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.22</p>
 </body>
 </html>
