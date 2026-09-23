@@ -292,6 +292,11 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     </div>
     <div class="form-row"><span class="form-label">Release Date (optional)</span><input type="date" class="form-input" id="edit-release" /><span style="font-size:11px;color:var(--sub);margin-top:3px;">Leave blank to show immediately. Set a future date to schedule.</span></div>
     <div class="form-row"><label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;"><input type="checkbox" id="edit-held" style="width:18px;height:18px;" /> Hold — don't post yet (no date needed)</label></div>
+    <div class="form-row">
+      <span class="form-label">Recommend to Specific Clients (optional)</span>
+      <p style="font-size:11px;color:var(--sub);margin-bottom:6px;">Checked clients will see this video under Recommended for You on their dashboard. Private to each client, they won't see who else it's recommended to.</p>
+      <div class="program-checkboxes" id="edit-recommend-checkboxes" style="max-height:180px;"><p class="tip">Loading clients...</p></div>
+    </div>
     <button class="action-btn" onclick="saveEdit()" style="width:100%;margin-top:4px;position:sticky;bottom:0;background:var(--accent);z-index:5;box-shadow:0 -8px 12px -8px rgba(0,0,0,0.25);">Save Changes</button>
   </div>
 </div>
@@ -548,6 +553,10 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
         <div id="equip-search-results" style="display:none;">
           <p class="section-sub" id="equip-search-sub"></p>
           <div class="video-grid" id="equip-search-grid"></div>
+        </div>
+        <div id="recommended-section" style="display:none;margin-bottom:1.4rem;">
+          <p class="section-sub">Recommended for You</p>
+          <div class="video-grid" id="recommended-grid"></div>
         </div>
         <div class="cat-grid" id="cat-grid"></div>
       </div>
@@ -2229,10 +2238,26 @@ function runEquipSearch(){
   gridEl.style.display="none";
 }
 
+// Private per client — only shows videos this specific client was checked
+// off for in the admin video editor, and only shows the section at all if
+// there's actually something in it.
+function renderRecommendedSection(){
+  var wrap = document.getElementById("recommended-section");
+  if(!wrap || !currentUser) return;
+  var vids = allVideos.filter(function(v){
+    if(!canAccess(v.tag||"Uncategorized")) return false;
+    return Array.isArray(v.recommendedTo) && v.recommendedTo.indexOf(currentUser)!==-1;
+  });
+  if(!vids.length){ wrap.style.display="none"; return; }
+  document.getElementById("recommended-grid").innerHTML = renderVideoCards(vids);
+  wrap.style.display="block";
+}
+
 function renderCategories(){
   var equipInput=document.getElementById("equip-search-input");
   updateGlobalFilterBtnLabel();
   if(equipInput && (equipInput.value.trim()||globalFiltersActive())) runEquipSearch();
+  renderRecommendedSection();
   var grid=document.getElementById("cat-grid");
   var cats={};
   allVideos.forEach(function(v){
@@ -3236,14 +3261,36 @@ function openEdit(key){
     renderEquipChips("edit");
     document.getElementById("edit-release").value=v.releaseDate||"";
     document.getElementById("edit-held").checked=!!v.held;
+    populateEditRecommendCheckboxes(v.recommendedTo||[]);
     document.getElementById("edit-modal").classList.add("open");
   });
+}
+
+function populateEditRecommendCheckboxes(selected){
+  editRecommendSelected = selected.slice();
+  var box = document.getElementById("edit-recommend-checkboxes");
+  if(!box || !DB) return;
+  DB.ref("codes").once("value", function(snap){
+    var names = [];
+    if(snap.exists()) snap.forEach(function(c){ var cd=c.val(); if(!isClientBlocked(cd)) names.push(cd.name); });
+    names.sort();
+    box.innerHTML = names.map(function(n){
+      var checked = editRecommendSelected.indexOf(n)!==-1 ? "checked" : "";
+      return "<label style='display:flex;align-items:center;gap:6px;padding:4px 0;font-size:13px;cursor:pointer;'><input type='checkbox' "+checked+" onchange='toggleEditRecommend(\""+ex(n).replace(/"/g,"&quot;")+"\",this.checked)' /> "+ex(n)+"</label>";
+    }).join("") || "<p class='tip'>No clients found.</p>";
+  });
+}
+function toggleEditRecommend(name, on){
+  var idx = editRecommendSelected.indexOf(name);
+  if(on && idx===-1) editRecommendSelected.push(name);
+  else if(!on && idx!==-1) editRecommendSelected.splice(idx,1);
 }
 
 function closeEdit(){
   document.getElementById("edit-modal").classList.remove("open");
   editFocusSelected = [];
   editEquipSelected = [];
+  editRecommendSelected = [];
 }
 
 function saveEdit(){
@@ -3256,7 +3303,7 @@ function saveEdit(){
   var rd=document.getElementById("edit-release").value;
   var held=document.getElementById("edit-held").checked;
   if(!t||!u){ alert("Please enter a title and link."); return; }
-  DB.ref("videos/"+key).update({title:t,url:u,tag:tg,subcat:sc||null,desc:desc||null,focus:editFocusSelected.length?editFocusSelected:null,equipment:editEquipSelected.length?editEquipSelected:null,releaseDate:rd||null,held:held||null},function(e){
+  DB.ref("videos/"+key).update({title:t,url:u,tag:tg,subcat:sc||null,desc:desc||null,focus:editFocusSelected.length?editFocusSelected:null,equipment:editEquipSelected.length?editEquipSelected:null,releaseDate:rd||null,held:held||null,recommendedTo:editRecommendSelected.length?editRecommendSelected:null},function(e){
     if(!e){ closeEdit(); showOk("ok-video","Video updated!"); populateProgramDatalist(); }
   });
 }
@@ -3492,6 +3539,7 @@ var editFocusSelected = [];
 var allEquipTags = [];
 var vEquipSelected = [];
 var editEquipSelected = [];
+var editRecommendSelected = [];
 
 function normalizeFocus(f){
   if(!f) return [];
@@ -8180,6 +8228,6 @@ function renderInsightsLog(){
   note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.22</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.23</p>
 </body>
 </html>
