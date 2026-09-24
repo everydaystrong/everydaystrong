@@ -513,6 +513,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
       <p style="font-size:14px;color:#3a2a1a;margin-bottom:8px;"><strong>One more thing!</strong> Please complete your intake, agreement, and waiver forms to finish setting up your account.</p>
       <button class="action-btn" id="forms-reminder-btn" style="width:auto;padding:8px 16px;font-size:13px;margin:0;">📝 Complete My Forms</button>
     </div>
+    <div id="notify-banners" style="margin-bottom:1rem;"></div>
     <div id="ann-sec"></div>
     <div class="streak-bar" id="streak-bar" style="display:none;">
       <div><div class="streak-num" id="streak-num">0</div><div class="streak-label">day streak</div></div>
@@ -1945,6 +1946,8 @@ function previewAsClient(){
   checkNewAnnouncements();
   checkNewMessages();
   checkNewComments();
+  checkNewInstructorPosts();
+  checkNewRecipes();
   checkBirthday();
   loadGoal();
   loadMyCheckins();
@@ -1993,6 +1996,8 @@ function doLogin(){
       checkNewAnnouncements();
       checkNewMessages();
       checkNewComments();
+      checkNewInstructorPosts();
+      checkNewRecipes();
       checkBirthday();
       loadGoal();
       loadMyCheckins();
@@ -2991,6 +2996,7 @@ function checkNewMessages(){
 function updateHasNewMsg(){
   hasNewMsg = cachedClientMessages.some(function(m){ return !m.fromClient && m.ts>clientMsgLastCheckTs; });
   updateNavDot();
+  renderNotifyBanners();
 }
 function clearNewMessagesBadge(){
   if(!currentUserKey||!DB) return;
@@ -2999,6 +3005,83 @@ function clearNewMessagesBadge(){
   clientMsgLastCheckTs = now;
   hasNewMsg = false;
   updateNavDot();
+  renderNotifyBanners();
+}
+
+// TOP OF DASHBOARD NOTIFICATION BANNERS: new message from Heather, a new
+// community post from Heather specifically (not other clients posting),
+// or a new recipe. Separate from the small nav dot, more visible, each
+// tappable to jump to that section and clear itself.
+var hasNewInstructorPost = false;
+var instructorPostLastCheckTs = 0;
+var cachedInstructorPosts = [];
+function checkNewInstructorPosts(){
+  if(!DB||!currentUserKey) return;
+  DB.ref("userdata/"+currentUserKey+"/lastInstructorPostCheck").on("value", function(metaSnap){
+    instructorPostLastCheckTs = metaSnap.val() || 0;
+    updateHasNewInstructorPost();
+  });
+  DB.ref("community").orderByChild("ts").limitToLast(20).on("value", function(snap){
+    cachedInstructorPosts = [];
+    if(snap.exists()) snap.forEach(function(c){ var v=c.val(); if(v.isInstructor) cachedInstructorPosts.push(v); });
+    updateHasNewInstructorPost();
+  });
+}
+function updateHasNewInstructorPost(){
+  hasNewInstructorPost = cachedInstructorPosts.some(function(p){ return p.ts>instructorPostLastCheckTs; });
+  renderNotifyBanners();
+}
+function clearNewInstructorPostBadge(){
+  if(!currentUserKey||!DB) return;
+  var now = Date.now();
+  DB.ref("userdata/"+currentUserKey+"/lastInstructorPostCheck").set(now);
+  instructorPostLastCheckTs = now;
+  hasNewInstructorPost = false;
+  renderNotifyBanners();
+}
+
+var hasNewRecipe = false;
+var recipeLastCheckTs = 0;
+var cachedRecipeTimes = [];
+function checkNewRecipes(){
+  if(!DB||!currentUserKey) return;
+  DB.ref("userdata/"+currentUserKey+"/lastRecipeCheck").on("value", function(metaSnap){
+    recipeLastCheckTs = metaSnap.val() || 0;
+    updateHasNewRecipe();
+  });
+  DB.ref("recipes").orderByChild("ts").limitToLast(10).on("value", function(snap){
+    cachedRecipeTimes = [];
+    if(snap.exists()) snap.forEach(function(c){ cachedRecipeTimes.push(c.val().ts||0); });
+    updateHasNewRecipe();
+  });
+}
+function updateHasNewRecipe(){
+  hasNewRecipe = cachedRecipeTimes.some(function(ts){ return ts>recipeLastCheckTs; });
+  renderNotifyBanners();
+}
+function clearNewRecipeBadge(){
+  if(!currentUserKey||!DB) return;
+  var now = Date.now();
+  DB.ref("userdata/"+currentUserKey+"/lastRecipeCheck").set(now);
+  recipeLastCheckTs = now;
+  hasNewRecipe = false;
+  renderNotifyBanners();
+}
+
+function renderNotifyBanners(){
+  var el = document.getElementById("notify-banners");
+  if(!el) return;
+  var h = "";
+  if(hasNewMsg) h += "<div class='notify-banner' onclick='goToNotifySection(\"msg\")' style='background:var(--accent);color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:14px;cursor:pointer;'>New message from Heather</div>";
+  if(hasNewInstructorPost) h += "<div class='notify-banner' onclick='goToNotifySection(\"comm\")' style='background:var(--accent);color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:14px;cursor:pointer;'>Heather posted in Community</div>";
+  if(hasNewRecipe) h += "<div class='notify-banner' onclick='goToNotifySection(\"recipes\")' style='background:var(--accent);color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:14px;cursor:pointer;'>New recipe added</div>";
+  el.innerHTML = h;
+}
+function goToNotifySection(name){
+  if(name==="msg") clearNewMessagesBadge();
+  if(name==="comm") clearNewInstructorPostBadge();
+  if(name==="recipes") clearNewRecipeBadge();
+  switchPortalTab(name, null);
 }
 
 function checkNewAnnouncements(){
@@ -8268,6 +8351,6 @@ function formatSeconds(s){
   return m+"m "+rem+"s";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.26</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.27</p>
 </body>
 </html>
