@@ -555,10 +555,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
           <p class="section-sub" id="equip-search-sub"></p>
           <div class="video-grid" id="equip-search-grid"></div>
         </div>
-        <div id="recommended-section" style="display:none;margin-bottom:1.4rem;">
-          <p class="section-sub">Recommended for You</p>
-          <div class="video-grid" id="recommended-grid"></div>
-        </div>
+        <div id="recommended-section" class="cat-grid" style="margin-bottom:0.9rem;"></div>
         <div class="cat-grid" id="cat-grid"></div>
       </div>
       <div id="vid-view" style="display:none;">
@@ -2249,9 +2246,12 @@ function runEquipSearch(){
   gridEl.style.display="none";
 }
 
-// Private per client — only shows videos this specific client was checked
-// off for in the admin video editor, and only shows the section at all if
-// there's actually something in it.
+// Private per client — only shows a tile at all if this client actually has
+// something recommended to them. Tapping it opens the same video list view
+// every other category uses, just pre filtered to their picks, with each
+// client's own note carried through via currentDisplayNotesMap.
+var recommendedVideosCache = [];
+var recommendedNotesCache = {};
 function renderRecommendedSection(){
   var wrap = document.getElementById("recommended-section");
   if(!wrap || !currentUser) return;
@@ -2262,9 +2262,32 @@ function renderRecommendedSection(){
     if(r && typeof r==="object" && r[currentUser]) notesMap[v._k] = r[currentUser];
     return true;
   });
-  if(!vids.length){ wrap.style.display="none"; return; }
-  document.getElementById("recommended-grid").innerHTML = renderVideoCards(vids, notesMap);
-  wrap.style.display="block";
+  recommendedVideosCache = vids;
+  recommendedNotesCache = notesMap;
+  if(!vids.length){ wrap.innerHTML=""; return; }
+  var img = getDefaultCatImg("Recommended for You");
+  var h = "<div class='cat-card' onclick='openRecommendedCategory()'>";
+  if(img){ h += "<img class='cat-img' src='"+ex(withCacheBust(img))+"' onerror=\"this.outerHTML='<div class=&quot;cat-img-placeholder&quot;></div>'\" />"; }
+  else{ h += "<div class='cat-img-placeholder'></div>"; }
+  h += "<div class='cat-info'><div class='cat-name'>Recommended for You</div><div class='cat-count'>"+vids.length+" video"+(vids.length!==1?"s":"")+"</div></div></div>";
+  wrap.innerHTML = h;
+}
+function openRecommendedCategory(){
+  currentCat="__RECOMMENDED__";
+  currentSubcat=null;
+  catFilters={equipment:[],focus:[]};
+  currentDisplayNotesMap = recommendedNotesCache;
+  document.getElementById("cat-view").style.display="none";
+  document.getElementById("vid-view").style.display="block";
+  document.getElementById("vid-title").textContent="Recommended for You";
+  document.getElementById("back-btn").textContent="← Back to Workouts";
+  document.getElementById("subcat-grid").style.display="none";
+  document.getElementById("cat-desc-text").style.display="none";
+  currentCatVids = recommendedVideosCache;
+  currentDisplayVids = currentCatVids;
+  renderFocusFilters();
+  renderFilteredVideos();
+  window.scrollTo(0,0);
 }
 
 function renderCategories(){
@@ -2417,6 +2440,7 @@ function openPopularCategory(){
   currentCat="__POPULAR__";
   currentSubcat=null;
   catFilters={equipment:[],focus:[]};
+  currentDisplayNotesMap=null;
   document.getElementById("cat-view").style.display="none";
   document.getElementById("vid-view").style.display="block";
   document.getElementById("vid-title").textContent="⭐ Most Popular";
@@ -2474,6 +2498,7 @@ function openCategory(cat){
   currentCat=cat;
   currentSubcat=null;
   catFilters={equipment:[],focus:[]};
+  currentDisplayNotesMap=null;
   document.getElementById("cat-view").style.display="none";
   document.getElementById("vid-view").style.display="block";
   document.getElementById("vid-title").textContent=cat;
@@ -2708,6 +2733,7 @@ function updateCatFilterBtnLabel(){
   btn.textContent = n ? "Filter+ ("+n+")" : "Filter+";
 }
 
+var currentDisplayNotesMap = null;
 function renderFilteredVideos(){
   var vids = currentDisplayVids.filter(function(v){
     var eq = normalizeFocus(v.equipment);
@@ -2717,7 +2743,7 @@ function renderFilteredVideos(){
     return true;
   });
   document.getElementById("vid-sub").textContent=vids.length+" video"+(vids.length!==1?"s":"");
-  document.getElementById("video-grid").innerHTML=renderVideoCards(vids);
+  document.getElementById("video-grid").innerHTML=renderVideoCards(vids, currentDisplayNotesMap);
 }
 
 function renderVideoCards(vids, notesMap){
@@ -8351,6 +8377,6 @@ function formatSeconds(s){
   return m+"m "+rem+"s";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.27</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.28</p>
 </body>
 </html>
