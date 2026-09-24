@@ -294,7 +294,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
     <div class="form-row"><label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;"><input type="checkbox" id="edit-held" style="width:18px;height:18px;" /> Hold — don't post yet (no date needed)</label></div>
     <div class="form-row">
       <span class="form-label">Recommend to Specific Clients (optional)</span>
-      <p style="font-size:11px;color:var(--sub);margin-bottom:6px;">Checked clients will see this video under Recommended for You on their dashboard. Private to each client, they won't see who else it's recommended to.</p>
+      <p style="font-size:11px;color:var(--sub);margin-bottom:6px;">Checked clients will see this video under Recommended for You on their dashboard, with an optional note just for them, like which section to focus on. Private, they won't see who else it's recommended to.</p>
       <div class="program-checkboxes" id="edit-recommend-checkboxes" style="max-height:180px;"><p class="tip">Loading clients...</p></div>
     </div>
     <button class="action-btn" onclick="saveEdit()" style="width:100%;margin-top:4px;position:sticky;bottom:0;background:var(--accent);z-index:5;box-shadow:0 -8px 12px -8px rgba(0,0,0,0.25);">Save Changes</button>
@@ -1491,8 +1491,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
       <div class="admin-card">
         <h3>Activity Log</h3>
         <p class="tip" style="margin-bottom:10px;" id="insights-intro-text">A running feed of client clicks and watches, across the dashboard and the public site. Kept for the last 12 months, then trimmed automatically.</p>
-        <button class="action-btn" id="insights-show-btn" style="padding:10px 18px;" onclick="showInsightsLog()">View Activity Log</button>
-        <div id="insights-log-container" style="display:none;">
+        <div id="insights-log-container">
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
             <input class="form-input" id="insights-client-search" placeholder="Filter by client name" style="flex:1;min-width:160px;text-transform:none;" oninput="renderInsightsLog()" />
             <input class="form-input" id="insights-text-search" placeholder="Filter by what was clicked" style="flex:1;min-width:160px;text-transform:none;" oninput="renderInsightsLog()" />
@@ -2056,11 +2055,18 @@ function loadCategorySettings(){
     renderCategories();
   });
 }
+function isRecommendedToMe(v){
+  if(!currentUser) return false;
+  var r = v.recommendedTo;
+  if(Array.isArray(r)) return r.indexOf(currentUser)!==-1;
+  if(r && typeof r==="object") return Object.prototype.hasOwnProperty.call(r,currentUser);
+  return false;
+}
 function loadVideos(){
   if(!DB) return;
   DB.ref("videos").on("value",function(snap){
     allVideos=[];
-    if(snap.exists()) snap.forEach(function(c){ var v=c.val(); v._k=c.key; if(canAccess(v.tag)&&isReleased(v)) allVideos.push(v); });
+    if(snap.exists()) snap.forEach(function(c){ var v=c.val(); v._k=c.key; if((canAccess(v.tag)||isRecommendedToMe(v))&&isReleased(v)) allVideos.push(v); });
     renderCategories();
   });
   loadCategorySettings();
@@ -2244,12 +2250,15 @@ function runEquipSearch(){
 function renderRecommendedSection(){
   var wrap = document.getElementById("recommended-section");
   if(!wrap || !currentUser) return;
+  var notesMap = {};
   var vids = allVideos.filter(function(v){
-    if(!canAccess(v.tag||"Uncategorized")) return false;
-    return Array.isArray(v.recommendedTo) && v.recommendedTo.indexOf(currentUser)!==-1;
+    if(!isRecommendedToMe(v)) return false;
+    var r = v.recommendedTo;
+    if(r && typeof r==="object" && r[currentUser]) notesMap[v._k] = r[currentUser];
+    return true;
   });
   if(!vids.length){ wrap.style.display="none"; return; }
-  document.getElementById("recommended-grid").innerHTML = renderVideoCards(vids);
+  document.getElementById("recommended-grid").innerHTML = renderVideoCards(vids, notesMap);
   wrap.style.display="block";
 }
 
@@ -2706,16 +2715,16 @@ function renderFilteredVideos(){
   document.getElementById("video-grid").innerHTML=renderVideoCards(vids);
 }
 
-function renderVideoCards(vids){
+function renderVideoCards(vids, notesMap){
   if(!vids.length) return "<div class='empty-state'><p>No videos here yet.</p></div>";
   var h="";
   vids.forEach(function(v){
-    h+=buildVideoCard(v);
+    h+=buildVideoCard(v, notesMap && notesMap[v._k]);
   });
   return h;
 }
 
-function buildVideoCard(v){
+function buildVideoCard(v, note){
   var ytId=getYTId(v.url);
   var th=ytId?"<img src='https://img.youtube.com/vi/"+ytId+"/mqdefault.jpg' onerror='this.style.display=\"none\"' />":"";
   var isFav=getUserData("fav",v._k);
@@ -2726,6 +2735,7 @@ function buildVideoCard(v){
   if(isDone) h+="<span class='completed-badge'>Done</span>";
   h+="</div>";
   h+="<div class='video-info'><div class='video-title'>"+ex(v.title)+"</div>";
+  if(note) h+="<div style='font-size:12px;color:var(--accent);margin:-4px 0 6px;'>"+ex(note)+"</div>";
   h+="<div class='video-actions'>";
   h+="<button class='vact-btn "+(isFav?"active":"")+"' onclick='toggleFav(\""+v._k+"\")' title='Favorite' data-track='Toggle Favorite'>"+(isFav?"⭐":"☆")+"</button>";
   h+="<button class='vact-btn "+(isDone?"active":"")+"' onclick='toggleDone(\""+v._k+"\")' title='Mark complete' data-track='Toggle Mark Complete'>"+(isDone?"✅":"○ Done")+"</button>";
@@ -3267,7 +3277,15 @@ function openEdit(key){
 }
 
 function populateEditRecommendCheckboxes(selected){
-  editRecommendSelected = selected.slice();
+  // Old videos may still have this as a plain array from before notes
+  // existed — convert to the {name: note} shape going forward.
+  if(Array.isArray(selected)){
+    var converted = {};
+    selected.forEach(function(n){ converted[n] = ""; });
+    editRecommendSelected = converted;
+  } else {
+    editRecommendSelected = selected ? Object.assign({}, selected) : {};
+  }
   var box = document.getElementById("edit-recommend-checkboxes");
   if(!box || !DB) return;
   DB.ref("codes").once("value", function(snap){
@@ -3275,22 +3293,31 @@ function populateEditRecommendCheckboxes(selected){
     if(snap.exists()) snap.forEach(function(c){ var cd=c.val(); if(!isClientBlocked(cd)) names.push(cd.name); });
     names.sort();
     box.innerHTML = names.map(function(n){
-      var checked = editRecommendSelected.indexOf(n)!==-1 ? "checked" : "";
-      return "<label style='display:flex;align-items:center;gap:6px;padding:4px 0;font-size:13px;cursor:pointer;'><input type='checkbox' "+checked+" onchange='toggleEditRecommend(\""+ex(n).replace(/"/g,"&quot;")+"\",this.checked)' /> "+ex(n)+"</label>";
+      var checked = Object.prototype.hasOwnProperty.call(editRecommendSelected,n) ? "checked" : "";
+      var noteVal = editRecommendSelected[n] || "";
+      var nId = "ern-"+sk(n);
+      return "<div style='padding:4px 0;'>"+
+        "<label style='display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;'><input type='checkbox' "+checked+" onchange='toggleEditRecommend(\""+ex(n).replace(/"/g,"&quot;")+"\",this.checked,\""+nId+"\")' /> "+ex(n)+"</label>"+
+        "<input type='text' id='"+nId+"' value=\""+ex(noteVal).replace(/"/g,"&quot;")+"\" placeholder='Note for this client (optional), e.g. standing only' style='display:"+(checked?"block":"none")+";width:100%;margin:4px 0 4px 24px;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--inp);color:var(--text);' oninput='updateEditRecommendNote(\""+ex(n).replace(/"/g,"&quot;")+"\",this.value)' />"+
+        "</div>";
     }).join("") || "<p class='tip'>No clients found.</p>";
   });
 }
-function toggleEditRecommend(name, on){
-  var idx = editRecommendSelected.indexOf(name);
-  if(on && idx===-1) editRecommendSelected.push(name);
-  else if(!on && idx!==-1) editRecommendSelected.splice(idx,1);
+function toggleEditRecommend(name, on, noteInputId){
+  if(on){ if(!Object.prototype.hasOwnProperty.call(editRecommendSelected,name)) editRecommendSelected[name]=""; }
+  else { delete editRecommendSelected[name]; }
+  var inp = document.getElementById(noteInputId);
+  if(inp) inp.style.display = on ? "block" : "none";
+}
+function updateEditRecommendNote(name, value){
+  if(Object.prototype.hasOwnProperty.call(editRecommendSelected,name)) editRecommendSelected[name] = value;
 }
 
 function closeEdit(){
   document.getElementById("edit-modal").classList.remove("open");
   editFocusSelected = [];
   editEquipSelected = [];
-  editRecommendSelected = [];
+  editRecommendSelected = {};
 }
 
 function saveEdit(){
@@ -3303,7 +3330,7 @@ function saveEdit(){
   var rd=document.getElementById("edit-release").value;
   var held=document.getElementById("edit-held").checked;
   if(!t||!u){ alert("Please enter a title and link."); return; }
-  DB.ref("videos/"+key).update({title:t,url:u,tag:tg,subcat:sc||null,desc:desc||null,focus:editFocusSelected.length?editFocusSelected:null,equipment:editEquipSelected.length?editEquipSelected:null,releaseDate:rd||null,held:held||null,recommendedTo:editRecommendSelected.length?editRecommendSelected:null},function(e){
+  DB.ref("videos/"+key).update({title:t,url:u,tag:tg,subcat:sc||null,desc:desc||null,focus:editFocusSelected.length?editFocusSelected:null,equipment:editEquipSelected.length?editEquipSelected:null,releaseDate:rd||null,held:held||null,recommendedTo:Object.keys(editRecommendSelected).length?editRecommendSelected:null},function(e){
     if(!e){ closeEdit(); showOk("ok-video","Video updated!"); populateProgramDatalist(); }
   });
 }
@@ -3539,7 +3566,7 @@ var editFocusSelected = [];
 var allEquipTags = [];
 var vEquipSelected = [];
 var editEquipSelected = [];
-var editRecommendSelected = [];
+var editRecommendSelected = {};
 
 function normalizeFocus(f){
   if(!f) return [];
@@ -8121,13 +8148,7 @@ document.getElementById("admin-reply-btn").onclick=sendAdminReply;
 document.getElementById("atab-checkins").onclick=function(){ setAdmTab("checkins",this); loadAdminCheckins(); };
 document.getElementById("atab-messages").onclick=function(){ setAdmTab("messages",this); loadAdminMessages(); clearMessageBadge(); };
 document.getElementById("atab-comments").onclick=function(){ setAdmTab("comments",this); loadAdminComments(); clearCommentsBadge(); };
-document.getElementById("atab-insights").onclick=function(){ setAdmTab("insights",this); };
-
-function showInsightsLog(){
-  document.getElementById("insights-show-btn").style.display="none";
-  document.getElementById("insights-log-container").style.display="block";
-  loadInsightsTab();
-}
+document.getElementById("atab-insights").onclick=function(){ setAdmTab("insights",this); loadInsightsTab(); };
 
 // ACTIVITY LOG: a single running feed of clicks across both the dashboard
 // and the public site, filterable by client name, free text, source, and
@@ -8136,8 +8157,8 @@ function showInsightsLog(){
 // was opened. Rolling 12 month window, trimmed on open, see pruneOldClickLog.
 var cachedInsightsLog = [];
 var insightsSourceSelections = ["dashboard","public"];
-var insightsTypeSelections = ["Video","Favorite","Complete","Comment","Navigation","Form","Other"];
-var ALL_CLICK_TYPES = ["Video","Favorite","Complete","Comment","Navigation","Form","Other"];
+var insightsTypeSelections = ["Video","Favorite","Complete","Comment","Navigation","Form","Page Visit","Other"];
+var ALL_CLICK_TYPES = ["Video","Favorite","Complete","Comment","Navigation","Form","Page Visit","Other"];
 var insightsTestAccountNames = [];
 var insightsShowMine = false;
 
@@ -8218,16 +8239,35 @@ function renderInsightsLog(){
   });
   if(!items.length){ el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>No matching activity.</p>"; note.textContent=""; return; }
   var shown = items.slice(0,300);
-  el.innerHTML = shown.map(function(r){
+  el.innerHTML = shown.map(function(r,i){
     var d2 = new Date(r.ts);
     var who = r.source==="public" ? "Site Visitor" : (r.clientName||"Unknown");
-    return "<div style='padding:6px 0;border-bottom:0.5px solid var(--border);'>"+
-      "<span style='font-size:13px;'><strong>"+ex(who)+"</strong> · "+ex(r.type||"Other")+" · "+ex(r.label||"")+"</span><br/>"+
-      "<span style='font-size:12px;color:var(--sub);'>"+d2.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})+" at "+d2.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})+"</span></div>";
+    var when = d2.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})+" at "+d2.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+    var hasSections = r.type==="Page Visit" && r.sections;
+    var rowStyle = "padding:6px 0;border-bottom:0.5px solid var(--border);"+(hasSections?"cursor:pointer;":"");
+    var row = "<div style='"+rowStyle+"'"+(hasSections?" onclick='toggleInsightsRowDetail("+i+")'":"")+">"+
+      "<span style='font-size:13px;'>"+(hasSections?"▸ ":"")+"<strong>"+ex(who)+"</strong> · "+ex(r.type||"Other")+" · "+ex(r.label||"")+"</span><br/>"+
+      "<span style='font-size:12px;color:var(--sub);'>"+when+"</span></div>";
+    if(hasSections){
+      var secKeys = Object.keys(r.sections).sort(function(a,b){ return r.sections[b]-r.sections[a]; });
+      var detail = secKeys.map(function(k){ return "<div style='font-size:12px;color:var(--sub);padding:2px 0 2px 16px;'>"+ex(k)+": "+formatSeconds(r.sections[k])+"</div>"; }).join("");
+      row += "<div id='insights-row-detail-"+i+"' style='display:none;padding-bottom:6px;'>"+detail+"</div>";
+    }
+    return row;
   }).join("");
   note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
 }
+function toggleInsightsRowDetail(i){
+  var d = document.getElementById("insights-row-detail-"+i);
+  if(d) d.style.display = d.style.display==="none" ? "block" : "none";
+}
+function formatSeconds(s){
+  s = Math.round(s);
+  if(s<60) return s+"s";
+  var m = Math.floor(s/60), rem = s%60;
+  return m+"m "+rem+"s";
+}
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.23</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.26</p>
 </body>
 </html>

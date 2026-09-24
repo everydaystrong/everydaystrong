@@ -751,6 +751,55 @@ try {
     landingDB.ref("clickLog").push({source:"public", clientKey:null, clientName:null, ts:Date.now(), type:type, label:label, elId:el.id||null});
   }, true);
 
+  // PER SECTION TIME TRACKING: how long each section of the page was
+  // actually visible on the visitor's screen, not just that they clicked
+  // something. Saved as one "Page Visit" entry (with a sections breakdown)
+  // when the visitor leaves, not tracked live, so it only shows up in the
+  // Activity Log after their visit ends.
+  (function(){
+    var sectionLabel = function(sec, idx){
+      if(sec.id) return sec.id.replace(/[-_]/g," ").replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+      var heading = sec.querySelector("h1, h2, h3");
+      if(heading && heading.textContent.trim()) return heading.textContent.trim().slice(0,40);
+      return "Section "+(idx+1);
+    };
+    var sections = Array.prototype.slice.call(document.querySelectorAll("section"));
+    if(!sections.length) return;
+    var sectionTimes = {};
+    var enterTs = {};
+    var visitStart = Date.now();
+    var labels = sections.map(sectionLabel);
+    var observer = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        var idx = sections.indexOf(entry.target);
+        var label = labels[idx];
+        if(entry.isIntersecting){
+          enterTs[label] = Date.now();
+        } else if(enterTs[label]){
+          sectionTimes[label] = (sectionTimes[label]||0) + (Date.now()-enterTs[label])/1000;
+          delete enterTs[label];
+        }
+      });
+    }, {threshold:0.5});
+    sections.forEach(function(sec){ observer.observe(sec); });
+    var finalized = false;
+    function finalizeVisit(){
+      if(finalized) return;
+      finalized = true;
+      Object.keys(enterTs).forEach(function(label){
+        sectionTimes[label] = (sectionTimes[label]||0) + (Date.now()-enterTs[label])/1000;
+      });
+      if(!Object.keys(sectionTimes).length) return;
+      var total = 0;
+      Object.keys(sectionTimes).forEach(function(k){ total += sectionTimes[k]; sectionTimes[k] = Math.round(sectionTimes[k]); });
+      var mins = Math.floor(total/60), secs = Math.round(total%60);
+      var label = "Page Visit ("+(mins?mins+"m ":"")+secs+"s total)";
+      landingDB.ref("clickLog").push({source:"public", clientKey:null, clientName:null, ts:visitStart, type:"Page Visit", label:label, sections:sectionTimes});
+    }
+    document.addEventListener("visibilitychange", function(){ if(document.visibilityState==="hidden") finalizeVisit(); });
+    window.addEventListener("pagehide", finalizeVisit);
+  })();
+
   // Load programs — only replace the static pricing cards if programs have
   // actually been published from admin (showWeb:true). Otherwise leave the
   // hardcoded pricing above exactly as-is so the page is never left blank.
@@ -1009,6 +1058,6 @@ document.addEventListener("click",function(e){
   }
 });
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: 2026-09-09-public-activity-tracking</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.24</p>
 </body>
 </html>
