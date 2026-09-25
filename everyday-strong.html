@@ -240,6 +240,7 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Allura&family=Raleway:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
 <body>
 
 
@@ -2780,9 +2781,50 @@ function buildVideoCard(v, note){
   return h;
 }
 
+// AUTO COMPLETE FROM ACTUAL WATCH PROGRESS: only works for videos actually
+// hosted on YouTube (needs their player API), and only signals that the
+// player reported that much playback, not that anyone was paying attention.
+// Marks complete either when the video reaches its natural end, or once
+// playback passes 90% (so skipping the last few outro seconds still counts).
+var ytPlayer = null;
+var ytProgressInterval = null;
+var currentOpenVideoKey = null;
+function onYouTubeIframeAPIReady(){
+  if(currentOpenVideoKey && document.getElementById("video-modal").classList.contains("open")){
+    attachYTPlayer(currentOpenVideoKey);
+  }
+}
+function attachYTPlayer(videoKey){
+  if(!window.YT || !YT.Player) return;
+  if(ytProgressInterval){ clearInterval(ytProgressInterval); ytProgressInterval=null; }
+  if(ytPlayer && ytPlayer.destroy){ try{ ytPlayer.destroy(); }catch(e){} }
+  ytPlayer = new YT.Player("video-modal-frame", {
+    events: {
+      onStateChange: function(e){
+        if(e.data===YT.PlayerState.ENDED){ markVideoWatchedComplete(videoKey); }
+        if(e.data===YT.PlayerState.PLAYING){
+          if(ytProgressInterval) clearInterval(ytProgressInterval);
+          ytProgressInterval = setInterval(function(){
+            try{
+              var dur = ytPlayer.getDuration(), cur = ytPlayer.getCurrentTime();
+              if(dur>0 && cur/dur>=0.9){ markVideoWatchedComplete(videoKey); clearInterval(ytProgressInterval); ytProgressInterval=null; }
+            } catch(e){}
+          }, 5000);
+        }
+      }
+    }
+  });
+}
+function markVideoWatchedComplete(videoKey){
+  if(!videoKey || previewingAsClient || getUserData("completed",videoKey)) return;
+  setUserData("completed", videoKey, Date.now());
+  renderCategories();
+}
+
 function openVideo(url, videoKey, desc){
   var ytId=getYTId(url);
-  var embedUrl = ytId ? ("https://www.youtube.com/embed/"+ytId+"?autoplay=1&rel=0") : url;
+  currentOpenVideoKey = videoKey||null;
+  var embedUrl = ytId ? ("https://www.youtube.com/embed/"+ytId+"?autoplay=1&rel=0&enablejsapi=1&origin="+encodeURIComponent(location.origin)) : url;
   document.getElementById("video-modal-frame").src = embedUrl;
   var descEl = document.getElementById("video-modal-desc");
   if(descEl){
@@ -2790,6 +2832,9 @@ function openVideo(url, videoKey, desc){
     else { descEl.textContent=""; descEl.style.display="none"; }
   }
   document.getElementById("video-modal").classList.add("open");
+  if(ytId && videoKey && !previewingAsClient && currentUserKey && window.YT && YT.Player){
+    attachYTPlayer(videoKey);
+  }
   // Only count real client views — not your own admin preview/comment-review clicks
   if(videoKey && DB && !previewingAsClient){
     DB.ref("videoViews/"+videoKey).transaction(function(cur){ return (cur||0)+1; });
@@ -2808,6 +2853,8 @@ function openVideo(url, videoKey, desc){
 function closeVideoModal(){
   document.getElementById("video-modal-frame").src = ""; // stop playback
   document.getElementById("video-modal").classList.remove("open");
+  currentOpenVideoKey = null;
+  if(ytProgressInterval){ clearInterval(ytProgressInterval); ytProgressInterval=null; }
 }
 
 function openPhotoLightbox(src){
@@ -8377,6 +8424,6 @@ function formatSeconds(s){
   return m+"m "+rem+"s";
 }
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.28</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.09.29</p>
 </body>
 </html>
