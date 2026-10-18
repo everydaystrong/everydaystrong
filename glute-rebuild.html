@@ -13,19 +13,20 @@
 body{margin:0}
 [hidden]{display:none!important}
 *{box-sizing:border-box}
-/* Layout: one narrow column app; month calendar on top, next session card, sheets slide up for detail and timer */
+img{max-width:100%}
+/* Layout: one narrow column app; next session, calendar, extras, weeks; sheets for detail; full screen timer */
 :root{
   --bg:#F5F2F6; --surface:#FFFFFF; --ink:#2B2530; --muted:#7A7180; --line:#E6DFE9;
-  --accent:#8C5A78; --accent-soft:#EBDDE6; --sage:#6F8C7C; --sage-soft:#DDE8E1; --video:#8A7A4E; --video-soft:#F0EAD8;
+  --accent:#8C5A78; --accent-soft:#EBDDE6; --sage:#6F8C7C; --sage-soft:#DDE8E1; --pil:#7A6A9C; --pil-soft:#E6E1F1;
   --display:"Bricolage Grotesque",ui-rounded,"Segoe UI",system-ui,sans-serif;
   --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#1C1820; --surface:#27222B; --ink:#EEE8F0; --muted:#A79FAD; --line:#3A3340;
-  --accent:#D3A9C2; --accent-soft:#40303A; --sage:#9FBBAB; --sage-soft:#2C3A33; --video:#D6C48F; --video-soft:#3A3426; color-scheme:dark}}
+  --accent:#D3A9C2; --accent-soft:#40303A; --sage:#9FBBAB; --sage-soft:#2C3A33; --pil:#BDB1DA; --pil-soft:#332E42; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#1C1820; --surface:#27222B; --ink:#EEE8F0; --muted:#A79FAD; --line:#3A3340;
-  --accent:#D3A9C2; --accent-soft:#40303A; --sage:#9FBBAB; --sage-soft:#2C3A33; --video:#D6C48F; --video-soft:#3A3426; color-scheme:dark}
+  --accent:#D3A9C2; --accent-soft:#40303A; --sage:#9FBBAB; --sage-soft:#2C3A33; --pil:#BDB1DA; --pil-soft:#332E42; color-scheme:dark}
 html,body{background:var(--bg);color:var(--ink)}
 body{font-family:var(--body);font-size:15px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
 .wrap{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
@@ -34,7 +35,7 @@ h1{font-size:30px}
 .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
 .muted{color:var(--muted)}
 button{font:inherit;color:inherit;cursor:pointer}
-button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 header{display:flex;flex-direction:column;gap:10px}
 .progress{display:flex;gap:4px}
 .progress span{flex:1;height:6px;border-radius:3px;background:var(--line)}
@@ -42,10 +43,11 @@ header{display:flex;flex-direction:column;gap:10px}
 .progress span.part{background:linear-gradient(90deg,var(--sage) var(--p),var(--line) var(--p))}
 .card{background:var(--surface);border-radius:18px;padding:18px;border:1px solid var(--line)}
 .next{display:flex;flex-direction:column;gap:12px;background:var(--accent-soft);border:none}
-.next .row{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.next.p{background:var(--pil-soft)}
 .btn{border:none;border-radius:999px;padding:12px 20px;font-weight:600;background:var(--accent);color:var(--bg);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
 .btn.sage{background:var(--sage);color:var(--bg)}
+.btn.small{padding:8px 14px;font-size:14px}
 .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .cal-head button{background:none;border:1px solid var(--line);border-radius:50%;width:36px;height:36px;font-size:18px}
 .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
@@ -55,42 +57,53 @@ header{display:flex;flex-direction:column;gap:10px}
 .day.today{box-shadow:inset 0 0 0 1.5px var(--ink)}
 .day .tag{font-size:9.5px;font-weight:600;letter-spacing:.04em;line-height:1}
 .day.s-A,.day.s-B{background:var(--accent-soft);color:var(--accent)}
-.day.s-C{background:var(--video-soft);color:var(--video)}
+.day.s-P{background:var(--pil-soft);color:var(--pil)}
 .day.done{background:var(--sage);color:var(--bg)}
 .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:12px;color:var(--muted)}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.extra{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.extra:first-of-type{border-top:none}
+.extra div{min-width:0}
 .weeks{display:flex;flex-direction:column;gap:8px}
 .wk{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:baseline}
 .wk b{font-family:var(--display);font-size:15px}
 details summary{cursor:pointer;font-weight:600}
 .set{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
 .set label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);flex:1;min-width:140px}
-.set input,.set select{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+input[type=date],select,textarea{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
 /* sheets */
 .sheet{position:fixed;inset:0;z-index:20;background:color-mix(in srgb,var(--ink) 40%,transparent);display:flex;align-items:flex-end;justify-content:center}
-.panel{background:var(--surface);width:100%;max-width:560px;max-height:88%;overflow:auto;border-radius:22px 22px 0 0;padding:22px max(18px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--surface);width:100%;max-width:560px;max-height:90%;overflow:auto;border-radius:22px 22px 0 0;padding:22px max(18px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
 .pill{display:inline-block;font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
-.pill.v{background:var(--video-soft);color:var(--video)}
+.pill.p{background:var(--pil-soft);color:var(--pil)}
 .pill.d{background:var(--sage-soft);color:var(--sage)}
-.ex{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-top:1px solid var(--line)}
+.ex{display:flex;flex-direction:column;gap:2px;padding:9px 0;border-top:1px solid var(--line)}
 .ex:first-child{border-top:none}
 .ex .n{font-weight:600}
+.ex .n small{font-weight:500;color:var(--muted);font-size:12px;margin-left:6px}
 .ex .c{font-size:13px;color:var(--muted)}
 .blk{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:6px}
 .actions{display:flex;flex-wrap:wrap;gap:10px}
 .actions .btn{flex:1;min-width:140px}
+.toggles{display:flex;flex-direction:column;gap:8px;background:var(--bg);border-radius:14px;padding:12px 14px}
+.toggles label{display:flex;align-items:center;gap:10px;font-weight:500}
+.toggles input{width:20px;height:20px;accent-color:var(--accent)}
+.toggles small{color:var(--muted);font-weight:400}
+.move{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 /* timer */
-.timer{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:calc(20px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) calc(28px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));text-align:center}
+.timer{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:calc(18px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));text-align:center}
 .timer.work{background:var(--accent-soft)}
 .timer.rest{background:var(--sage-soft)}
 .t-top{width:100%;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
-.t-mid{display:flex;flex-direction:column;align-items:center;gap:14px;max-width:420px}
+.t-mid{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:440px;width:100%}
 .t-phase{font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:600}
-.t-name{font-family:var(--display);font-size:30px;line-height:1.1;text-wrap:balance}
-.t-cue{color:var(--muted);font-size:14px;max-width:34ch}
-.ring{position:relative;width:min(62vw,240px);aspect-ratio:1}
+.t-upnext{font-size:13px;font-weight:600;color:var(--sage);letter-spacing:.08em;text-transform:uppercase}
+.t-name{font-family:var(--display);font-size:clamp(28px,8vw,38px);line-height:1.08;text-wrap:balance}
+.t-side{font-weight:600;font-size:15px;padding:4px 12px;border-radius:999px;background:var(--surface)}
+.t-cue{color:var(--muted);font-size:15px;max-width:34ch}
+.ring{position:relative;width:min(56vw,220px);aspect-ratio:1;margin:6px 0}
 .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
-.ring .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:64px;font-variant-numeric:tabular-nums}
+.ring .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:60px;font-variant-numeric:tabular-nums}
 .t-next{font-size:13px;color:var(--muted)}
 .t-ctrl{display:flex;gap:12px;width:100%;max-width:420px}
 .t-ctrl button{flex:1;padding:14px 0;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-weight:600}
@@ -119,14 +132,20 @@ details summary{cursor:pointer;font-weight:600}
     </div>
     <div class="grid" id="grid"></div>
     <div class="legend">
-      <span><i style="background:var(--accent-soft)"></i>Timer session</span>
-      <span><i style="background:var(--video-soft)"></i>Video day</span>
+      <span><i style="background:var(--accent-soft)"></i>Squat or hinge</span>
+      <span><i style="background:var(--pil-soft)"></i>Pilates strength</span>
       <span><i style="background:var(--sage)"></i>Done</span>
     </div>
   </section>
 
   <section class="card">
-    <h3 style="font-size:17px;margin-bottom:12px">How the six weeks build</h3>
+    <h3 style="font-size:17px;margin-bottom:6px">Extras</h3>
+    <p class="muted" style="margin:0 0 6px;font-size:13px">Do one on its own, or add it to a session. A new one comes up each time you finish.</p>
+    <div id="extras"></div>
+  </section>
+
+  <section class="card">
+    <h3 style="font-size:17px;margin-bottom:12px">How the weeks build</h3>
     <div class="weeks" id="weeks"></div>
   </section>
 
@@ -145,7 +164,7 @@ details summary{cursor:pointer;font-weight:600}
       </div>
       <p class="muted" style="font-size:13px;margin:12px 0 0">Checkmarks save on this device. Getting a new phone? Copy your backup code first, then paste it on the new phone.</p>
       <div class="actions" style="margin-top:12px"><button class="btn ghost" id="bkCopy">Copy backup code</button></div>
-      <label class="set" style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)">Restore from backup code<textarea id="bkIn" rows="2" style="font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></textarea></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted);margin-top:12px">Restore from backup code<textarea id="bkIn" rows="2"></textarea></label>
       <div class="actions" style="margin-top:8px"><button class="btn ghost" id="bkLoad">Restore</button></div>
       <p class="muted" id="bkMsg" style="font-size:13px;margin:8px 0 0"></p>
       <button class="btn ghost" id="resetBtn" style="margin-top:12px">Clear all checkmarks</button>
@@ -163,207 +182,299 @@ details summary{cursor:pointer;font-weight:600}
   <div class="t-top"><span id="tStep"></span><span id="tLeft"></span></div>
   <div class="t-mid">
     <div class="t-phase" id="tPhase"></div>
+    <div class="t-upnext" id="tUp" hidden>Next up</div>
     <div class="t-name" id="tName"></div>
+    <div class="t-side" id="tSide" hidden></div>
     <div class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="none" stroke="var(--line)" stroke-width="6"/><circle id="tArc" cx="50" cy="50" r="45" fill="none" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" stroke-dasharray="282.74" stroke-dashoffset="0"/></svg><div class="num" id="tNum"></div></div>
     <div class="t-cue" id="tCue"></div>
     <div class="t-next" id="tNext"></div>
   </div>
-  <div class="t-ctrl">
-    <button id="tBack">Back</button>
-    <button class="main" id="tPlay">Pause</button>
-    <button id="tSkip">Skip</button>
+  <div style="width:100%;display:flex;flex-direction:column;align-items:center;gap:10px">
+    <div class="t-ctrl">
+      <button id="tBack">Back</button>
+      <button class="main" id="tPlay">Pause</button>
+      <button id="tSkip">Skip</button>
+    </div>
+    <button id="tEnd" style="background:none;border:none;color:var(--muted);font-size:13px">Stop and save my spot</button>
   </div>
-  <button id="tEnd" style="background:none;border:none;color:var(--muted);margin-top:10px;font-size:13px">Stop and save my spot</button>
 </div>
 
 <script>
+/* ---------- program data ---------- */
+// entry: [name, cue, sides (1 or 2), seconds (optional, defaults to the week's work time)]
 const PATTERNS={tts:[2,4,6],sth:[0,2,4],tth:[2,4,7],tfs:[2,5,7],fss:[5,6,7]};
 const WEEKS=[
- {w:35,r:25,note:"Moderate weight. Learn the groove and feel your glutes do the work."},
- {w:35,r:25,note:"Same weight, slower lowering. Three seconds down."},
- {w:40,r:20,note:"Go up a little in weight on squats, thrusts and RDLs."},
- {w:40,r:20,note:"New variations. Moderate weight while you learn them."},
- {w:45,r:15,note:"Heavier. The last three reps should feel hard."},
- {w:45,r:15,note:"Your strongest week. Pause and squeeze every rep."}
+ {w:45,r:15,note:"Learn each move. Smooth and controlled."},
+ {w:45,r:15,note:"Slow every lowering to a three count."},
+ {w:50,r:10,note:"Add a one second pause at the hardest point."},
+ {w:50,r:10,note:"New moves this week. Find your groove."},
+ {w:50,r:10,note:"Add a pulse at the bottom: down, pulse, up."},
+ {w:50,r:10,note:"Strongest week. Full squeeze on every rep."}
 ];
+const BRACE="Brace first: ribs down, belly tight, hips back.";
 const WARM={
- A:[["Band lateral walk","Band above knees, small steps, stay low",60],["Bodyweight squat with reach","Sit back, reach arms forward, stand tall",60],["Banded glute bridge hold","Push knees out into the band, squeeze",60]],
- B:[["Banded glute bridge","Drive through heels, ribs down",60],["Hip hinge drill","Hands on hips, push hips back, flat back",60],["Banded clamshell, left","Heels together, open slow",30],["Banded clamshell, right","Heels together, open slow",30]]
+ A:[["Band lateral walk","Band above knees, stay low, small steps",1,40],["Bodyweight squat with reach","Sit back, reach arms forward",1,40],["Glute bridge march","Hips level, slow knee lifts",1,40],["Standing hip circles","Hand on wall, big slow circles",2,20]],
+ B:[["Glute bridge","Drive through heels, ribs down",1,40],["Hip hinge drill","Hands on hips, push hips back, flat back",1,40],["Cat cow","Move one segment at a time",1,40],["Banded clamshell","Heels together, open slow",2,20]],
+ P:[["Pelvic tilts","Lying on your back, rock pelvis slowly",1,40],["Cat cow","Breathe in to arch, out to round",1,40],["Thread the needle","On all fours, reach under and open up",2,20],["Bridge roll up","Peel your spine up and down one bone at a time",1,40]]
 };
-const COOL=[["Figure four stretch, left","Lying down, ankle over knee, pull in",30],["Figure four stretch, right","Lying down, ankle over knee, pull in",30],["Half kneeling hip flexor, left","Tuck pelvis, squeeze back glute",30],["Half kneeling hip flexor, right","Tuck pelvis, squeeze back glute",30]];
+const COOL={
+ A:[["Figure four stretch","Lying down, ankle over knee, pull in",2,30],["Half kneeling hip flexor","Tuck pelvis, squeeze back glute",2,30]],
+ B:[["Child's pose","Knees wide, sink hips back, breathe into your low back",1,40],["Supine twist","Knees to one side, shoulders stay down",2,30],["Figure four stretch","Lying down, ankle over knee, pull in",2,30]],
+ P:[["Child's pose","Knees wide, breathe into your low back",1,40],["Supine twist","Knees to one side, shoulders stay down",2,30],["Pigeon stretch","Or figure four if pigeon bothers your hip",2,30],["Happy baby","Rock gently side to side",1,30]]
+};
 const MAIN={
- A1:[["Goblet squat","Kettlebell at chest, sit between your heels"],["Bulgarian split squat, left","Back foot on the step, lean slightly forward, dumbbells"],["Bulgarian split squat, right","Back foot on the step, lean slightly forward, dumbbells"],["Step up, left","Drive through the top foot, don't push off the floor"],["Step up, right","Drive through the top foot, don't push off the floor"],["Banded squat pulse","Band above knees, stay in the bottom third"]],
- A2:[["Heels elevated goblet squat","Heels on the step edge, deep and controlled"],["Bulgarian split squat, left","Heavier dumbbells, pause at the bottom"],["Bulgarian split squat, right","Heavier dumbbells, pause at the bottom"],["Curtsy lunge, left","Step back and across, hips stay square"],["Curtsy lunge, right","Step back and across, hips stay square"],["Banded sumo squat pulse","Wide stance, toes out, push knees out"]],
- B1:[["Barbell hip thrust","Shoulders on the couch or bench, pad the bar, chin tucked"],["Dumbbell RDL","Soft knees, push hips back, bar slides down thighs"],["Kettlebell swing","Snap the hips, arms just guide the bell"],["Single leg RDL, left","Dumbbell in opposite hand, hips level"],["Single leg RDL, right","Dumbbell in opposite hand, hips level"],["Banded frog pump","Soles together, knees out, quick squeezes"]],
- B2:[["Paused barbell hip thrust","Two second squeeze at the top every rep"],["Barbell RDL","Heavier, slow three count down"],["Kettlebell swing","Heavier bell, crisp lockout"],["Banded kickback, left","On all fours, kick back and up, no back arch"],["Banded kickback, right","On all fours, kick back and up, no back arch"],["Banded frog pump","Soles together, knees out, hold the last one"]]
+ A:[
+  {main:[["Goblet squat","Kettlebell at chest, sit between your heels",1],["Reverse lunge","Dumbbells at sides, front heel drives you up",2],["Bird dog","Reach long, hips stay level, no twisting",2,30],["Step up","Drive through the top foot only",2],["Banded sumo squat","Wide stance, push knees out into the band",1],["Pallof press","Band anchored at chest height, press out, resist the pull",2,30],["Curtsy lunge","Step back and across, hips stay square",2],["Side plank, knees down","Hips high, long line from knees to head",2,30],["Dumbbell glute bridge march","Dumbbell on hips, march slow, hips don't drop",1]],burn:["Banded squat pulse","Stay in the bottom half, push knees out",1,60]},
+  {main:[["Dumbbell squat","Dumbbells at shoulders, three count down",1],["Split squat","Back foot on floor, drop straight down",2],["Dead bug","Low back stays heavy on the mat, opposite arm and leg",1,40],["Lateral lunge","Sit into the hip, other leg straight",2],["Suitcase hold","One heavy dumbbell, stand tall, don't lean",2,30],["Step up with knee drive","Drive up, lift the back knee high",2],["Banded wall sit","Back on wall, push knees out into the band",1],["Bird dog with pause","Hold three seconds at full reach",2,30],["Banded glute bridge","Push knees out at the top",1]],burn:["Kettlebell sumo squat pulse","Wide stance, stay low",1,60]},
+  {main:[["Heels elevated goblet squat","Heels on the block or step edge, pause at the bottom",1],["Bulgarian split squat","Back foot on the step, slight forward lean",2],["Pallof press with pause","Hold the press out for three seconds",2,30],["Lateral step up","Step up from the side, control the way down",2],["Squat to Pallof press","Band at chest, squat, press out at the bottom",1],["Curtsy lunge with pause","Pause one second at the bottom",2],["Side plank clamshell","Knees down, open the top knee",2,30],["Banded bridge abduction","Hold the bridge, press knees out and in",1]],burn:["Goblet squat pulse","Bottom half only, chest tall",1,60]},
+  {main:[["Paused goblet squat","Two second pause at the bottom",1],["Front foot elevated split squat","Front foot on the block, go deep",2],["Dead bug with band","Band overhead from anchor, low back heavy",1,40],["Offset reverse lunge","One dumbbell, stay square, don't lean",2],["Assisted cossack squat","Hold the step or wall, shift side to side",2],["Suitcase march","One dumbbell, march in place, stay tall",1,40],["Banded squat to lateral step","Squat, step out, squat, step back",1],["Side plank hip lifts","Knees down, lift and lower slowly",2,30],["Single leg glute bridge","Other knee hugged in",2]],burn:["Banded squat hold with knee pushes","Hold low, press knees out and in",1,60]},
+  {main:[["Goblet squat with pulse","Down, pulse, up",1],["Bulgarian split squat with pulse","Down, pulse, up",2],["Bird dog crunch","Elbow to knee under you, then reach long",2,30],["Slow step down","Stand on the step, lower other heel slowly to tap",2],["Pallof press hold","Press out and hold the whole time",2,30],["Lateral lunge to balance","Push back up to a knee lift",2],["Side plank, knees down, top leg lift","Hips high, lift the top leg",2,30],["Dumbbell sumo squat","One dumbbell between your legs, sit deep",1]],burn:["Pulse squat into hold","30 seconds pulse, then hold low",1,60]},
+  {main:[["Barbell back squat","Light bar on your back, brace and sit",1],["Rear foot elevated split squat with pause","Pause at the bottom every rep",2],["Dead bug, arms and legs","Slow and controlled, exhale as you reach",1,40],["Crossover step up","Step up from across your body",2],["Suitcase carry","One dumbbell, walk tall around the room",2,30],["Curtsy lunge to side leg lift","Lunge back, then lift the leg out to the side",2],["Bird dog hold","Hold the reach, breathe",2,30],["One and a half goblet squat","All the way down, half up, down, all the way up",1]],burn:["Banded bridge pulse and hold","Pulse 40 seconds, hold 20",1,75]}
+ ],
+ B:[
+  {main:[["Barbell hip thrust","Shoulders on couch, pad the bar, chin tucked",1],["Dumbbell RDL",BRACE+" Bar slides down your thighs.",1],["Bird dog","Reach long, hips stay level",2,30],["Kettlebell swing","Snap the hips, arms just guide the bell",1],["Single leg glute bridge","Other knee hugged in",2],["Pallof press","Band at chest height, press out, resist the pull",2,30],["Kickstand RDL","Back toe just for balance, front leg does the work",2],["Side plank, knees down","Hips high, long line",2,30],["Banded frog pump","Soles together, knees out, quick squeezes",1]],burn:["Banded bridge pulse","Small fast pulses at the top",1,60]},
+  {main:[["Dumbbell hip thrust","Three count lower, squeeze at the top",1],["Good morning","Light bar on your back. "+BRACE,1],["B stance glute bridge","Back foot on the heel for balance only",2],["Kettlebell deadlift","Bell between feet, push the floor away",1],["Dead bug","Low back stays heavy on the mat",1,40],["Single leg RDL","Hand on the wall, hips level",2],["Suitcase hold","One heavy dumbbell, stand tall",2,30],["Band pull through","Band anchored low behind you, snap hips forward",1]],burn:["Frog pump to hold","Pump 40 seconds, hold 20",1,60]},
+  {main:[["Paused barbell hip thrust","Two second squeeze at the top",1],["Dumbbell RDL with pause","Pause just below the knee. "+BRACE,1],["Kettlebell swing","Crisp lockout, glutes tight at the top",1],["Single leg hip thrust","Shoulders on couch, one leg drives",2],["Bird dog with pause","Hold three seconds at full reach",2,30],["Kickstand RDL with pause","Pause at the bottom",2],["Side plank clamshell","Knees down, open the top knee",2,30],["Banded hip thrust abduction","At the top, press knees out and back",1]],burn:["Banded glute bridge pulse","Knees out the whole time",1,60]},
+  {main:[["Banded barbell hip thrust","Band above knees, push out as you lift",1],["Sumo kettlebell deadlift","Wide stance, chest proud. "+BRACE,1],["Single leg RDL","Free standing if you can, hips level",2],["Dead bug, alternating","Opposite arm and leg, slow exhale",1,40],["Dumbbell glute bridge march","Dumbbell on hips, no hip drop",1],["Pallof press with step out","Press out, step away, step back",2,30],["Double kettlebell swing","Or one heavier bell, snap the hips",1],["Bird dog row","Hand on the step, row with the other hand",2,30],["Hip thrust hold","Hold at the top, squeeze",1,40]],burn:["Banded frog pump","As many as you can",1,60]},
+  {main:[["Hip thrust with pulse","Up, pulse at the top, down",1],["One and a half RDL","Down, half up, down, all the way up. "+BRACE,1],["Kettlebell swing with hold","Two second hold at the top",1],["B stance hip thrust","Back foot on the heel, front leg drives",2],["Suitcase march","One dumbbell, march in place, stay tall",1,40],["Kickstand RDL with pulse","Pulse at the bottom",2],["Side plank hip lifts","Knees down, lift and lower slowly",2,30],["Band pull through with pause","Hold the squeeze for two seconds",1]],burn:["Hip thrust hold then pulse","Hold 30 seconds, pulse 30",1,60]},
+  {main:[["Barbell hip thrust, full squeeze","Hold every rep for a second at the top",1],["Barbell RDL","Slow three count down. "+BRACE,1],["Kettlebell swing","Your strongest swings",1],["Single leg hip thrust on step","Foot on the step, shoulders on couch",2],["Pallof press hold","Press out and hold the whole time",2,30],["Single leg RDL to knee drive","Hinge down, drive the knee up as you stand",2],["Bird dog crunch","Elbow to knee under you, then reach long",2,30],["Dumbbell frog pump","Dumbbell on hips, soles together",1]],burn:["Three way bridge burnout","Hold, pulse, then open and close knees",1,75]}
+ ],
+ P:[
+  {main:[["Glute bridge with block squeeze","Block between thighs, squeeze as you lift",1],["Banded clamshell","Lying on side, heels together, slow",2],["Bird dog with knee to elbow","Slow and controlled",2,30],["Plié squat with heel raise","Dumbbell at chest, lift heels at the bottom",1],["Side lying leg lift with dumbbell","Dumbbell resting on thigh, lift slow",2],["Half kneeling Pallof press","Band at chest, press out, hips square",2,30],["Ball wall squat hold","Ball behind your back on the wall",1],["Kneeling side kick","Hand down, kick forward and back",2],["Single leg bridge","Other leg reaching to the ceiling",2],["Ball hamstring curl","Heels on ball, lift hips, curl in",1],["Dead bug with ball","Ball between hands and knees, press in",1,40]],burn:["Bridge pulse with block","Squeeze the block, small pulses",1,60]},
+  {main:[["Feet on ball bridge","Heels on the ball, lift slow",1],["Banded fire hydrant to kick back","Knee out, then kick straight back",2],["Side plank with top leg lift","Knees down, lift the top leg",2,30],["Slow dumbbell sumo squat","Four count down, four count up",1],["Banded standing leg lift back","Hold the counter, squeeze the glute",2],["Dead bug","Low back heavy on the mat",1,40],["Ball wall squat with heel lift","Squat and lift heels, then lower",1],["Donkey kick with dumbbell","Dumbbell behind the knee, lift slow",2],["Reverse clamshell","Knees together, lift the foot",2],["Bridge march with block","Block between thighs, march slow",1],["Pallof press","Band at chest height",2,30]],burn:["Frog pump with block","Block between feet, fast squeezes",1,60]},
+  {main:[["Ball hamstring curl","Hips stay lifted the whole time",1],["Curtsy to side lift","Curtsy back, then lift the leg to the side",2],["Bird dog with band","Band around feet, reach long",2,30],["Plié pulse with dumbbell","Stay low, small pulses",1],["Side lying clam with dumbbell","Dumbbell on the top knee",2],["Suitcase hold","One heavy dumbbell, stand tall",2,30],["Banded bridge abduction","Bridge up, press knees out and in",1],["Fire hydrant circles","Knee out, draw slow circles",2],["Dead bug with ball","Ball between hands and knees",1,40],["Standing kick back with dumbbell","Hold a counter, dumbbell in the knee pit",2]],burn:["Bridge hold with block squeeze","Hold high, pulse the squeeze",1,60]},
+  {main:[["Ball bridge march","Heels on ball, march slow",1],["Banded standing kick back","Hold counter, kick back and squeeze",2],["Side plank clamshell","Knees down, open the top knee",2,30],["Wall sit with block squeeze","Back on wall, squeeze the block",1],["Side lying leg circles","Small circles both directions",2],["Bird dog crunch","Elbow to knee under you, reach long",2,30],["Plié squat heel lift hold","Squat, lift heels, hold",1],["Donkey kick pulse","Lift high, small pulses",2],["Ball hamstring curl with lift","Curl in, then lift hips higher",1],["Slow dumbbell glute bridge","Four count up and down",1]],burn:["Banded frog pump","As many as you can",1,60]},
+  {main:[["Step elevated dumbbell bridge","Feet on the step, dumbbell on hips",1],["Slow single leg deadlift","Dumbbell in opposite hand, four count down",2],["Banded side lying leg lift","Band above knees, lift slow",2],["Dead bug with heel taps","Knees bent, tap heels down one at a time",1,40],["Ball wall squat with dumbbells","Ball behind your back, sit deep",1],["Kneeling side kick with pulse","Kick forward, pulse, kick back",2],["Pallof press, three second hold","Press out, hold three, return",2,30],["Banded fire hydrant","Knee out, hold at the top",2],["Sumo squat pulse with block","Block between hands, stay low",1],["Single leg ball bridge","One heel on ball, lift slow",2,30]],burn:["Bridge pulse open and close","Pulse up, open knees, close",1,60]},
+  {main:[["Shoulders on ball hip thrust","Upper back on the ball, dumbbell on hips",1],["Curtsy lunge to leg lift","Lunge back, lift the leg to the side",2],["Bird dog with dumbbell row","Hand on the step, row with the other",2,30],["Plié squat hold with pulses","Hold low, add small pulses",1],["Side lying series with dumbbell","Lift, pulse, circles",2],["Suitcase march","One dumbbell, march in place, stay tall",1,40],["Single leg ball hamstring curl","Hips stay lifted",2,30],["Banded standing kick back","Kick back and squeeze",2],["Wall sit with block","Squeeze the block the whole time",1],["Slow glute bridge march","Hips level, slow knee lifts",1]],burn:["Three way bridge burnout","Hold, pulse, then open and close knees",1,75]}
+ ]
 };
-const VIDEOS=[
- {t:"Nourish Move Love 20 minute dumbbell glute workout",by:"Lindsey Bomgren",q:"nourish move love 20 minute glute workout dumbbells",eq:"Medium to heavy dumbbells, optional mini band"},
- {t:"MadFit 20 minute glute workout",by:"MadFit",q:"madfit 20 minute glute workout",eq:"Mat, no equipment"},
- {t:"Fitness Blender Booty Boot Camp",by:"Fitness Blender",q:"fitness blender booty boot camp 15 minute glutes",eq:"Mat, no equipment. Do it twice through for 15 minutes"},
- {t:"Max 20 leg and glute workout",by:"Lindsey Bomgren",q:"nourish move love max 20 leg and glute workout",eq:"Medium to heavy dumbbells"},
- {t:"20 minute dumbbell glute workout",by:"Caroline Girvan",q:"caroline girvan 20 minute glutes dumbbell workout",eq:"Dumbbells, step or bench"},
- {t:"MadFit banded booty workout",by:"MadFit",q:"madfit resistance band glute workout 20 minutes",eq:"Loop band"}
+const CORE=[
+ {t:"Core block 1",l:[["Dead bug","Low back heavy on the mat",1,40],["Side plank, knees down","Hips high",2,30],["Bird dog","Reach long, hips level",2,30],["Pallof press","Press out, resist the pull",2,40],["Glute bridge march","Hips level, slow",1,40]]},
+ {t:"Core block 2",l:[["Heel taps","Knees bent, tap heels down one at a time",1,40],["Bird dog crunch","Elbow to knee under you, reach long",2,30],["Side plank hip lifts","Knees down, lift and lower",2,30],["Dead bug with ball","Ball between hands and knees, press in",1,40],["Suitcase hold","One heavy dumbbell, stand tall",2,40]]},
+ {t:"Core block 3",l:[["Pallof press hold","Hold the press out",2,40],["Dead bug, alternating","Opposite arm and leg",1,40],["Side plank clamshell","Knees down, open the top knee",2,30],["Bird dog hold","Hold the reach, breathe",2,30],["Bear hold","Knees one inch off the floor",1,30]]},
+ {t:"Core block 4",l:[["Suitcase march","One dumbbell, march in place",1,40],["Half kneeling Pallof press","Hips square",2,30],["Dead bug with band","Band overhead from anchor",1,40],["Side plank, top leg lift","Knees down",2,30],["Bird dog row","Hand on step, row with the other",2,30]]},
+ {t:"Core block 5",l:[["Dead bug with heel taps","Slow and controlled",1,40],["Pallof press with step out","Press, step away, step back",2,30],["Side plank reach under","Knees down, reach under and open",2,30],["Bird dog with knee to elbow","Slow",2,30],["Suitcase carry","Walk tall around the room",2,40]]},
+ {t:"Core block 6",l:[["Bear hold with shoulder taps","Hips stay still",1,40],["Side plank hold","Knees down or full, your choice",2,30],["Dead bug","Exhale as you reach",1,40],["Pallof press, three second hold","Press, hold three, return",2,40],["Glute bridge march","Slow and level",1,40]]}
+];
+const BURN=[
+ {t:"Glute burnout 1",l:[["Banded frog pump","Fast squeezes",1,45],["Banded bridge pulse","Small pulses at the top",1,45],["Bridge abduction","Press knees out and in",1,45],["Bridge hold","Squeeze and hold",1,30]]},
+ {t:"Glute burnout 2",l:[["Banded squat pulse","Bottom half only",1,45],["Banded lateral walk","Stay low",1,45],["Banded wall sit","Push knees out",1,40],["Sumo squat pulse","Stay low",1,40]]},
+ {t:"Glute burnout 3",l:[["Donkey kick pulse","Lift high, pulse",2,30],["Fire hydrant pulse","Knee out, pulse",2,30],["Frog pump","Fast",1,45]]},
+ {t:"Glute burnout 4",l:[["Single leg bridge pulse","Other leg up",2,30],["Banded clamshell pulse","Small and fast",2,30],["Bridge hold with knee pushes","Hold high",1,45]]},
+ {t:"Glute burnout 5",l:[["Hip thrust pulse","Shoulders on couch",1,45],["Hip thrust hold","Squeeze",1,30],["Banded standing kick back","Hold a counter",2,30],["Squat pulse","Bottom half",1,40]]},
+ {t:"Glute burnout 6",l:[["Kneeling side kick pulse","Hand down",2,30],["Curtsy pulse","Stay low",2,30],["Three way bridge","Hold, pulse, open and close",1,60]]}
 ];
 
-const KEY="gluteRebuild.v2";
-let S={start:"2026-10-18",pat:"tts",done:{}};
+/* ---------- state ---------- */
+const KEY="gluteRebuild.v3";
+let S={start:"2026-10-18",pat:"tts",done:{},moved:{},coreN:0,burnN:0,inprog:null};
 try{const s=JSON.parse(localStorage.getItem(KEY));if(s)S=Object.assign(S,s)}catch(e){}
-if(!PATTERNS[S.pat])S.pat="tts";
+if(!PATTERNS[S.pat])S.pat="tts";S.moved=S.moved||{};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 
 const pad=n=>String(n).padStart(2,"0");
 const key=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
-const parse=s=>{const[a,b,c]=s.split("/").join("-").split("-").map(Number);return new Date(a,b-1,c)};
+const parse=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(a,b-1,c)};
 const fmt=d=>d.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
+const TITLE={A:"Squat Day",B:"Hinge Day",P:"Pilates Strength"};
+const TAG={A:"SQ",B:"HG",P:"PIL"};
 
 function sessions(){
-  const st=parse(S.start),off=PATTERNS[S.pat]||PATTERNS.tts,out=[];
-  for(let w=0;w<6;w++)for(let s=0;s<3;s++){
-    const d=new Date(st);d.setDate(st.getDate()+w*7+off[s]);
-    const type=["A","B","C"][s];
-    out.push({id:"w"+(w+1)+type,week:w+1,type,date:d,dk:key(d)});
-  }
+  const st=parse(S.start),off=PATTERNS[S.pat],out=[];
+  for(let w=0;w<6;w++)["A","B","P"].forEach((type,s)=>{
+    const id="w"+(w+1)+type;let d;
+    if(S.moved[id])d=parse(S.moved[id]);else{d=new Date(st);d.setDate(st.getDate()+w*7+off[s])}
+    out.push({id,week:w+1,type,date:d,dk:key(d),moved:!!S.moved[id]});
+  });
   return out;
 }
-function steps(sess){
-  const W=WEEKS[sess.week-1],ph=sess.week<=3?"1":"2",list=MAIN[sess.type+ph],out=[];
-  WARM[sess.type].forEach(([n,c,t])=>out.push({k:"warm",n,c,t}));
-  for(let r=1;r<=2;r++){
-    if(r===2)out.push({k:"rest",n:"Round break",c:"Grab water, reset your weights",t:60});
-    list.forEach(([n,c],i)=>{
-      out.push({k:"work",n,c,t:W.w,round:r});
-      if(i<list.length-1)out.push({k:"rest",n:"Rest",c:"",t:W.r});
-    });
-  }
-  COOL.forEach(([n,c,t])=>out.push({k:"cool",n,c,t}));
-  return out;
-}
-const mins=st=>Math.round(st.reduce((a,s)=>a+s.t,0)/60);
-const title=t=>t==="A"?"Squat and Step":t==="B"?"Hinge and Thrust":"Video Day";
 
+/* ---------- step builder ---------- */
+function expand(list,k,W,R){
+  const out=[];
+  list.forEach((e,i)=>{
+    const [n,c,sides,t]=e,tt=t||W;
+    if(sides===2){out.push({k,n,c,t:tt,side:"Weaker side first"});out.push({k:"switch",t:5});out.push({k,n,c,t:tt,side:"Other side"})}
+    else out.push({k,n,c,t:tt});
+    if(i<list.length-1&&R)out.push({k:"rest",t:R});
+  });
+  return out;
+}
+function steps(sess,opt){
+  opt=opt||{};
+  const W=WEEKS[sess.week-1],m=MAIN[sess.type][sess.week-1];
+  let out=[{k:"ready",t:10}];
+  out=out.concat(expand(WARM[sess.type],"warm",40,10));
+  out.push({k:"trans",t:15});
+  out=out.concat(expand(m.main,"work",W.w,W.r));
+  out.push({k:"trans",t:15});
+  out=out.concat(expand([m.burn],"burn",60,0));
+  if(opt.core){out.push({k:"trans",t:20});out=out.concat(expand(CORE[S.coreN%6].l,"core",40,15))}
+  if(opt.burnx){out.push({k:"trans",t:20});out=out.concat(expand(BURN[S.burnN%6].l,"burn",45,10))}
+  out.push({k:"trans",t:20});
+  out=out.concat(expand(COOL[sess.type],"cool",30,5));
+  return out;
+}
+function extraSteps(kind){
+  const b=kind==="core"?CORE[S.coreN%6]:BURN[S.burnN%6];
+  return [{k:"ready",t:10}].concat(expand(b.l,kind==="core"?"core":"burn",40,kind==="core"?15:10));
+}
+const secs=st=>st.reduce((a,s)=>a+s.t,0);
+const mins=st=>Math.round(secs(st)/60);
+
+/* ---------- main render ---------- */
 let view;
 function render(){
   const all=sessions(),doneN=all.filter(s=>S.done[s.id]).length;
   document.getElementById("sub").textContent=doneN+" of 18 sessions done";
   const pr=document.getElementById("progress");pr.innerHTML="";
   for(let w=1;w<=6;w++){const n=all.filter(s=>s.week===w&&S.done[s.id]).length;const sp=document.createElement("span");if(n===3)sp.className="on";else if(n){sp.className="part";sp.style.setProperty("--p",(n/3*100)+"%")}pr.appendChild(sp)}
-  // next card
-  const nx=all.find(s=>!S.done[s.id]),nc=document.getElementById("nextCard");
-  if(!nx){nc.innerHTML='<div class="eyebrow">Block complete</div><h2>All 18 sessions done</h2><p class="muted" style="margin:0">Repeat the block with heavier weights, or change the start date to begin again.</p>'}
+  const todo=all.filter(s=>!S.done[s.id]).sort((a,b)=>a.date-b.date),nx=todo[0],nc=document.getElementById("nextCard");
+  if(!nx){nc.className="card next";nc.innerHTML='<div class="eyebrow">Block complete</div><h2>All 18 sessions done</h2><p class="muted" style="margin:0">Change the start date to run it again.</p>'}
   else{
-    const isC=nx.type==="C",len=isC?"15 to 20 min":mins(steps(nx))+" min";
-    const today=key(new Date())===nx.dk;
+    nc.className="card next"+(nx.type==="P"?" p":"");
+    const today=key(new Date())===nx.dk,ip=S.inprog&&S.inprog.id===nx.id;
     nc.innerHTML=`<div class="eyebrow">${today?"Today":"Up next"} · Week ${nx.week}</div>
-    <div class="row"><div><h2 style="font-size:24px">${title(nx.type)}</h2><div class="muted">${fmt(nx.date)} · ${len}</div></div></div>
-    <div class="actions"><button class="btn" data-open="${nx.id}">${isC?"See video":S.inprog&&S.inprog.id===nx.id?"Resume session":"Open session"}</button></div>`;
+    <div><h2 style="font-size:24px">${TITLE[nx.type]}</h2><div class="muted">${fmt(nx.date)} · ${mins(steps(nx))} min</div></div>
+    <div class="actions"><button class="btn" data-open="${nx.id}">${ip?"Resume session":"Open session"}</button></div>`;
   }
-  // calendar
   if(!view){const t=new Date(),st=all[0].date;view=t<st?new Date(st.getFullYear(),st.getMonth(),1):new Date(t.getFullYear(),t.getMonth(),1)}
   document.getElementById("monthLabel").textContent=view.toLocaleDateString(undefined,{month:"long",year:"numeric"});
   const g=document.getElementById("grid");g.innerHTML="";
   ["S","M","T","W","T","F","S"].forEach(d=>{const e=document.createElement("div");e.className="dow";e.textContent=d;g.appendChild(e)});
-  const first=new Date(view),lead=first.getDay();first.setDate(1-lead);
-  const map={};all.forEach(s=>map[s.dk]=s);const tk=key(new Date());
+  const first=new Date(view);first.setDate(1-first.getDay());
+  const map={};all.forEach(s=>{(map[s.dk]=map[s.dk]||[]).push(s)});const tk=key(new Date());
   for(let i=0;i<42;i++){
     const d=new Date(first);d.setDate(first.getDate()+i);
     if(i>=35&&d.getMonth()!==view.getMonth())break;
-    const s=map[key(d)],b=document.createElement("button");
+    const list=map[key(d)],b=document.createElement("button");
     b.className="day"+(d.getMonth()!==view.getMonth()?" out":"")+(key(d)===tk?" today":"");
     b.innerHTML=`<span>${d.getDate()}</span>`;
-    if(s){b.classList.add("s-"+s.type);if(S.done[s.id])b.classList.add("done");b.innerHTML+=`<span class="tag">${S.done[s.id]?"✓":s.type==="C"?"VID":s.type}</span>`;b.dataset.open=s.id;b.setAttribute("aria-label",title(s.type)+", "+fmt(d))}
+    if(list){const s=list.find(x=>!S.done[x.id])||list[0],dn=list.every(x=>S.done[x.id]);
+      b.classList.add("s-"+s.type);if(dn)b.classList.add("done");
+      b.innerHTML+=`<span class="tag">${dn?"✓":list.length>1?"x2":TAG[s.type]}</span>`;b.dataset.open=s.id;b.setAttribute("aria-label",TITLE[s.type]+", "+fmt(d))}
     else b.tabIndex=-1;
     g.appendChild(b);
   }
-  // weeks
+  const c=CORE[S.coreN%6],bu=BURN[S.burnN%6];
+  document.getElementById("extras").innerHTML=`
+   <div class="extra"><div><b>${c.t}</b><div class="muted" style="font-size:13px">${mins(extraSteps("core"))} min · core and back</div></div><button class="btn small" data-extra="core">Start</button></div>
+   <div class="extra"><div><b>${bu.t}</b><div class="muted" style="font-size:13px">${mins(extraSteps("burn"))} min · glute burn</div></div><button class="btn small" data-extra="burn">Start</button></div>`;
   document.getElementById("weeks").innerHTML=WEEKS.map((W,i)=>`<div class="wk"><b>Week ${i+1}</b><span class="muted">${W.w}s work, ${W.r}s rest. ${W.note}</span></div>`).join("");
   document.getElementById("startIn").value=S.start;document.getElementById("patIn").value=S.pat;
 }
 
+/* ---------- session sheet ---------- */
+let opts={core:false,burnx:false};
+function exList(list){return list.map(e=>`<div class="ex"><span class="n">${e[0]}${e[2]===2?"<small>each side</small>":""}</span><span class="c">${e[1]}</span></div>`).join("")}
 function openSession(id){
-  const s=sessions().find(x=>x.id===id),p=document.getElementById("panel"),done=!!S.done[id];
-  let h=`<div style="display:flex;justify-content:space-between;align-items:center"><span class="pill ${s.type==="C"?"v":""}">Week ${s.week} · ${s.type==="C"?"Video":"Timer"}</span><button id="close" style="background:none;border:none;font-size:22px" aria-label="Close">×</button></div>
-  <div><h2 style="font-size:26px">${title(s.type)}</h2><div class="muted">${fmt(s.date)}${done?' · <span class="pill d">Done</span>':""}</div></div>`;
-  if(s.type==="C"){
-    const v=VIDEOS[s.week-1];
-    h+=`<div class="card" style="background:var(--video-soft);border:none"><div class="n" style="font-weight:600;font-size:17px">${v.t}</div><div class="muted" style="font-size:13px">${v.by} · ${v.eq}</div></div>
-    <p class="muted" style="margin:0;font-size:13px">Opens a YouTube search so you can pick the exact video. Follow along, then come back and check it off.</p>
-    <div class="actions"><a class="btn" href="https://www.youtube.com/results?search_query=${encodeURIComponent(v.q)}" target="_blank" rel="noopener">Open on YouTube</a>
-    <button class="btn ${done?"ghost":"sage"}" id="toggle">${done?"Mark not done":"Mark done"}</button></div>`;
-  }else{
-    const st=steps(s),W=WEEKS[s.week-1],list=MAIN[s.type+(s.week<=3?"1":"2")];
-    h+=`<p style="margin:0">${W.note}</p><div class="muted" style="font-size:13px">${mins(st)} min · ${W.w}s on, ${W.r}s off · 2 rounds</div>
-    <div class="actions">${S.inprog&&S.inprog.id===id?`<button class="btn" id="resume">Resume at step ${S.inprog.i+1}</button><button class="btn ghost" id="go">Start over</button>`:`<button class="btn" id="go">Start timer</button>`}<button class="btn ${done?"ghost":"sage"}" id="toggle">${done?"Mark not done":"Mark done"}</button></div>
-    <div class="blk">Warm up</div><div>${WARM[s.type].map(e=>`<div class="ex"><span class="n">${e[0]}</span><span class="c">${e[1]}</span></div>`).join("")}</div>
-    <div class="blk">Circuit, 2 rounds</div><div>${list.map(e=>`<div class="ex"><span class="n">${e[0]}</span><span class="c">${e[1]}</span></div>`).join("")}</div>
-    <div class="blk">Cool down</div><div>${COOL.map(e=>`<div class="ex"><span class="n">${e[0]}</span><span class="c">${e[1]}</span></div>`).join("")}</div>`;
-  }
-  p.innerHTML=h;document.getElementById("sheet").hidden=false;
-  p.querySelector("#close").onclick=closeSheet;
-  p.querySelector("#toggle").onclick=()=>{if(S.done[id])delete S.done[id];else{S.done[id]=Date.now();if(S.inprog&&S.inprog.id===id)delete S.inprog}save();render();openSession(id)};
-  const go=p.querySelector("#go");if(go)go.onclick=()=>{delete S.inprog;save();closeSheet();startTimer(s)};
-  const rs=p.querySelector("#resume");if(rs)rs.onclick=()=>{closeSheet();startTimer(s,true)};
+  const s=sessions().find(x=>x.id===id),p=document.getElementById("panel"),done=!!S.done[id],m=MAIN[s.type][s.week-1],W=WEEKS[s.week-1];
+  const ip=S.inprog&&S.inprog.id===id;
+  if(ip)opts=Object.assign({core:false,burnx:false},S.inprog.opt||{});
+  const st=steps(s,opts);
+  p.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><span class="pill ${s.type==="P"?"p":""}">Week ${s.week}</span><button id="close" style="background:none;border:none;font-size:24px" aria-label="Close">×</button></div>
+  <div><h2 style="font-size:26px">${TITLE[s.type]}</h2><div class="muted">${fmt(s.date)}${s.moved?" (moved)":""}${done?' · <span class="pill d">Done</span>':""}</div></div>
+  <p style="margin:0">${W.note} Pick a weight that feels challenging today.</p>
+  <div class="muted" style="font-size:13px" id="len">${mins(st)} min · ${W.w}s on, ${W.r}s off · one straight pass</div>
+  <div class="toggles">
+    <label><input type="checkbox" id="optCore" ${opts.core?"checked":""} ${ip?"disabled":""}> Add ${CORE[S.coreN%6].t.toLowerCase()} <small>(${mins(extraSteps("core"))} min)</small></label>
+    <label><input type="checkbox" id="optBurn" ${opts.burnx?"checked":""} ${ip?"disabled":""}> Add ${BURN[S.burnN%6].t.toLowerCase()} <small>(${mins(extraSteps("burn"))} min)</small></label>
+  </div>
+  <div class="actions">${ip?`<button class="btn" id="resume">Resume at step ${S.inprog.i+1}</button><button class="btn ghost" id="go">Start over</button>`:`<button class="btn" id="go">Start timer</button>`}
+  <button class="btn ${done?"ghost":"sage"}" id="toggle">${done?"Mark not done":"Mark done"}</button></div>
+  <div class="move"><button class="btn ghost small" id="moveBtn">Move this session</button><span id="moveBox" hidden><input type="date" id="moveIn" value="${s.dk}"> <button class="btn small" id="moveSave">Save</button>${s.moved?' <button class="btn ghost small" id="moveReset">Back to plan</button>':""}</span></div>
+  <div class="blk">Warm up</div><div>${exList(WARM[s.type])}</div>
+  <div class="blk">Workout</div><div>${exList(m.main)}</div>
+  <div class="blk">Glute burnout</div><div>${exList([m.burn])}</div>
+  <div class="blk">Cool down</div><div>${exList(COOL[s.type])}</div>`;
+  document.getElementById("sheet").hidden=false;
+  const $=q=>p.querySelector(q);
+  $("#close").onclick=closeSheet;
+  const upd=()=>{opts.core=$("#optCore").checked;opts.burnx=$("#optBurn").checked;$("#len").firstChild.textContent=mins(steps(s,opts))+" min · "+W.w+"s on, "+W.r+"s off · one straight pass"};
+  $("#optCore").onchange=upd;$("#optBurn").onchange=upd;
+  $("#toggle").onclick=()=>{if(S.done[id])delete S.done[id];else{S.done[id]=Date.now();if(ip)S.inprog=null}save();render();openSession(id)};
+  $("#go").onclick=()=>{S.inprog=null;save();closeSheet();startTimer({sess:s,opt:{...opts}})};
+  if($("#resume"))$("#resume").onclick=()=>{closeSheet();startTimer({sess:s,opt:S.inprog.opt||{},resume:true})};
+  $("#moveBtn").onclick=()=>{$("#moveBox").hidden=false};
+  $("#moveSave").onclick=()=>{const v=$("#moveIn").value;if(v){S.moved[id]=v;save();view=null;render();openSession(id)}};
+  if($("#moveReset"))$("#moveReset").onclick=()=>{delete S.moved[id];save();view=null;render();openSession(id)};
 }
-function closeSheet(){document.getElementById("sheet").hidden=true}
+function closeSheet(){document.getElementById("sheet").hidden=true;opts={core:false,burnx:false}}
 
-// timer
+/* ---------- timer ---------- */
 let T=null,ac=null,wake=null;
-function beep(f,d){try{if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.25,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.start();o.stop(ac.currentTime+d)}catch(e){}}
-async function startTimer(sess,resume){
+const PAUSEK=["ready","rest","switch","trans"];
+function beep(f,d){try{if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.3,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+async function startTimer(cfg){
   try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(e){}
   try{wake=await navigator.wakeLock?.request("screen")}catch(e){}
-  T={sess,st:steps(sess),i:0,left:0,run:true,iv:null};
-  T.left=T.st[0].t;
-  const ip=S.inprog;if(resume&&ip&&ip.id===sess.id&&T.st[ip.i]){T.i=ip.i;T.left=ip.left}
-  document.getElementById("timer").hidden=false;beep(880,.25);
+  const st=cfg.extra?extraSteps(cfg.extra):steps(cfg.sess,cfg.opt);
+  T={cfg,st,i:0,left:st[0].t,run:true,iv:null};
+  if(cfg.resume&&S.inprog&&st[S.inprog.i]){T.i=S.inprog.i;T.left=S.inprog.left}
+  document.getElementById("timer").hidden=false;
   paint();T.iv=setInterval(tick,1000);
 }
+function keep(){if(T&&!T.cfg.extra){S.inprog={id:T.cfg.sess.id,i:T.i,left:T.left,opt:T.cfg.opt};save()}}
 function tick(){
   if(!T||!T.run)return;
   T.left--;
-  if(T.left>0&&T.left<=3)beep(660,.12);
+  if(T.left>0&&T.left<=5)beep(T.left===1?740:620,.12);
   if(T.left<=0){go(1);return}
   paint();if(T.left%5===0)keep();
 }
-function keep(){if(T){S.inprog={id:T.sess.id,i:T.i,left:T.left};save()}}
 function go(d){
   if(d<0){
     const cur=T.st[T.i];
     if(cur.t-T.left>3){T.left=cur.t;paint();keep();return}
-    let n=T.i-1;while(n>0&&T.st[n].k==="rest")n--;
+    let n=T.i-1;while(n>0&&PAUSEK.includes(T.st[n].k))n--;
     if(n<0)return;
-    T.i=n;T.left=T.st[n].t;beep(880,.2);paint();keep();return;
+    T.i=n;T.left=T.st[n].t;paint();keep();return;
   }
   const n=T.i+d;
   if(n>=T.st.length){finish();return}
-  if(n<0)return;
-  T.i=n;T.left=T.st[n].t;beep(T.st[n].k==="rest"?520:880,.3);paint();keep();
+  T.i=n;T.left=T.st[n].t;
+  beep(PAUSEK.includes(T.st[n].k)?520:880,.35);
+  paint();keep();
 }
 function paint(){
-  const s=T.st[T.i],el=document.getElementById("timer");
-  el.className="timer "+(s.k==="rest"?"rest":s.k==="work"?"work":"");
-  const labels={warm:"Warm up",work:"Round "+(s.round||1)+" · Work",rest:"Rest",cool:"Cool down"};
-  document.getElementById("tPhase").textContent=labels[s.k];
-  document.getElementById("tName").textContent=s.k==="rest"&&s.n==="Rest"?"Rest":s.n;
-  let nxt=T.st.slice(T.i+1).find(x=>x.k!=="rest");
-  document.getElementById("tCue").textContent=s.k==="rest"&&nxt?"Get set: "+nxt.c:s.c;
-  document.getElementById("tNext").textContent=nxt?"Next: "+nxt.n:"Last one";
+  const s=T.st[T.i],el=document.getElementById("timer"),pause=PAUSEK.includes(s.k);
+  const nxt=T.st.slice(T.i+1).find(x=>!PAUSEK.includes(x.k));
+  const show=pause?nxt:s;
+  el.className="timer "+(pause?"rest":(s.k==="warm"||s.k==="cool")?"":"work");
+  const LBL={ready:"Get ready",rest:"Rest",switch:"Switch sides",trans:"Next section",warm:"Warm up",work:"Work",burn:"Glute burnout",core:"Core and back",cool:"Cool down"};
+  let ph=LBL[s.k];if(pause&&show)ph+=" · "+LBL[show.k];
+  document.getElementById("tPhase").textContent=ph;
+  document.getElementById("tUp").hidden=!pause;
+  document.getElementById("tName").textContent=show?show.n:"Done";
+  const sd=document.getElementById("tSide");sd.hidden=!(show&&show.side);sd.textContent=show&&show.side||"";
+  document.getElementById("tCue").textContent=show?show.c:"";
+  let after=null;if(!pause){after=nxt}else{const j=T.st.indexOf(show);after=T.st.slice(j+1).find(x=>!PAUSEK.includes(x.k))}
+  document.getElementById("tNext").textContent=after?"Then: "+after.n+(after.side?" ("+after.side.toLowerCase()+")":""):"Last one";
   document.getElementById("tNum").textContent=T.left;
-  document.getElementById("tArc").style.strokeDashoffset=282.74*(1-T.left/s.t);
-  document.getElementById("tArc").setAttribute("stroke",s.k==="rest"?"var(--sage)":"var(--accent)");
+  const arc=document.getElementById("tArc");arc.style.strokeDashoffset=282.74*(1-T.left/s.t);arc.setAttribute("stroke",pause?"var(--sage)":"var(--accent)");
   const rem=T.left+T.st.slice(T.i+1).reduce((a,x)=>a+x.t,0);
-  document.getElementById("tStep").textContent=(T.i+1)+" / "+T.st.length;
+  document.getElementById("tStep").textContent="Step "+(T.i+1)+" of "+T.st.length;
   document.getElementById("tLeft").textContent=Math.floor(rem/60)+":"+pad(rem%60)+" left";
   document.getElementById("tPlay").textContent=T.run?"Pause":"Resume";
 }
-function stopTimer(){if(T){keep();clearInterval(T.iv)}T=null;document.getElementById("timer").hidden=true;try{wake&&wake.release()}catch(e){}wake=null}
-function finish(){const s=T.sess;clearInterval(T.iv);T=null;delete S.inprog;S.done[s.id]=Date.now();save();stopTimer();beep(990,.5);render();openSession(s.id)}
+function closeTimer(){if(T)clearInterval(T.iv);T=null;document.getElementById("timer").hidden=true;try{wake&&wake.release()}catch(e){}wake=null}
+function finish(){
+  const c=T.cfg;closeTimer();beep(990,.6);
+  if(c.extra){if(c.extra==="core")S.coreN++;else S.burnN++;save();render();return}
+  S.done[c.sess.id]=Date.now();S.inprog=null;
+  if(c.opt&&c.opt.core)S.coreN++;if(c.opt&&c.opt.burnx)S.burnN++;
+  save();render();openSession(c.sess.id);
+}
 document.getElementById("tPlay").onclick=()=>{T.run=!T.run;paint()};
 document.getElementById("tSkip").onclick=()=>go(1);
 document.getElementById("tBack").onclick=()=>go(-1);
-document.getElementById("tEnd").onclick=stopTimer;
+document.getElementById("tEnd").onclick=()=>{keep();closeTimer();render()};
 
-document.addEventListener("click",e=>{const o=e.target.closest("[data-open]");if(o)openSession(o.dataset.open)});
+/* ---------- wiring ---------- */
+document.addEventListener("click",e=>{
+  const o=e.target.closest("[data-open]");if(o){openSession(o.dataset.open);return}
+  const x=e.target.closest("[data-extra]");if(x)startTimer({extra:x.dataset.extra});
+});
 document.getElementById("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")closeSheet()});
 document.getElementById("prev").onclick=()=>{view.setMonth(view.getMonth()-1);render()};
 document.getElementById("nextM").onclick=()=>{view.setMonth(view.getMonth()+1);render()};
@@ -371,9 +482,11 @@ document.getElementById("startIn").onchange=e=>{if(e.target.value){S.start=e.tar
 document.getElementById("patIn").onchange=e=>{S.pat=e.target.value;save();render()};
 document.getElementById("resetBtn").onclick=()=>{document.getElementById("resetConfirm").hidden=false};
 document.getElementById("resetNo").onclick=()=>{document.getElementById("resetConfirm").hidden=true};
-document.getElementById("resetYes").onclick=()=>{S.done={};save();document.getElementById("resetConfirm").hidden=true;render()};
-document.getElementById("bkCopy").onclick=()=>{const c=btoa(JSON.stringify(S)),m=document.getElementById("bkMsg");const done=()=>m.textContent="Copied. Save it in your Notes app.";navigator.clipboard?navigator.clipboard.writeText(c).then(done,()=>{document.getElementById("bkIn").value=c;m.textContent="Copy the code in the box above."}):(document.getElementById("bkIn").value=c,m.textContent="Copy the code in the box above.")};
-document.getElementById("bkLoad").onclick=()=>{const m=document.getElementById("bkMsg");try{const s=JSON.parse(atob(document.getElementById("bkIn").value.trim()));if(!s.done)throw 0;S=Object.assign(S,s);if(!PATTERNS[S.pat])S.pat="tts";save();view=null;render();m.textContent="Restored."}catch(e){m.textContent="That code didn't work. Paste the whole code and try again."}};
+document.getElementById("resetYes").onclick=()=>{S.done={};S.inprog=null;save();document.getElementById("resetConfirm").hidden=true;render()};
+document.getElementById("bkCopy").onclick=()=>{const c=btoa(JSON.stringify(S)),m=document.getElementById("bkMsg"),box=document.getElementById("bkIn");
+  const fb=()=>{box.value=c;box.select();m.textContent="Copy the code in the box above."};
+  if(navigator.clipboard)navigator.clipboard.writeText(c).then(()=>m.textContent="Copied. Save it in your Notes app.",fb);else fb()};
+document.getElementById("bkLoad").onclick=()=>{const m=document.getElementById("bkMsg");try{const s=JSON.parse(atob(document.getElementById("bkIn").value.trim()));if(!s.done)throw 0;S=Object.assign(S,s);if(!PATTERNS[S.pat])S.pat="tts";S.moved=S.moved||{};save();view=null;render();m.textContent="Restored."}catch(e){m.textContent="That code didn't work. Paste the whole code and try again."}};
 render();
 </script>
 
