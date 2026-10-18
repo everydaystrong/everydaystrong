@@ -173,7 +173,7 @@ details summary{cursor:pointer;font-weight:600}
     <button class="main" id="tPlay">Pause</button>
     <button id="tSkip">Skip</button>
   </div>
-  <button id="tEnd" style="background:none;border:none;color:var(--muted);margin-top:10px;font-size:13px">End session</button>
+  <button id="tEnd" style="background:none;border:none;color:var(--muted);margin-top:10px;font-size:13px">Stop and save my spot</button>
 </div>
 
 <script>
@@ -256,7 +256,7 @@ function render(){
     const today=key(new Date())===nx.dk;
     nc.innerHTML=`<div class="eyebrow">${today?"Today":"Up next"} · Week ${nx.week}</div>
     <div class="row"><div><h2 style="font-size:24px">${title(nx.type)}</h2><div class="muted">${fmt(nx.date)} · ${len}</div></div></div>
-    <div class="actions"><button class="btn" data-open="${nx.id}">${isC?"See video":"Open session"}</button></div>`;
+    <div class="actions"><button class="btn" data-open="${nx.id}">${isC?"See video":S.inprog&&S.inprog.id===nx.id?"Resume session":"Open session"}</button></div>`;
   }
   // calendar
   if(!view){const t=new Date(),st=all[0].date;view=t<st?new Date(st.getFullYear(),st.getMonth(),1):new Date(t.getFullYear(),t.getMonth(),1)}
@@ -293,26 +293,29 @@ function openSession(id){
   }else{
     const st=steps(s),W=WEEKS[s.week-1],list=MAIN[s.type+(s.week<=3?"1":"2")];
     h+=`<p style="margin:0">${W.note}</p><div class="muted" style="font-size:13px">${mins(st)} min · ${W.w}s on, ${W.r}s off · 2 rounds</div>
-    <div class="actions"><button class="btn" id="go">Start timer</button><button class="btn ${done?"ghost":"sage"}" id="toggle">${done?"Mark not done":"Mark done"}</button></div>
+    <div class="actions">${S.inprog&&S.inprog.id===id?`<button class="btn" id="resume">Resume at step ${S.inprog.i+1}</button><button class="btn ghost" id="go">Start over</button>`:`<button class="btn" id="go">Start timer</button>`}<button class="btn ${done?"ghost":"sage"}" id="toggle">${done?"Mark not done":"Mark done"}</button></div>
     <div class="blk">Warm up</div><div>${WARM[s.type].map(e=>`<div class="ex"><span class="n">${e[0]}</span><span class="c">${e[1]}</span></div>`).join("")}</div>
     <div class="blk">Circuit, 2 rounds</div><div>${list.map(e=>`<div class="ex"><span class="n">${e[0]}</span><span class="c">${e[1]}</span></div>`).join("")}</div>
     <div class="blk">Cool down</div><div>${COOL.map(e=>`<div class="ex"><span class="n">${e[0]}</span><span class="c">${e[1]}</span></div>`).join("")}</div>`;
   }
   p.innerHTML=h;document.getElementById("sheet").hidden=false;
   p.querySelector("#close").onclick=closeSheet;
-  p.querySelector("#toggle").onclick=()=>{if(S.done[id])delete S.done[id];else S.done[id]=Date.now();save();render();openSession(id)};
-  const go=p.querySelector("#go");if(go)go.onclick=()=>{closeSheet();startTimer(s)};
+  p.querySelector("#toggle").onclick=()=>{if(S.done[id])delete S.done[id];else{S.done[id]=Date.now();if(S.inprog&&S.inprog.id===id)delete S.inprog}save();render();openSession(id)};
+  const go=p.querySelector("#go");if(go)go.onclick=()=>{delete S.inprog;save();closeSheet();startTimer(s)};
+  const rs=p.querySelector("#resume");if(rs)rs.onclick=()=>{closeSheet();startTimer(s,true)};
 }
 function closeSheet(){document.getElementById("sheet").hidden=true}
 
 // timer
 let T=null,ac=null,wake=null;
 function beep(f,d){try{if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.25,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.start();o.stop(ac.currentTime+d)}catch(e){}}
-async function startTimer(sess){
+async function startTimer(sess,resume){
   try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(e){}
   try{wake=await navigator.wakeLock?.request("screen")}catch(e){}
   T={sess,st:steps(sess),i:0,left:0,run:true,iv:null};
-  T.left=T.st[0].t;document.getElementById("timer").hidden=false;beep(880,.25);
+  T.left=T.st[0].t;
+  const ip=S.inprog;if(resume&&ip&&ip.id===sess.id&&T.st[ip.i]){T.i=ip.i;T.left=ip.left}
+  document.getElementById("timer").hidden=false;beep(880,.25);
   paint();T.iv=setInterval(tick,1000);
 }
 function tick(){
@@ -320,13 +323,21 @@ function tick(){
   T.left--;
   if(T.left>0&&T.left<=3)beep(660,.12);
   if(T.left<=0){go(1);return}
-  paint();
+  paint();if(T.left%5===0)keep();
 }
+function keep(){if(T){S.inprog={id:T.sess.id,i:T.i,left:T.left};save()}}
 function go(d){
+  if(d<0){
+    const cur=T.st[T.i];
+    if(cur.t-T.left>3){T.left=cur.t;paint();keep();return}
+    let n=T.i-1;while(n>0&&T.st[n].k==="rest")n--;
+    if(n<0)return;
+    T.i=n;T.left=T.st[n].t;beep(880,.2);paint();keep();return;
+  }
   const n=T.i+d;
   if(n>=T.st.length){finish();return}
   if(n<0)return;
-  T.i=n;T.left=T.st[n].t;beep(T.st[n].k==="rest"?520:880,.3);paint();
+  T.i=n;T.left=T.st[n].t;beep(T.st[n].k==="rest"?520:880,.3);paint();keep();
 }
 function paint(){
   const s=T.st[T.i],el=document.getElementById("timer");
@@ -345,8 +356,8 @@ function paint(){
   document.getElementById("tLeft").textContent=Math.floor(rem/60)+":"+pad(rem%60)+" left";
   document.getElementById("tPlay").textContent=T.run?"Pause":"Resume";
 }
-function stopTimer(){if(T)clearInterval(T.iv);T=null;document.getElementById("timer").hidden=true;try{wake&&wake.release()}catch(e){}wake=null}
-function finish(){const s=T.sess;S.done[s.id]=Date.now();save();stopTimer();beep(990,.5);render();openSession(s.id)}
+function stopTimer(){if(T){keep();clearInterval(T.iv)}T=null;document.getElementById("timer").hidden=true;try{wake&&wake.release()}catch(e){}wake=null}
+function finish(){const s=T.sess;clearInterval(T.iv);T=null;delete S.inprog;S.done[s.id]=Date.now();save();stopTimer();beep(990,.5);render();openSession(s.id)}
 document.getElementById("tPlay").onclick=()=>{T.run=!T.run;paint()};
 document.getElementById("tSkip").onclick=()=>go(1);
 document.getElementById("tBack").onclick=()=>go(-1);
