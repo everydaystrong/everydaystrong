@@ -210,6 +210,8 @@ footer a{color:rgba(255,255,255,0.7);text-decoration:none;font-weight:600;}
   #test-swipe-hint{ display:none; }
 }
 
+.about-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0.8rem;margin-bottom:1rem;}
+@media (max-width:700px){.about-row{grid-template-columns:1fr 1fr;}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -577,7 +579,6 @@ footer a{color:rgba(255,255,255,0.7);text-decoration:none;font-weight:600;}
     <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:3rem;align-items:start;margin-bottom:3rem;">
       <div>
         <img src="media/heather-with-boys.jpeg" alt="Heather with her boys" style="width:100%;border-radius:16px;object-fit:cover;aspect-ratio:3/4;box-shadow:0 8px 30px rgba(60,30,10,0.12);" />
-        <img src="media/about-dog.jpeg" alt="Heather kneeling on her mat in the backyard" style="width:100%;border-radius:16px;object-fit:cover;aspect-ratio:4/5;margin-top:1rem;box-shadow:0 8px 30px rgba(60,30,10,0.12);" />
       </div>
       <div>
         <p style="font-family:'Raleway',sans-serif;font-size:16px;color:#5a4a38;line-height:1.8;margin-bottom:1rem;">I'm a mom of two boys (14 and 8), and like many of the people I work with, I've had to learn how to balance health, family, work, and everything in between.</p>
@@ -597,16 +598,19 @@ footer a{color:rgba(255,255,255,0.7);text-decoration:none;font-weight:600;}
             <div style="font-family:'Raleway',sans-serif;font-size:11px;color:#9a8a7a;text-transform:uppercase;letter-spacing:0.5px;">Keeping it real</div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-top:1.5rem;">
-          <img src="media/about-minnie.jpeg" alt="Heather on her mat with Minnie" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:16px;display:block;box-shadow:0 8px 30px rgba(60,30,10,0.12);" />
-          <img src="media/in-action-with-the-dogs.jpeg" alt="Heather with Clark and Minnie" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:16px;display:block;box-shadow:0 8px 30px rgba(60,30,10,0.12);" />
-        </div>
       </div>
+    </div>
+
+    <div class="about-row">
+      <img src="media/about-dog.jpeg" alt="Heather kneeling on her mat in the backyard" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:16px;display:block;box-shadow:0 8px 30px rgba(60,30,10,0.12);" />
+      <img src="media/about-minnie.jpeg" alt="Heather on her mat with Minnie" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:16px;display:block;box-shadow:0 8px 30px rgba(60,30,10,0.12);" />
+      <img src="media/about-clark.jpeg" alt="Heather with Clark" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:16px;display:block;box-shadow:0 8px 30px rgba(60,30,10,0.12);" />
+      <img src="media/in-action-with-the-dogs.jpeg" alt="Heather with Clark and Minnie" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:16px;display:block;box-shadow:0 8px 30px rgba(60,30,10,0.12);" />
     </div>
 
     <div style="margin-top:2rem;">
       <div class="section-label" style="margin-bottom:1rem;">In Action</div>
-      <div style="max-width:340px;margin-bottom:0.8rem;">
+      <div style="max-width:340px;margin:0 auto 0.8rem;text-align:center;">
         <div style="position:relative;border-radius:12px;overflow:hidden;">
           <video controls playsinline preload="metadata" poster="media/training-with-son-poster.jpeg" style="width:100%;display:block;border-radius:12px;">
             <source src="media/training-with-son.mp4" type="video/mp4">
@@ -1079,6 +1083,6 @@ document.addEventListener("click",function(e){
   }
 });
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.19b</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.19c</p>
 </body>
 </html>
