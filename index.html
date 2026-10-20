@@ -210,9 +210,6 @@ footer a{color:rgba(255,255,255,0.7);text-decoration:none;font-weight:600;}
   #test-swipe-hint{ display:none; }
 }
 
-.ia-strip{display:flex;gap:0.8rem;overflow-x:auto;scroll-snap-type:x mandatory;margin-top:0.8rem;padding-bottom:6px;-webkit-overflow-scrolling:touch;}
-.ia-strip img{flex:0 0 auto;width:min(60vw,240px);aspect-ratio:3/4;object-fit:cover;border-radius:12px;scroll-snap-align:start;display:block;}
-.ia-hint{font-family:'Raleway',sans-serif;font-size:11px;color:#9a8a7a;margin-top:4px;}
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -600,6 +597,10 @@ footer a{color:rgba(255,255,255,0.7);text-decoration:none;font-weight:600;}
             <div style="font-family:'Raleway',sans-serif;font-size:11px;color:#9a8a7a;text-transform:uppercase;letter-spacing:0.5px;">Keeping it real</div>
           </div>
         </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-top:1.5rem;">
+          <img src="media/about-minnie.jpeg" alt="Heather on her mat with Minnie" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:16px;display:block;box-shadow:0 8px 30px rgba(60,30,10,0.12);" />
+          <img src="media/in-action-with-the-dogs.jpeg" alt="Heather with Clark and Minnie" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:16px;display:block;box-shadow:0 8px 30px rgba(60,30,10,0.12);" />
+        </div>
       </div>
     </div>
 
@@ -627,19 +628,6 @@ footer a{color:rgba(255,255,255,0.7);text-decoration:none;font-weight:600;}
           <img src="media/in-action-looking-away.jpeg" alt="Heather doing a one arm dumbbell row" style="width:100%;aspect-ratio:4/3;object-fit:cover;object-position:center 30%;display:block;" />
         </div>
       </div>
-      <div class="ia-strip" aria-label="More photos of me training">
-        <img src="media/in-action-front-raise.jpeg" alt="Dumbbell front raise" loading="lazy" />
-        <img src="media/in-action-bw-press.jpeg" alt="Single arm press in black and white" loading="lazy" />
-        <img src="media/in-action-with-the-dogs.jpeg" alt="With Clark and Minnie" loading="lazy" />
-        <img src="media/in-action-band-pull.jpeg" alt="Band pull apart by the window" loading="lazy" />
-        <img src="media/in-action-ball-crunch.jpeg" alt="Crunch on the ball" loading="lazy" />
-        <img src="media/in-action-bw-shoulder-press.jpeg" alt="Shoulder press in the backyard, black and white" loading="lazy" />
-        <img src="media/in-action-roller.jpeg" alt="Side lying on the foam roller" loading="lazy" />
-        <img src="media/in-action-headstand.jpeg" alt="Headstand in the studio" loading="lazy" />
-        <img src="media/in-action-with-betty.jpeg" alt="Leg lift with Betty the cat" loading="lazy" />
-        <img src="media/in-action-ball-squeeze.jpeg" alt="Ball squeeze lunge" loading="lazy" />
-      </div>
-      <p class="ia-hint">Swipe for more</p>
     </div>
 
     <div style="margin-top:2.5rem;background:linear-gradient(135deg,#a76a5b,#8b4a3d);border-radius:14px;padding:2rem;color:#fff;max-width:600px;">
@@ -1091,6 +1079,6 @@ document.addEventListener("click",function(e){
   }
 });
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.19</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.19b</p>
 </body>
 </html>
