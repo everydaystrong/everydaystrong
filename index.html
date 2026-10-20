@@ -210,6 +210,9 @@ footer a{color:rgba(255,255,255,0.7);text-decoration:none;font-weight:600;}
   #test-swipe-hint{ display:none; }
 }
 
+.ia-strip{display:flex;gap:0.8rem;overflow-x:auto;scroll-snap-type:x mandatory;margin-top:0.8rem;padding-bottom:6px;-webkit-overflow-scrolling:touch;}
+.ia-strip img{flex:0 0 auto;width:min(60vw,240px);aspect-ratio:3/4;object-fit:cover;border-radius:12px;scroll-snap-align:start;display:block;}
+.ia-hint{font-family:'Raleway',sans-serif;font-size:11px;color:#9a8a7a;margin-top:4px;}
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -577,7 +580,7 @@ footer a{color:rgba(255,255,255,0.7);text-decoration:none;font-weight:600;}
     <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:3rem;align-items:start;margin-bottom:3rem;">
       <div>
         <img src="media/heather-with-boys.jpeg" alt="Heather with her boys" style="width:100%;border-radius:16px;object-fit:cover;aspect-ratio:3/4;box-shadow:0 8px 30px rgba(60,30,10,0.12);" />
-        <img src="media/about-dog.jpeg" alt="Heather relaxing on her mat with her dog" style="width:100%;border-radius:16px;object-fit:cover;aspect-ratio:4/5;margin-top:1rem;box-shadow:0 8px 30px rgba(60,30,10,0.12);" />
+        <img src="media/about-dog.jpeg" alt="Heather kneeling on her mat in the backyard" style="width:100%;border-radius:16px;object-fit:cover;aspect-ratio:4/5;margin-top:1rem;box-shadow:0 8px 30px rgba(60,30,10,0.12);" />
       </div>
       <div>
         <p style="font-family:'Raleway',sans-serif;font-size:16px;color:#5a4a38;line-height:1.8;margin-bottom:1rem;">I'm a mom of two boys (14 and 8), and like many of the people I work with, I've had to learn how to balance health, family, work, and everything in between.</p>
@@ -624,6 +627,19 @@ footer a{color:rgba(255,255,255,0.7);text-decoration:none;font-weight:600;}
           <img src="media/in-action-looking-away.jpeg" alt="Heather doing a one arm dumbbell row" style="width:100%;aspect-ratio:4/3;object-fit:cover;object-position:center 30%;display:block;" />
         </div>
       </div>
+      <div class="ia-strip" aria-label="More photos of me training">
+        <img src="media/in-action-front-raise.jpeg" alt="Dumbbell front raise" loading="lazy" />
+        <img src="media/in-action-bw-press.jpeg" alt="Single arm press in black and white" loading="lazy" />
+        <img src="media/in-action-with-the-dogs.jpeg" alt="With Clark and Minnie" loading="lazy" />
+        <img src="media/in-action-band-pull.jpeg" alt="Band pull apart by the window" loading="lazy" />
+        <img src="media/in-action-ball-crunch.jpeg" alt="Crunch on the ball" loading="lazy" />
+        <img src="media/in-action-bw-shoulder-press.jpeg" alt="Shoulder press in the backyard, black and white" loading="lazy" />
+        <img src="media/in-action-roller.jpeg" alt="Side lying on the foam roller" loading="lazy" />
+        <img src="media/in-action-headstand.jpeg" alt="Headstand in the studio" loading="lazy" />
+        <img src="media/in-action-with-betty.jpeg" alt="Leg lift with Betty the cat" loading="lazy" />
+        <img src="media/in-action-ball-squeeze.jpeg" alt="Ball squeeze lunge" loading="lazy" />
+      </div>
+      <p class="ia-hint">Swipe for more</p>
     </div>
 
     <div style="margin-top:2.5rem;background:linear-gradient(135deg,#a76a5b,#8b4a3d);border-radius:14px;padding:2rem;color:#fff;max-width:600px;">
@@ -635,8 +651,9 @@ footer a{color:rgba(255,255,255,0.7);text-decoration:none;font-weight:600;}
 
 
 
-<section style="background:#fff;padding:0 1.5rem 4rem;"><div class="container" style="max-width:720px;display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;">
+<section style="background:#fff;padding:0 1.5rem 4rem;"><div class="container" style="max-width:900px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;">
     <img src="media/bw-ball-back.jpeg" alt="Heather reaching overhead with a ball" style="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;display:block;" />
+    <img src="media/shirt-logo.jpeg" alt="The Everyday Strong logo on my shirt" style="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;display:block;" />
     <img src="media/bw-ball-hip.jpeg" alt="Heather holding a ball at her hip" style="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;display:block;" />
   </div></section>
 
@@ -1074,6 +1091,6 @@ document.addEventListener("click",function(e){
   }
 });
 </script>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.09b</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.19</p>
 </body>
 </html>
