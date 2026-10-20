@@ -67,6 +67,13 @@ body{font-family:'Raleway',Arial,sans-serif;background:var(--bg);min-height:100v
 .logout-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:7px 16px;font-size:13px;color:var(--sub);cursor:pointer;}
 .welcome-bar{background:var(--bar);color:#fff;padding:11px 1.6rem;font-size:13px;}
 .portal-body{padding:1rem;max-width:980px;margin:0 auto;}
+#pg-portal{position:relative;}
+#pg-portal::before{content:"";position:fixed;inset:-30px;background:url("media/dashboard-bg-kettlebell.jpeg") center/cover no-repeat;filter:blur(4px);opacity:0.9;z-index:0;pointer-events:none;}
+#pg-portal::after{content:"";position:fixed;inset:0;background:rgba(245,240,235,0.3);z-index:0;pointer-events:none;}
+body.dark #pg-portal::after{background:rgba(26,26,26,0.55);}
+#pg-portal>*:not(.portal-header){position:relative;z-index:1;}
+#pg-portal .portal-body{background:var(--bg);border-radius:16px;margin:1.2rem auto 2rem;padding:1.4rem;box-shadow:0 2px 24px rgba(60,30,10,0.1);border:0.5px solid var(--border);}
+@media (max-width:600px){#pg-portal .portal-body{margin:0.6rem 0.5rem 1.5rem;padding:1rem 0.8rem;border-radius:12px;}}
 .section-title{font-size:19px;color:var(--text);margin-bottom:0.5rem;font-family:'Raleway',sans-serif;font-weight:700;}
 .section-sub{font-size:13px;color:var(--sub);margin-bottom:1rem;}
 
@@ -8432,6 +8439,6 @@ function formatSeconds(s){
 }
 </script>
 <p style="text-align:center;font-size:11px;color:#9a8a7a;padding:14px 16px 0;font-family:'Raleway',sans-serif;">Photos by <a href="https://christavphotography.com" target="_blank" rel="noopener" style="color:#a76a5b;text-decoration:none;">Christa V Photography</a></p>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.19b</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.19c</p>
 </body>
 </html>
