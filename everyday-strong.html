@@ -527,6 +527,7 @@ body.dark #pg-portal::after,#pg-admin::after{background:rgba(26,26,26,0.55);}
       <p style="font-size:14px;color:#3a2a1a;margin-bottom:8px;"><strong>One more thing!</strong> Please complete your intake, agreement, and waiver forms to finish setting up your account.</p>
       <button class="action-btn" id="forms-reminder-btn" style="width:auto;padding:8px 16px;font-size:13px;margin:0;">📝 Complete My Forms</button>
     </div>
+    <div id="test-paydue-banner"></div>
     <div id="notify-banners" style="margin-bottom:1rem;"></div>
     <div id="ann-sec"></div>
     <div class="streak-bar" id="streak-bar" style="display:none;">
@@ -841,6 +842,7 @@ body.dark #pg-portal::after,#pg-admin::after{background:rgba(26,26,26,0.55);}
   </div>
   </div>
   <div class="admin-body">
+    <div id="admin-paydue-banner"></div>
     <div class="admin-tabs">
       <button class="tab-btn on" id="atab-dashboard">Dashboard</button>
       <button class="tab-btn" id="atab-videos">Videos</button>
@@ -1115,7 +1117,7 @@ body.dark #pg-portal::after,#pg-admin::after{background:rgba(26,26,26,0.55);}
           <button class="comm-cat-btn" data-filter="hidden" onclick="filterClients('hidden',this)">Hidden</button>
           <button class="comm-cat-btn" data-filter="archived" onclick="filterClients('archived',this)">Archived</button>
         </div>
-        <p class="tip" style="margin-top:-6px;margin-bottom:10px;">Hidden clients can still log in. They come back to your list on their own the next time they do.</p>
+        <p class="tip" style="margin-top:-6px;margin-bottom:10px;">Hidden clients can still log in. They come back to your list on their own the next time they do. Your test accounts stay hidden until you unhide them.</p>
         <div id="clients-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
       </div>
       <div class="admin-card" id="client-profile-card" style="display:none;">
@@ -1889,6 +1891,7 @@ function sk(s){ var r="",str=String(s).trim().replace(/\s+/g," ").toLowerCase();
 // Logging in after being hidden brings them back automatically.
 function isClientHidden(cd){
   if(!cd || !cd.hiddenAt) return false;
+  if(cd.isTestAccount) return true; // my own test logins never bring it back
   return !(cd.lastLogin && cd.lastLogin > cd.hiddenAt);
 }
 function isClientBlocked(cd){
@@ -2027,6 +2030,8 @@ function doLogin(){
       err.style.display="none";
       document.getElementById("welcome-bar").textContent="Welcome, "+found.name+"! Ready to get strong?";
       showTrialBanner(found);
+      var tpb = document.getElementById("test-paydue-banner"); if(tpb) tpb.innerHTML = "";
+      showTestAccountPaymentDueBanner(found);
       loadMyUserData(function(){ refreshPopularVideos(function(){ loadVideos(); }); });
       loadAnnouncements();
       loadStreak();
@@ -3289,7 +3294,7 @@ function doAdmin(){
   if(!adminPassLoaded){ alert("Still loading — please wait a couple seconds and try again."); return; }
   var p=prompt("Instructor password:");
   if(p===null) return;
-  if(p.trim().toLowerCase()===adminPass.toLowerCase()){ loadDashboard(); loadTrialTracker(); loadUnpaidDashboard(); loadPaymentReminders(); loadAtRiskClients(); loadReferrals(); loadClassWaitlist(); loadAdmVideos(); populateProgramDatalist(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); initCommentsBadge(); sp("pg-admin"); }
+  if(p.trim().toLowerCase()===adminPass.toLowerCase()){ loadDashboard(); loadTrialTracker(); loadUnpaidDashboard(); loadPaymentReminders(); showAdminPaymentDueBanner(); loadAtRiskClients(); loadReferrals(); loadClassWaitlist(); loadAdmVideos(); populateProgramDatalist(); loadAdmAnn(); loadAdminPrograms(); loadPendingTestimonials(); initMessageBadge(); initSubmissionsBadge(); initCommentsBadge(); sp("pg-admin"); }
   else alert("Incorrect password. Please try again.");
 }
 
@@ -5771,16 +5776,17 @@ function loadUnpaidDashboard(){
 }
 
 // PAYMENT REMINDERS DUE
-function loadPaymentReminders(){
-  if(!DB) return;
+// Shared by the Payments Due card (7 days ahead) and the due banner on admin
+// and my test account (3 days ahead). callback(list) sorted soonest first.
+function computeDuePayments(daysAhead, callback){
+  if(!DB){ callback([]); return; }
   DB.ref("codes").once("value", function(csnap){
     var clients = {};
     if(csnap.exists()) csnap.forEach(function(c){ var cd=c.val(); if(cd && cd.name) clients[sk(cd.name)] = {cd:cd, codeKey:c.key}; });
     DB.ref("payments").once("value", function(psnap){
-      var el = document.getElementById("dash-paydue");
-      if(!el) return;
       var due = [];
-      var soon = Date.now() + 7*24*60*60*1000;
+      var soon = Date.now() + daysAhead*24*60*60*1000;
+      var todayMs = new Date(new Date().toDateString()).getTime();
       var latestByClient = {};
       if(psnap.exists()) psnap.forEach(function(c){
         var latest = null, latestTs = -1;
@@ -5794,22 +5800,65 @@ function loadPaymentReminders(){
         var nextDue = cd.nextDue || (latest && latest.nextDue) || null;
         if(!nextDue) return;
         var dueMs = new Date(nextDue+"T00:00:00").getTime();
-        if(dueMs <= soon) due.push({name:cd.name, key:k, nextDue:nextDue, overdue: dueMs < new Date(new Date().toDateString()).getTime()});
+        if(dueMs <= soon) due.push({name:cd.name, key:k, codeKey:clients[k].codeKey, nextDue:nextDue, overdue: dueMs < todayMs});
       });
-      if(!due.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No payments due soon.</p>"; return; }
       due.sort(function(a,b){ return new Date(a.nextDue)-new Date(b.nextDue); });
+      callback(due);
+    });
+  });
+}
+function formatDueDate(s){
+  var d = new Date(s+"T12:00:00");
+  return d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+}
+function paymentDueBannerHtml(due, isAdmin){
+  if(!due.length) return "";
+  var rows = due.map(function(d){
+    var label = d.overdue ? "Overdue since "+formatDueDate(d.nextDue) : "Due "+formatDueDate(d.nextDue);
+    var nameEsc = ex(d.name).replace(/"/g,"&quot;");
+    var btn = isAdmin ? " <button class='action-btn sec' style='width:auto;margin:0 0 0 6px;font-size:11px;padding:4px 10px;background:#fff;' onclick='openDuePayment(\""+nameEsc+"\",\""+ex(d.codeKey)+"\")'>Log Payment</button>" : "";
+    return "<div style='display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;'><span><strong>"+ex(d.name)+"</strong> · "+label+"</span>"+btn+"</div>";
+  }).join("");
+  return "<div style='background:#fff7f0;border:1.5px solid #e8c0a0;border-radius:10px;padding:12px 16px;margin-bottom:1rem;color:#3a2a1a;font-size:14px;'>"+
+    "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;'><strong>💵 Payments to check</strong>"+
+    "<button onclick='this.parentNode.parentNode.style.display=\"none\"' style='background:none;border:none;font-size:18px;cursor:pointer;color:#9a8a7a;' aria-label='Dismiss'>✕</button></div>"+
+    rows+(isAdmin?"":"<p style='font-size:12px;color:#9a8a7a;margin-top:4px;'>Only you see this on your test account.</p>")+"</div>";
+}
+function showAdminPaymentDueBanner(){
+  computeDuePayments(3, function(due){
+    var el = document.getElementById("admin-paydue-banner");
+    if(el) el.innerHTML = paymentDueBannerHtml(due, true);
+  });
+}
+function showTestAccountPaymentDueBanner(found){
+  if(!found || !found.isTestAccount) return;
+  computeDuePayments(3, function(due){
+    var el = document.getElementById("test-paydue-banner");
+    if(el) el.innerHTML = paymentDueBannerHtml(due, false);
+  });
+}
+function openDuePayment(name, codeKey){
+  setAdmTab("clients", document.getElementById("atab-clients"));
+  loadClients();
+  openClientProfile(name, codeKey);
+  cpTab("payments", document.getElementById("cp-tab-payments"));
+}
+function loadPaymentReminders(){
+  computeDuePayments(7, function(due){
+      var el = document.getElementById("dash-paydue");
+      if(!el) return;
+      if(!due.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No payments due soon.</p>"; return; }
       el.innerHTML = due.map(function(d){
         var color = d.overdue ? "#c05040" : "#e8a020";
         var label = d.overdue ? "Overdue" : "Due "+d.nextDue;
         var nameEsc = ex(d.name).replace(/"/g,"&quot;");
         return "<div style='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border);gap:8px;'>"+
-          "<div style='cursor:pointer;' onclick='openClientProfile(\""+nameEsc+"\",\""+ex(d.key)+"\")'><strong style='font-size:14px;color:var(--text);'>"+ex(d.name)+"</strong></div>"+
+          "<div style='cursor:pointer;' onclick='openDuePayment(\""+nameEsc+"\",\""+ex(d.codeKey)+"\")'><strong style='font-size:14px;color:var(--text);'>"+ex(d.name)+"</strong></div>"+
           "<div style='display:flex;align-items:center;gap:6px;'>"+
           "<span style='background:"+color+";color:#fff;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600;white-space:nowrap;'>"+label+"</span>"+
           "<button class='action-btn sec' style='width:auto;margin:0;font-size:11px;padding:5px 10px;' onclick='sendPaymentReminder(\""+d.key+"\",\""+nameEsc+"\")'>Remind</button>"+
           "</div></div>";
       }).join("");
-    });
   });
 }
 function sendPaymentReminder(clientKey, name){
@@ -8578,6 +8627,6 @@ function formatSeconds(s){
 }
 </script>
 <p style="text-align:center;font-size:11px;color:#9a8a7a;padding:14px 16px 0;font-family:'Raleway',sans-serif;">Photos by <a href="https://christavphotography.com" target="_blank" rel="noopener" style="color:#a76a5b;text-decoration:none;">Christa V Photography</a></p>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.20c</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.20d</p>
 </body>
 </html>
