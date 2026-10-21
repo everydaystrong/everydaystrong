@@ -955,6 +955,11 @@ body.dark #pg-portal::after{background:rgba(26,26,26,0.55);}
         </div>
         <div class="form-row"><span class="form-label">Release Date (optional)</span><input type="date" class="form-input" id="v-release" /><span style="font-size:11px;color:var(--sub);margin-top:3px;">Leave blank to show immediately. Set a future date to schedule.</span></div>
         <div class="form-row"><label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);cursor:pointer;"><input type="checkbox" id="v-held" style="width:18px;height:18px;" /> Hold — don't post yet (no date needed)</label></div>
+        <div class="form-row">
+          <span class="form-label">Recommend to Specific Clients (optional)</span>
+          <p style="font-size:11px;color:var(--sub);margin-bottom:6px;">Checked clients will see this video under Recommended for You on their dashboard, with an optional note just for them. Private, they won't see who else it's recommended to.</p>
+          <div class="program-checkboxes" id="v-recommend-checkboxes" style="max-height:180px;"><p class="tip">Loading clients...</p></div>
+        </div>
         <button class="action-btn" id="add-video-btn">Save Video</button>
         </div>
       </div>
@@ -1040,6 +1045,14 @@ body.dark #pg-portal::after{background:rgba(26,26,26,0.55);}
           <h3>Create Access Code</h3>
           <div class="ok-msg" id="ok-code"></div>
           <div class="form-row"><span class="form-label">Client Name</span><input class="form-input" id="c-name" placeholder="e.g. Sarah M." style="text-transform:none;" /></div>
+          <div class="form-row"><span class="form-label">Email (optional)</span><input class="form-input" id="c-email" type="email" placeholder="name@email.com" style="text-transform:none;" /></div>
+          <div class="form-row"><span class="form-label">Phone (optional)</span><input class="form-input" id="c-phone" type="tel" style="text-transform:none;" /></div>
+          <div class="form-row"><span class="form-label">Birthday (optional)</span><input class="form-input" id="c-dob" placeholder="e.g. 04/12/1985" style="text-transform:none;" /></div>
+          <div class="inline-row">
+            <div class="form-row"><span class="form-label">OK to Contact</span><select class="form-select" id="c-okcontact"><option value="Yes">Yes</option><option value="No">No</option></select></div>
+            <div class="form-row"><span class="form-label">Preferred Contact Method</span><select class="form-select" id="c-method"><option value="Dashboard Messaging">Dashboard Messaging</option><option value="Email">Email</option><option value="Text/Phone">Text/Phone</option></select></div>
+          </div>
+          <p class="tip" style="margin-bottom:8px;">Saved to their profile as contact info. They still get asked to fill out their own intake, agreement, and waiver.</p>
           <div class="inline-row">
             <div class="form-row"><span class="form-label">Access Code</span><input class="form-input" id="c-code" placeholder="e.g. SARAH2024" /></div>
             <button class="action-btn sec" id="gen-btn" style="white-space:nowrap;font-size:13px;margin-bottom:0;">Generate</button>
@@ -1762,15 +1775,24 @@ function notifyHeather(subject, message){
 // them and prefer Email or Dashboard Messaging (not Text/Phone only).
 // Looks up a client's email from their most recent Intake Form submission.
 // callback(email) — email will be null if none found.
+// Picks the entry the app reads contact details from: the client's own
+// newest Intake Form if there is one, otherwise the newest Contact Info
+// Heather typed in herself. Contact Info never counts as a completed intake.
+function pickContactEntry(snap){
+  var intake = null, intakeTs = -1, manual = null, manualTs = -1;
+  snap.forEach(function(c){
+    var v = c.val();
+    if(!v || v.deleted) return;
+    if(v.formType==="Intake Form" && (v.ts||0) > intakeTs){ intake = v; intakeTs = v.ts||0; }
+    if(v.formType==="Contact Info" && (v.ts||0) > manualTs){ manual = v; manualTs = v.ts||0; }
+  });
+  return intake || manual;
+}
 function lookupClientEmail(clientKey, callback){
   if(!DB || !clientKey){ callback(null); return; }
   DB.ref("client_forms/"+clientKey).once("value", function(snap){
     if(!snap.exists()){ callback(null); return; }
-    var best = null, bestTs = -1;
-    snap.forEach(function(c){
-      var v = c.val();
-      if(v && v.formType==="Intake Form" && v.ts > bestTs){ best = v; bestTs = v.ts; }
-    });
+    var best = pickContactEntry(snap);
     callback(best && best.data && best.data.Email ? best.data.Email : null);
   });
 }
@@ -1780,11 +1802,7 @@ function notifyClientIfOk(clientKey, subject, message, callback){
   if(!DB || !clientKey){ callback(false,"no client key"); return; }
   DB.ref("client_forms/"+clientKey).once("value", function(snap){
     if(!snap.exists()){ callback(false,"no forms on file"); return; }
-    var best = null, bestTs = -1;
-    snap.forEach(function(c){
-      var v = c.val();
-      if(v && v.formType==="Intake Form" && v.ts > bestTs){ best = v; bestTs = v.ts; }
-    });
+    var best = pickContactEntry(snap);
     if(!best || !best.data || !best.data.Email){ callback(false,"no email on file"); return; }
     var d = best.data;
     if(d["OK to Contact"] !== "Yes"){ callback(false,"not okay to contact"); return; }
@@ -2884,7 +2902,9 @@ function checkFormsReminder(){
   var bar = document.getElementById("forms-reminder-bar");
   if(!bar || !DB || !currentUserKey) return;
   DB.ref("client_forms/"+currentUserKey).once("value", function(snap){
-    bar.style.display = snap.exists() ? "none" : "block";
+    var hasRealForm = false;
+    if(snap.exists()) snap.forEach(function(c){ var v=c.val(); if(v && !v.deleted && v.formType!=="Contact Info") hasRealForm = true; });
+    bar.style.display = hasRealForm ? "none" : "block";
   });
 }
 document.getElementById("forms-reminder-btn").onclick = function(){
@@ -3446,6 +3466,11 @@ function openEdit(key){
   });
 }
 
+var vRecommendSelected = {};
+function populateAddRecommendCheckboxes(){
+  vRecommendSelected = {};
+  renderRecommendBox("v-recommend-checkboxes", vRecommendSelected, "vrn-");
+}
 function populateEditRecommendCheckboxes(selected){
   // Old videos may still have this as a plain array from before notes
   // existed — convert to the {name: note} shape going forward.
@@ -3456,32 +3481,45 @@ function populateEditRecommendCheckboxes(selected){
   } else {
     editRecommendSelected = selected ? Object.assign({}, selected) : {};
   }
-  var box = document.getElementById("edit-recommend-checkboxes");
+  renderRecommendBox("edit-recommend-checkboxes", editRecommendSelected, "ern-");
+}
+// Shared client picker for Add Video and Edit Video. Only active clients are
+// listed: archived codes live outside "codes", and paused or expired ones are
+// skipped by isClientBlocked.
+function renderRecommendBox(boxId, state, prefix){
+  var box = document.getElementById(boxId);
   if(!box || !DB) return;
   DB.ref("codes").once("value", function(snap){
     var names = [];
-    if(snap.exists()) snap.forEach(function(c){ var cd=c.val(); if(!isClientBlocked(cd)) names.push(cd.name); });
-    names.sort();
+    if(snap.exists()) snap.forEach(function(c){ var cd=c.val(); if(cd && cd.name && !isClientBlocked(cd)) names.push(cd.name); });
+    names.sort(function(a,b){ return a.toLowerCase()<b.toLowerCase()?-1:1; });
+    var which = boxId==="v-recommend-checkboxes" ? "add" : "edit";
     box.innerHTML = names.map(function(n){
-      var checked = Object.prototype.hasOwnProperty.call(editRecommendSelected,n) ? "checked" : "";
-      var noteVal = editRecommendSelected[n] || "";
-      var nId = "ern-"+sk(n);
+      var checked = Object.prototype.hasOwnProperty.call(state,n) ? "checked" : "";
+      var noteVal = state[n] || "";
+      var nId = prefix+sk(n);
+      var nm = ex(n).replace(/"/g,"&quot;");
       return "<div style='padding:4px 0;'>"+
-        "<label style='display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;'><input type='checkbox' "+checked+" onchange='toggleEditRecommend(\""+ex(n).replace(/"/g,"&quot;")+"\",this.checked,\""+nId+"\")' /> "+ex(n)+"</label>"+
-        "<input type='text' id='"+nId+"' value=\""+ex(noteVal).replace(/"/g,"&quot;")+"\" placeholder='Note for this client (optional), e.g. standing only' style='display:"+(checked?"block":"none")+";width:100%;margin:4px 0 4px 24px;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--inp);color:var(--text);' oninput='updateEditRecommendNote(\""+ex(n).replace(/"/g,"&quot;")+"\",this.value)' />"+
+        "<label style='display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;'><input type='checkbox' "+checked+" onchange='toggleRecommend(\""+which+"\",\""+nm+"\",this.checked,\""+nId+"\")' /> "+ex(n)+"</label>"+
+        "<input type='text' id='"+nId+"' value=\""+ex(noteVal).replace(/"/g,"&quot;")+"\" placeholder='Note for this client (optional), e.g. standing only' style='display:"+(checked?"block":"none")+";width:100%;margin:4px 0 4px 24px;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--inp);color:var(--text);' oninput='updateRecommendNote(\""+which+"\",\""+nm+"\",this.value)' />"+
         "</div>";
-    }).join("") || "<p class='tip'>No clients found.</p>";
+    }).join("") || "<p class='tip'>No active clients found.</p>";
   });
 }
-function toggleEditRecommend(name, on, noteInputId){
-  if(on){ if(!Object.prototype.hasOwnProperty.call(editRecommendSelected,name)) editRecommendSelected[name]=""; }
-  else { delete editRecommendSelected[name]; }
+function recommendState(which){ return which==="add" ? vRecommendSelected : editRecommendSelected; }
+function toggleRecommend(which, name, on, noteInputId){
+  var st = recommendState(which);
+  if(on){ if(!Object.prototype.hasOwnProperty.call(st,name)) st[name]=""; }
+  else { delete st[name]; }
   var inp = document.getElementById(noteInputId);
   if(inp) inp.style.display = on ? "block" : "none";
 }
-function updateEditRecommendNote(name, value){
-  if(Object.prototype.hasOwnProperty.call(editRecommendSelected,name)) editRecommendSelected[name] = value;
+function updateRecommendNote(which, name, value){
+  var st = recommendState(which);
+  if(Object.prototype.hasOwnProperty.call(st,name)) st[name] = value;
 }
+function toggleEditRecommend(name, on, noteInputId){ toggleRecommend("edit", name, on, noteInputId); }
+function updateEditRecommendNote(name, value){ updateRecommendNote("edit", name, value); }
 
 function closeEdit(){
   document.getElementById("edit-modal").classList.remove("open");
@@ -4212,6 +4250,7 @@ function toggleAddVideoCard(){
   var open = body.style.display !== "none";
   body.style.display = open ? "none" : "block";
   arrow.style.transform = open ? "rotate(0deg)" : "rotate(90deg)";
+  if(!open && !Object.keys(vRecommendSelected).length) populateAddRecommendCheckboxes();
 }
 function toggleBulkAddCard(){
   var body = document.getElementById("bulk-add-body");
@@ -4331,7 +4370,7 @@ function addVideo(){
   DB.ref("videos").orderByChild("tag").equalTo(tg).once("value",function(snap){
     var maxOrder=0;
     if(snap.exists()) snap.forEach(function(c){ var o=c.val().order||0; if(o>maxOrder) maxOrder=o; });
-    DB.ref("videos").push({title:t,url:u,tag:tg,subcat:sc||null,desc:desc||null,focus:vFocusSelected.length?vFocusSelected:null,equipment:vEquipSelected.length?vEquipSelected:null,order:maxOrder+1,releaseDate:rd||null,held:held||null,ts:Date.now()},function(e){
+    DB.ref("videos").push({title:t,url:u,tag:tg,subcat:sc||null,desc:desc||null,focus:vFocusSelected.length?vFocusSelected:null,equipment:vEquipSelected.length?vEquipSelected:null,order:maxOrder+1,releaseDate:rd||null,held:held||null,recommendedTo:Object.keys(vRecommendSelected).length?vRecommendSelected:null,ts:Date.now()},function(e){
       if(!e){
         document.getElementById("v-title").value="";
         document.getElementById("v-url").value="";
@@ -4348,6 +4387,7 @@ function addVideo(){
         renderEquipChips("v");
         document.getElementById("v-release").value="";
         document.getElementById("v-held").checked=false;
+        populateAddRecommendCheckboxes();
         showOk("ok-video","Video saved!");
         populateProgramDatalist();
       }
@@ -4517,10 +4557,20 @@ function addCode(){
   var group = document.getElementById("c-group").value.trim();
   var referredBy = document.getElementById("c-referredby").value.trim();
   var isTestAccount = document.getElementById("c-testaccount").checked;
+  var contact = {
+    Name: n,
+    Email: document.getElementById("c-email").value.trim(),
+    Phone: document.getElementById("c-phone").value.trim(),
+    DOB: document.getElementById("c-dob").value.trim(),
+    "OK to Contact": document.getElementById("c-okcontact").value,
+    "Preferred Contact Method": document.getElementById("c-method").value
+  };
+  var hasContact = !!(contact.Email || contact.Phone || contact.DOB);
   DB.ref("codes").orderByChild("code").equalTo(c).once("value",function(snap){
     if(snap.exists()){ alert("That code already exists."); return; }
     DB.ref("codes").push({name:n,code:c,access:access,trial:isTrial||false,expiresAt:expiresAt,customExpiresAt:customExpiresAt,group:group||null,referredBy:referredBy||null,isTestAccount:isTestAccount||null,ts:Date.now(),inactive:false},function(e){
       if(!e){
+        if(hasContact) DB.ref("client_forms/"+sk(n)).push({formType:"Contact Info", source:"admin", ts:Date.now(), data:contact});
         var label=isTrial?" (7-day trial)":"";
         showOk("ok-code","Code for "+n+": "+c+label);
         document.getElementById("c-name").value="";
@@ -4531,6 +4581,9 @@ function addCode(){
         document.getElementById("c-group").value="";
         document.getElementById("c-referredby").value="";
         document.getElementById("c-testaccount").checked=false;
+        ["c-email","c-phone","c-dob"].forEach(function(id){ document.getElementById(id).value=""; });
+        document.getElementById("c-okcontact").value="Yes";
+        document.getElementById("c-method").value="Dashboard Messaging";
         document.getElementById("program-picker").style.display="none";
       }
     });
@@ -6134,7 +6187,7 @@ function loadClientForms(){
       return;
     }
     entries.sort(function(a,b){ return (b.f.ts||0)-(a.f.ts||0); });
-    var bestIntake = entries.filter(function(e){ return e.f.formType==="Intake Form"; })[0];
+    var bestIntake = entries.filter(function(e){ return e.f.formType==="Intake Form" && !e.f.deleted; })[0] || entries.filter(function(e){ return e.f.formType==="Contact Info" && !e.f.deleted; })[0];
     var h = bestIntake ? renderContactInfoCard(bestIntake) : "<button class='action-btn' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:14px;' onclick='renderAddContactInfoForm()'>Add Contact Info</button>";
     h += "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:14px;' onclick='renderUploadFormBox()'>Upload Form Photo/PDF</button>";
     entries.forEach(function(e){
@@ -6210,7 +6263,8 @@ function saveNewContactInfo(){
   };
   if(!data.Name || !data.Email){ alert("Name and email can't be blank."); return; }
   DB.ref("client_forms/"+currentClientKey).push({
-    formType: "Intake Form",
+    formType: "Contact Info",
+    source: "admin",
     ts: Date.now(),
     data: data
   }, function(err){
@@ -6644,7 +6698,7 @@ function initSubmissionsBadge(){
         var key = clientNode.key;
         clientNode.forEach(function(entry){
           var v = entry.val();
-          if(v && v.formType==="Uploaded Form") return;
+          if(v && (v.formType==="Uploaded Form" || v.formType==="Contact Info")) return;
           if(v){
             v._clientKey = key;
             v._entryKey = entry.key;
@@ -7037,11 +7091,7 @@ function loadClientContactInfo(){
   el.innerHTML = "";
   DB.ref("client_forms/"+currentClientKey).once("value", function(snap){
     if(!snap.exists()) return;
-    var best = null, bestTs = -1;
-    snap.forEach(function(c){
-      var v = c.val();
-      if(v && v.formType==="Intake Form" && v.ts > bestTs){ best = v; bestTs = v.ts; }
-    });
+    var best = pickContactEntry(snap);
     if(!best || !best.data) return;
     var d = best.data;
     var contactOk = d["OK to Contact"];
@@ -8331,6 +8381,8 @@ var insightsTypeSelections = ["Video","Favorite","Complete","Comment","Navigatio
 var ALL_CLICK_TYPES = ["Video","Favorite","Complete","Comment","Navigation","Form","Page Visit","Other"];
 var insightsTestAccountNames = [];
 var insightsShowMine = false;
+var insightsDaysShown = 7;
+function loadMoreInsights(){ insightsDaysShown += 7; renderInsightsLog(); }
 
 function loadInsightsTab(){
   if(!DB) return;
@@ -8407,8 +8459,13 @@ function renderInsightsLog(){
     if(labelText && (r.label||"").toLowerCase().indexOf(labelText)===-1) return false;
     return true;
   });
-  if(!items.length){ el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>No matching activity.</p>"; note.textContent=""; return; }
-  var shown = items.slice(0,300);
+  var cutoff = Date.now() - insightsDaysShown*24*60*60*1000;
+  var olderCount = items.filter(function(r){ return r.ts < cutoff; }).length;
+  items = items.filter(function(r){ return r.ts >= cutoff; });
+  var moreBtn = olderCount ? "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-top:10px;' onclick='loadMoreInsights()'>Load Another Week</button>" : "";
+  var rangeNote = "Showing the last "+insightsDaysShown+" days.";
+  if(!items.length){ el.innerHTML = "<p style='color:var(--sub);font-size:13px;'>No matching activity in the last "+insightsDaysShown+" days.</p>"+moreBtn; note.textContent=""; return; }
+  var shown = items.slice(0,1000);
   el.innerHTML = shown.map(function(r,i){
     var d2 = new Date(r.ts);
     var who = r.source==="public" ? "Site Visitor" : (r.clientName||"Unknown");
@@ -8424,8 +8481,8 @@ function renderInsightsLog(){
       row += "<div id='insights-row-detail-"+i+"' style='display:none;padding-bottom:6px;'>"+detail+"</div>";
     }
     return row;
-  }).join("");
-  note.textContent = items.length>300 ? ("Showing the most recent 300 of "+items.length+" matches. Narrow your filters to see more specific results.") : "";
+  }).join("") + moreBtn;
+  note.textContent = items.length>1000 ? (rangeNote+" Showing the most recent 1000 of "+items.length+" matches.") : rangeNote;
 }
 function toggleInsightsRowDetail(i){
   var d = document.getElementById("insights-row-detail-"+i);
@@ -8439,6 +8496,6 @@ function formatSeconds(s){
 }
 </script>
 <p style="text-align:center;font-size:11px;color:#9a8a7a;padding:14px 16px 0;font-family:'Raleway',sans-serif;">Photos by <a href="https://christavphotography.com" target="_blank" rel="noopener" style="color:#a76a5b;text-decoration:none;">Christa V Photography</a></p>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.19c</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.20</p>
 </body>
 </html>
