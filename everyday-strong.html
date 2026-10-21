@@ -1723,7 +1723,7 @@ try {
     appId:"1:835314554846:web:cd5367a8002833c6ed2f4f"
   });
   DB = firebase.database();
-  DB.ref("adminPass").once("value",function(s){ if(s.exists()) adminPass=s.val(); adminPassLoaded=true; });
+  DB.ref("adminPass").once("value",function(s){ if(s.exists() && s.val()!==null && s.val()!=="") adminPass=String(s.val()).trim(); adminPassLoaded=true; }, function(){ adminPassLoaded=true; });
   DB.ref("siteConfig/imgVersion").once("value",function(s){ if(s.exists()) imgCacheVersion=s.val(); });
 } catch(e){ adminPassLoaded=true; }
 
@@ -3393,7 +3393,7 @@ function doAdmin(){
   if(!adminPassLoaded){ alert("Still loading — please wait a couple seconds and try again."); return; }
   pinEntry = ""; renderPinDots();
   document.getElementById("pin-err").textContent = "";
-  document.getElementById("pin-sub").textContent = /^\d{4}$/.test(adminPass) ? "Enter your 4 digit PIN" : "No PIN set yet. Use password instead, then set one in Settings.";
+  document.getElementById("pin-sub").textContent = /^\d{4}$/.test(String(adminPass).trim()) ? "Enter your 4 digit PIN" : "No PIN set yet. Use password instead, then set one in Settings.";
   document.getElementById("pin-modal").style.display = "flex";
   showPinLock();
 }
@@ -3405,7 +3405,7 @@ function pinPress(d){
 }
 function pinBack(){ pinEntry = pinEntry.slice(0,-1); renderPinDots(); }
 function checkPin(){
-  if(pinEntry===adminPass){
+  if(pinEntry===String(adminPass).trim()){
     pinStore("esPinFails", null);
     closePinPad();
     enterAdmin();
@@ -3432,11 +3432,10 @@ document.addEventListener("keydown", function(e){
   else if(e.key==="Escape"){ closePinPad(); }
 });
 function adminPasswordFallback(){
-  if(pinLockedFor()) return;
   closePinPad();
-  var p=prompt("Instructor password:");
+  var p=prompt("Instructor password or PIN:");
   if(p===null) return;
-  if(p.trim().toLowerCase()===adminPass.toLowerCase()) enterAdmin();
+  if(p.trim().toLowerCase()===String(adminPass).trim().toLowerCase()) enterAdmin();
   else alert("Incorrect password. Please try again.");
 }
 function enterAdmin(){
@@ -4993,10 +4992,10 @@ document.querySelectorAll(".pw-eye-btn").forEach(function(btn){
 });
 document.getElementById("pass-btn").onclick=function(){
   var cur=document.getElementById("pass-cur").value.trim(),nw=document.getElementById("pass-new").value.trim(),cf=document.getElementById("pass-cf").value.trim();
-  if(cur.toLowerCase()!==adminPass.toLowerCase()){ alert("Current PIN or password is incorrect."); return; }
+  if(cur.toLowerCase()!==String(adminPass).trim().toLowerCase()){ alert("Current PIN or password is incorrect."); return; }
   if(!/^\d{4}$/.test(nw)){ alert("Your new PIN needs to be exactly 4 numbers."); return; }
   if(nw!==cf){ alert("The PINs don't match."); return; }
-  adminPass=nw; if(DB) DB.ref("adminPass").set(nw);
+  adminPass=String(nw); if(DB) DB.ref("adminPass").set(String(nw));
   document.getElementById("pass-cur").value=""; document.getElementById("pass-new").value=""; document.getElementById("pass-cf").value="";
   showOk("ok-pass","PIN updated!");
 };
@@ -8773,6 +8772,6 @@ function formatSeconds(s){
 }
 </script>
 <p style="text-align:center;font-size:11px;color:#9a8a7a;padding:14px 16px 0;font-family:'Raleway',sans-serif;">Photos by <a href="https://christavphotography.com" target="_blank" rel="noopener" style="color:#a76a5b;text-decoration:none;">Christa V Photography</a></p>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.21</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.21b</p>
 </body>
 </html>
