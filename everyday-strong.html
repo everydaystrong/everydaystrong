@@ -484,6 +484,7 @@ body.dark #pg-portal::after{background:rgba(26,26,26,0.55);}
     <div style="position:sticky;bottom:0;background:var(--card);padding-top:10px;z-index:5;box-shadow:0 -8px 12px -8px rgba(0,0,0,0.25);">
     <button class="action-btn" onclick="saveCodeEdit()" style="width:100%;">Save Changes</button>
     <button class="action-btn sec" id="ec-pause-btn" onclick="togglePauseEditingClient()" style="width:100%;margin-top:8px;">⏸️ Pause Access</button>
+    <button class="action-btn sec" id="ec-hide-btn" onclick="toggleHideEditingClient()" style="width:100%;margin-top:8px;">Hide from My Client List</button>
     <button class="action-btn sec" onclick="deleteEditingClient()" style="width:100%;margin-top:8px;color:#c05040;border-color:#c05040;">Archive Client</button>
     </div>
   </div>
@@ -1109,8 +1110,10 @@ body.dark #pg-portal::after{background:rgba(26,26,26,0.55);}
           <button class="comm-cat-btn" data-filter="paused" onclick="filterClients('paused',this)">⏸️ Paused</button>
           <button class="comm-cat-btn" data-filter="expired" onclick="filterClients('expired',this)">Expired</button>
           <button class="comm-cat-btn" data-filter="unpaid" onclick="filterClients('unpaid',this)">Unpaid</button>
+          <button class="comm-cat-btn" data-filter="hidden" onclick="filterClients('hidden',this)">Hidden</button>
           <button class="comm-cat-btn" data-filter="archived" onclick="filterClients('archived',this)">Archived</button>
         </div>
+        <p class="tip" style="margin-top:-6px;margin-bottom:10px;">Hidden clients can still log in. They come back to your list on their own the next time they do.</p>
         <div id="clients-list"><p style="color:var(--sub);font-size:13px;">Loading...</p></div>
       </div>
       <div class="admin-card" id="client-profile-card" style="display:none;">
@@ -1880,6 +1883,12 @@ function sk(s){ var r="",str=String(s).trim().replace(/\s+/g," ").toLowerCase();
 // client's access is currently blocked should use this instead of
 // re-deriving the same boolean logic separately (which drifted out of sync
 // before — e.g. bulk messaging didn't know about custom expiration dates).
+// Hidden clients keep their access; they're just left out of Heather's lists.
+// Logging in after being hidden brings them back automatically.
+function isClientHidden(cd){
+  if(!cd || !cd.hiddenAt) return false;
+  return !(cd.lastLogin && cd.lastLogin > cd.hiddenAt);
+}
 function isClientBlocked(cd){
   if(cd.inactive) return true;
   if(cd.trial && cd.expiresAt && Date.now()>cd.expiresAt) return true;
@@ -3365,7 +3374,9 @@ function editCode(key){
       }
       editingCodeKey = key;
       editingCodeInactive = !!cd.inactive;
+      editingCodeHidden = isClientHidden(cd);
       editingCodeName = cd.name||"";
+      document.getElementById("ec-hide-btn").textContent = editingCodeHidden ? "Unhide" : "Hide from My Client List";
       document.getElementById("ec-pause-btn").textContent = editingCodeInactive ? "▶️ Reactivate Access" : "⏸️ Pause Access";
       document.getElementById("edit-code-modal").classList.add("open");
     });
@@ -3374,6 +3385,20 @@ function editCode(key){
 
 var editingCodeKey = null;
 var editingCodeInactive = false;
+var editingCodeHidden = false;
+function setClientHidden(key, hide, cb){
+  if(!DB || !key) return;
+  DB.ref("codes/"+key).update({hiddenAt: hide ? Date.now() : null}, function(e){ if(!e && cb) cb(); });
+}
+function toggleHideEditingClient(){
+  if(!editingCodeKey) return;
+  var hide = !editingCodeHidden;
+  setClientHidden(editingCodeKey, hide, function(){
+    editingCodeHidden = hide;
+    document.getElementById("ec-hide-btn").textContent = hide ? "Unhide" : "Hide from My Client List";
+    if(hide){ closeEditCode(); var pc=document.getElementById("client-profile-card"); if(pc) pc.style.display="none"; }
+  });
+}
 var editingCodeName = "";
 
 function togglePauseEditingClient(){
@@ -5729,6 +5754,7 @@ function loadUnpaidDashboard(){
     if(snap.exists()) snap.forEach(function(c){
       var cd = c.val();
       var status = cd.paymentStatus || "unpaid";
+      if(isClientHidden(cd)) return;
       if(status === "unpaid") unpaid.push({name:cd.name, code:cd.code, key:c.key, note:cd.paymentStatusNote||""});
     });
     if(!unpaid.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>Everyone's paid up!</p>"; return; }
@@ -5747,21 +5773,26 @@ function loadPaymentReminders(){
   if(!DB) return;
   DB.ref("codes").once("value", function(csnap){
     var clients = {};
-    if(csnap.exists()) csnap.forEach(function(c){ clients[c.key] = c.val(); });
+    if(csnap.exists()) csnap.forEach(function(c){ var cd=c.val(); if(cd && cd.name) clients[sk(cd.name)] = {cd:cd, codeKey:c.key}; });
     DB.ref("payments").once("value", function(psnap){
       var el = document.getElementById("dash-paydue");
       if(!el) return;
       var due = [];
       var soon = Date.now() + 7*24*60*60*1000;
+      var latestByClient = {};
       if(psnap.exists()) psnap.forEach(function(c){
-        var cd = clients[c.key];
-        if(!cd || isClientBlocked(cd)) return;
         var latest = null, latestTs = -1;
-        c.forEach(function(p){ var v=p.val(); if(v.ts && v.ts>latestTs){ latest=v; latestTs=v.ts; } });
-        if(latest && latest.nextDue){
-          var dueMs = new Date(latest.nextDue+"T00:00:00").getTime();
-          if(dueMs <= soon) due.push({name:cd.name, key:c.key, nextDue:latest.nextDue, overdue: dueMs < Date.now()});
-        }
+        c.forEach(function(p){ var v=p.val(); if(v && !v.returned && v.ts && v.ts>latestTs){ latest=v; latestTs=v.ts; } });
+        latestByClient[c.key] = latest;
+      });
+      Object.keys(clients).forEach(function(k){
+        var cd = clients[k].cd;
+        if(isClientBlocked(cd) || isClientHidden(cd) || cd.paymentStatus==="exempt") return;
+        var latest = latestByClient[k];
+        var nextDue = cd.nextDue || (latest && latest.nextDue) || null;
+        if(!nextDue) return;
+        var dueMs = new Date(nextDue+"T00:00:00").getTime();
+        if(dueMs <= soon) due.push({name:cd.name, key:k, nextDue:nextDue, overdue: dueMs < new Date(new Date().toDateString()).getTime()});
       });
       if(!due.length){ el.innerHTML="<p style='color:var(--sub);font-size:13px;'>No payments due soon.</p>"; return; }
       due.sort(function(a,b){ return new Date(a.nextDue)-new Date(b.nextDue); });
@@ -5794,7 +5825,7 @@ function loadAtRiskClients(){
     var atRisk = [];
     if(snap.exists()) snap.forEach(function(c){
       var cd = c.val();
-      if(isClientBlocked(cd) || cd.trial) return;
+      if(isClientBlocked(cd) || cd.trial || isClientHidden(cd)) return;
       var last = cd.lastLogin || cd.ts;
       if(last && last < cutoff){
         var days = Math.floor((Date.now()-last)/(24*60*60*1000));
@@ -6003,6 +6034,8 @@ function renderClientList(){
     }
     if(clientFilter==="archived") return cd._archived;
     if(cd._archived) return false;
+    if(clientFilter==="hidden") return isClientHidden(cd);
+    if(isClientHidden(cd)) return false;
     if(clientFilter==="all") return true;
     if(clientFilter==="active") return !inactive&&!expired&&!isTrial;
     if(clientFilter==="trial") return isTrial;
@@ -6040,6 +6073,8 @@ function renderClientList(){
         "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;color:#c05040;border-color:#c05040;' onclick='event.stopPropagation();deleteArchivedClientForever(\""+cd._key+"\",\""+ex(cd.name).replace(/"/g,"&quot;")+"\")'>Delete</button></div>";
     } else if(isBroken){
       rightSide = "<button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;color:#c05040;border-color:#c05040;' onclick='event.stopPropagation();quickDeleteClient(\""+cd._key+"\")'>Remove broken entry</button>";
+    } else if(isClientHidden(cd)){
+      rightSide = "<div style='display:flex;align-items:center;gap:8px;'><button class='action-btn sec' style='width:auto;margin-bottom:0;font-size:12px;padding:6px 12px;' onclick='event.stopPropagation();setClientHidden(\""+cd._key+"\",false)'>Unhide</button><span style='color:var(--accent);font-size:13px;'>View →</span></div>";
     } else {
       rightSide = "<span style='color:var(--accent);font-size:13px;'>View →</span>";
     }
@@ -6420,6 +6455,18 @@ function loadClientPayments(){
         if(isExempt){
           h += "<p class='tip' style='margin-bottom:1rem;'>This client is marked No Charge — they won't show up under the Unpaid filter or badge, and won't be affected by any future payment reminders.</p>";
         }
+        var latestPay = history.filter(function(p){ return !p.returned; })[0];
+        var currentDue = cd.nextDue || (latestPay && latestPay.nextDue) || "";
+        h += "<div class='admin-card' style='background:var(--inp);margin-bottom:1rem;'>";
+        h += "<p style='font-size:13px;font-weight:600;margin-bottom:8px;'>Payment Plan</p>";
+        h += "<div class='inline-row'>";
+        h += "<div class='form-row'><span class='form-label'>Amount</span><input class='form-input' id='plan-amount' type='text' placeholder='e.g. 120' value=\""+ex(cd.planAmount||"").replace(/"/g,"&quot;")+"\" /></div>";
+        h += "<div class='form-row'><span class='form-label'>Repeats Every (weeks)</span><input class='form-input' id='plan-weeks' type='number' min='1' step='1' placeholder='e.g. 6' value='"+(cd.planWeeks||"")+"' /></div>";
+        h += "</div>";
+        h += "<div class='form-row'><span class='form-label'>Next Due Date</span><input class='form-input' id='plan-nextdue' type='date' value='"+ex(currentDue)+"' /></div>";
+        h += "<button class='action-btn' style='margin-top:4px;' onclick='savePaymentPlan()'>Save Plan</button>";
+        h += "<p class='tip' style='margin-top:6px;'>Leave the plan blank for clients without a set schedule. You can set a due date here without logging a payment.</p>";
+        h += "</div>";
         h += "<div class='admin-card' style='background:var(--inp);margin-bottom:1rem;'>";
         h += "<p style='font-size:13px;font-weight:600;margin-bottom:8px;' id='pay-form-title'>+ Log a Payment</p>";
         h += "<div class='form-row'><span class='form-label'>Amount</span><input class='form-input' id='pay-amount' type='text' placeholder='e.g. 50, $50, or 0 for free/promo' /></div>";
@@ -6445,7 +6492,12 @@ function loadClientPayments(){
         }
         el.innerHTML = h;
         var dateInput = document.getElementById("pay-date");
-        if(dateInput) dateInput.value = new Date().toISOString().slice(0,10);
+        var tzToday = new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+        if(dateInput) dateInput.value = tzToday;
+        currentPlan = {amount: cd.planAmount||"", weeks: parseInt(cd.planWeeks,10)||0, codeKey: realKey};
+        if(currentPlan.amount) document.getElementById("pay-amount").value = currentPlan.amount;
+        fillNextDueFromPlan();
+        if(dateInput) dateInput.addEventListener("change", fillNextDueFromPlan);
         populatePayPromoDropdown();
       });
     });
@@ -6453,6 +6505,33 @@ function loadClientPayments(){
 }
 
 var editingPaymentKey = null;
+var currentPlan = {amount:"", weeks:0, codeKey:null};
+
+function addWeeksToDate(dateStr, weeks){
+  if(!dateStr || !weeks) return "";
+  var d = new Date(dateStr+"T12:00:00");
+  d.setDate(d.getDate() + weeks*7);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function fillNextDueFromPlan(){
+  if(editingPaymentKey || !currentPlan.weeks) return;
+  var paid = document.getElementById("pay-date");
+  var next = document.getElementById("pay-nextdue");
+  if(paid && next) next.value = addWeeksToDate(paid.value, currentPlan.weeks);
+}
+function savePaymentPlan(){
+  if(!DB) return;
+  var amount = document.getElementById("plan-amount").value.trim();
+  var weeks = parseInt(document.getElementById("plan-weeks").value,10);
+  var nextDue = document.getElementById("plan-nextdue").value;
+  resolveClientCodeKey(function(realKey){
+    if(!realKey){ alert("Couldn't find this client's access code."); return; }
+    DB.ref("codes/"+realKey).update({planAmount: amount||null, planWeeks: weeks>0?weeks:null, nextDue: nextDue||null}, function(e){
+      if(e){ alert("Couldn't save. Please try again."); return; }
+      loadClientPayments();
+    });
+  });
+}
 
 function populatePayPromoDropdown(){
   var sel = document.getElementById("pay-promo");
@@ -6573,8 +6652,9 @@ function logPayment(){
       amount: amount, date: date, nextDue: nextDue||null, promo: promo, note: note, ts: Date.now()
     }, function(e){
       if(!e){
-        // Logging a payment marks the client as paid — the common case
-        DB.ref("codes/"+realKey).update({paymentStatus:"paid"}, function(){
+        // Logging a payment marks the client as paid, the common case, and
+        // its next due date becomes the client's current due date.
+        DB.ref("codes/"+realKey).update({paymentStatus:"paid", nextDue: nextDue||null}, function(){
           loadClientPayments();
         });
       }
@@ -8496,6 +8576,6 @@ function formatSeconds(s){
 }
 </script>
 <p style="text-align:center;font-size:11px;color:#9a8a7a;padding:14px 16px 0;font-family:'Raleway',sans-serif;">Photos by <a href="https://christavphotography.com" target="_blank" rel="noopener" style="color:#a76a5b;text-decoration:none;">Christa V Photography</a></p>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.20</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.20b</p>
 </body>
 </html>
