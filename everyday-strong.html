@@ -100,6 +100,8 @@ body.dark #pg-portal::after,#pg-admin::after{background:rgba(26,26,26,0.55);}
 
 /* CATEGORY CARDS */
 .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:0.9rem;}
+#recommended-section,#cat-grid{display:contents;}
+#cat-grid .empty-state{grid-column:1/-1;}
 .cat-card{background:var(--card);border-radius:14px;border:0.5px solid var(--border);overflow:hidden;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;-webkit-tap-highlight-color:transparent;box-shadow:0 1px 3px rgba(58,42,26,0.06);}
 .cat-card:active{transform:scale(0.97);}
 .cat-img{width:100%;aspect-ratio:4/3;object-fit:cover;background:#e8ddd2;display:block;}
@@ -570,8 +572,10 @@ body.dark #pg-portal::after,#pg-admin::after{background:rgba(26,26,26,0.55);}
           <p class="section-sub" id="equip-search-sub"></p>
           <div class="video-grid" id="equip-search-grid"></div>
         </div>
-        <div id="recommended-section" class="cat-grid" style="margin-bottom:0.9rem;"></div>
-        <div class="cat-grid" id="cat-grid"></div>
+        <div class="cat-grid" id="cat-grid-wrap">
+        <div id="recommended-section"></div>
+        <div id="cat-grid"></div>
+        </div>
       </div>
       <div id="vid-view" style="display:none;">
         <button class="back-btn" id="back-btn">← Back to Workouts</button>
@@ -2294,6 +2298,41 @@ function runEquipSearch(){
   resultsEl.style.display="block";
   gridEl.style.display="none";
 }
+
+// EVEN TILE ROWS: picks a column count for each tile grid so the last row
+// isn't left with one lonely tile, e.g. 6 tiles show as 3 + 3 instead of
+// 5 + 1. Re-runs whenever tiles change or the screen is resized.
+function balanceTileGrid(el){
+  if(!el || el.offsetParent===null) return;
+  var n = el.querySelectorAll(".cat-card").length;
+  if(!n){ if(el.style.gridTemplateColumns) el.style.gridTemplateColumns=""; return; }
+  var gap = 14.4, minW = 148;
+  var maxCols = Math.max(1, Math.min(5, Math.floor((el.clientWidth+gap)/(minW+gap))));
+  var best = Math.min(n, maxCols), bestEmpty = Infinity;
+  for(var c=Math.min(n,maxCols); c>=Math.min(2,maxCols); c--){
+    var empty = Math.ceil(n/c)*c - n;
+    if(empty < bestEmpty){ best = c; bestEmpty = empty; }
+    if(empty===0) break;
+  }
+  var val = "repeat("+best+", minmax(0px, 1fr))";
+  if(el.style.gridTemplateColumns !== val) el.style.gridTemplateColumns = val;
+}
+function balanceAllTileGrids(){
+  balanceTileGrid(document.getElementById("cat-grid-wrap"));
+  balanceTileGrid(document.getElementById("subcat-grid"));
+}
+(function(){
+  var t = null;
+  function soon(){ clearTimeout(t); t = setTimeout(balanceAllTileGrids, 30); }
+  try{
+    var mo = new MutationObserver(soon);
+    ["cat-grid-wrap","subcat-grid"].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) mo.observe(el, {childList:true, subtree:true, attributes:true, attributeFilter:["style"]});
+    });
+  }catch(e){}
+  window.addEventListener("resize", soon);
+})();
 
 // Private per client — only shows a tile at all if this client actually has
 // something recommended to them. Tapping it opens the same video list view
@@ -8627,6 +8666,6 @@ function formatSeconds(s){
 }
 </script>
 <p style="text-align:center;font-size:11px;color:#9a8a7a;padding:14px 16px 0;font-family:'Raleway',sans-serif;">Photos by <a href="https://christavphotography.com" target="_blank" rel="noopener" style="color:#a76a5b;text-decoration:none;">Christa V Photography</a></p>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.20d</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.20e</p>
 </body>
 </html>
