@@ -179,7 +179,7 @@ input[type=date],select,textarea{font:inherit;padding:10px;border-radius:10px;bo
 <div class="sheet" id="sheet" hidden><div class="panel" id="panel" role="dialog" aria-modal="true"></div></div>
 
 <div class="timer" id="timer" hidden>
-  <div class="t-top"><span id="tStep"></span><span id="tLeft"></span></div>
+  <div class="t-top"><span id="tStep"></span><button id="tVoice" style="background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600"></button><span id="tLeft"></span></div>
   <div class="t-mid">
     <div class="t-phase" id="tPhase"></div>
     <div class="t-upnext" id="tUp" hidden>Next up</div>
@@ -213,9 +213,9 @@ const WEEKS=[
 ];
 const BRACE="Brace first: ribs down, belly tight, hips back.";
 const WARM={
- A:[["Band lateral walk","Band above knees, stay low, small steps",1,40],["Bodyweight squat with reach","Sit back, reach arms forward",1,40],["Glute bridge march","Hips level, slow knee lifts",1,40],["Standing hip circles","Hand on wall, big slow circles",2,20]],
- B:[["Glute bridge","Drive through heels, ribs down",1,40],["Hip hinge drill","Hands on hips, push hips back, flat back",1,40],["Cat cow","Move one segment at a time",1,40],["Banded clamshell","Heels together, open slow",2,20]],
- P:[["Pelvic tilts","Lying on your back, rock pelvis slowly",1,40],["Cat cow","Breathe in to arch, out to round",1,40],["Thread the needle","On all fours, reach under and open up",2,20],["Bridge roll up","Peel your spine up and down one bone at a time",1,40]]
+ A:[["Band lateral walk","Band above knees, stay low, small steps",1,30],["Bodyweight squat with reach","Sit back, reach arms forward",1,30],["Glute bridge march","Hips level, slow knee lifts",1,30],["Standing hip circles","Hand on wall, big slow circles",2,15]],
+ B:[["Glute bridge","Drive through heels, ribs down",1,30],["Hip hinge drill","Hands on hips, push hips back, flat back",1,30],["Cat cow","Move one segment at a time",1,30],["Banded clamshell","Heels together, open slow",2,15]],
+ P:[["Pelvic tilts","Lying on your back, rock pelvis slowly",1,30],["Cat cow","Breathe in to arch, out to round",1,30],["Thread the needle","On all fours, reach under and open up",2,15],["Bridge roll up","Peel your spine up and down one bone at a time",1,30]]
 };
 const COOL={
  A:[["Figure four stretch","Lying down, ankle over knee, pull in",2,30],["Half kneeling hip flexor","Tuck pelvis, squeeze back glute",2,30]],
@@ -300,24 +300,40 @@ function expand(list,k,W,R){
   });
   return out;
 }
+const isStand=n=>/squat|lunge|step up|step down|lateral walk|standing|hinge drill|rdl|deadlift|good morning|swing|pull through|suitcase|wall sit|plié|curtsy|cossack|pallof/i.test(n)&&!/kneeling|bridge|thrust|frog/i.test(n);
+const floorFirst=l=>l.filter(e=>!isStand(e[0])).concat(l.filter(e=>isStand(e[0])));
+function bodyItems(sess,opt){
+  opt=opt||{};const W=WEEKS[sess.week-1],m=MAIN[sess.type][sess.week-1],it=[];
+  m.main.forEach(e=>it.push({e,k:"work",w:W.w,r:W.r}));
+  it.push({e:m.burn,k:"burn",w:60,r:10});
+  if(opt.core)CORE[S.coreN%6].l.forEach(e=>it.push({e,k:"core",w:40,r:15}));
+  if(opt.burnx)BURN[S.burnN%6].l.forEach(e=>it.push({e,k:"burn",w:45,r:10}));
+  return {st:it.filter(x=>isStand(x.e[0])),fl:it.filter(x=>!isStand(x.e[0]))};
+}
+function seq(items){
+  const out=[];
+  items.forEach((x,i)=>{
+    if(i>0){const p=items[i-1];
+      if(isStand(p.e[0])&&!isStand(x.e[0]))out.push({k:"trans",t:20,lbl:"Get down on the floor"});
+      else if(p.k!==x.k)out.push({k:"trans",t:15});
+      else out.push({k:"rest",t:p.r});}
+    out.push(...expand([x.e],x.k,x.w,0));
+  });
+  return out;
+}
 function steps(sess,opt){
-  opt=opt||{};
-  const W=WEEKS[sess.week-1],m=MAIN[sess.type][sess.week-1];
-  let out=[{k:"ready",t:10}];
-  out=out.concat(expand(WARM[sess.type],"warm",40,10));
-  out.push({k:"trans",t:15});
-  out=out.concat(expand(m.main,"work",W.w,W.r));
-  out.push({k:"trans",t:15});
-  out=out.concat(expand([m.burn],"burn",60,0));
-  if(opt.core){out.push({k:"trans",t:20});out=out.concat(expand(CORE[S.coreN%6].l,"core",40,15))}
-  if(opt.burnx){out.push({k:"trans",t:20});out=out.concat(expand(BURN[S.burnN%6].l,"burn",45,10))}
-  out.push({k:"trans",t:20});
+  const g=bodyItems(sess,opt),warm=floorFirst(WARM[sess.type]),body=g.st.concat(g.fl);
+  let out=[{k:"ready",t:10}].concat(expand(warm,"warm",30,5));
+  const wEnd=isStand(warm[warm.length-1][0]),bStart=isStand(body[0].e[0]);
+  out.push(wEnd&&!bStart?{k:"trans",t:20,lbl:"Get down on the floor"}:!wEnd&&bStart?{k:"trans",t:20,lbl:"Stand up"}:{k:"trans",t:15});
+  out=out.concat(seq(body));
+  out.push(isStand(body[body.length-1].e[0])?{k:"trans",t:20,lbl:"Get down on the floor"}:{k:"trans",t:20});
   out=out.concat(expand(COOL[sess.type],"cool",30,5));
   return out;
 }
 function extraSteps(kind){
   const b=kind==="core"?CORE[S.coreN%6]:BURN[S.burnN%6];
-  return [{k:"ready",t:10}].concat(expand(b.l,kind==="core"?"core":"burn",40,kind==="core"?15:10));
+  return [{k:"ready",t:10}].concat(expand(floorFirst(b.l),kind==="core"?"core":"burn",40,kind==="core"?15:10));
 }
 const secs=st=>st.reduce((a,s)=>a+s.t,0);
 const mins=st=>Math.round(secs(st)/60);
@@ -371,7 +387,7 @@ function openSession(id){
   const s=sessions().find(x=>x.id===id),p=document.getElementById("panel"),done=!!S.done[id],m=MAIN[s.type][s.week-1],W=WEEKS[s.week-1];
   const ip=S.inprog&&S.inprog.id===id;
   if(ip)opts=Object.assign({core:false,burnx:false},S.inprog.opt||{});
-  const st=steps(s,opts);
+  const st=steps(s,opts),G=bodyItems(s,{}),lab=x=>x.k==="burn"?[x.e[0]+" (burnout)",x.e[1],x.e[2]]:x.e;
   p.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><span class="pill ${s.type==="P"?"p":""}">Week ${s.week}</span><button id="close" style="background:none;border:none;font-size:24px" aria-label="Close">×</button></div>
   <div><h2 style="font-size:26px">${TITLE[s.type]}</h2><div class="muted">${fmt(s.date)}${s.moved?" (moved)":""}${done?' · <span class="pill d">Done</span>':""}</div></div>
   <p style="margin:0">${W.note} Pick a weight that feels challenging today.</p>
@@ -383,9 +399,9 @@ function openSession(id){
   <div class="actions">${ip?`<button class="btn" id="resume">Resume at step ${S.inprog.i+1}</button><button class="btn ghost" id="go">Start over</button>`:`<button class="btn" id="go">Start timer</button>`}
   <button class="btn ${done?"ghost":"sage"}" id="toggle">${done?"Mark not done":"Mark done"}</button></div>
   <div class="move"><button class="btn ghost small" id="moveBtn">Move this session</button><span id="moveBox" hidden><input type="date" id="moveIn" value="${s.dk}"> <button class="btn small" id="moveSave">Save</button>${s.moved?' <button class="btn ghost small" id="moveReset">Back to plan</button>':""}</span></div>
-  <div class="blk">Warm up</div><div>${exList(WARM[s.type])}</div>
-  <div class="blk">Workout</div><div>${exList(m.main)}</div>
-  <div class="blk">Glute burnout</div><div>${exList([m.burn])}</div>
+  <div class="blk">Warm up</div><div>${exList(floorFirst(WARM[s.type]))}</div>
+  ${G.st.length?`<div class="blk">Standing</div><div>${exList(G.st.map(lab))}</div>`:""}
+  ${G.fl.length?`<div class="blk">On the floor</div><div>${exList(G.fl.map(lab))}</div>`:""}
   <div class="blk">Cool down</div><div>${exList(COOL[s.type])}</div>`;
   document.getElementById("sheet").hidden=false;
   const $=q=>p.querySelector(q);
@@ -401,18 +417,33 @@ function openSession(id){
 }
 function closeSheet(){document.getElementById("sheet").hidden=true;opts={core:false,burnx:false}}
 
+
 /* ---------- timer ---------- */
 let T=null,ac=null,wake=null;
 const PAUSEK=["ready","rest","switch","trans"];
-function beep(f,d){try{if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.3,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+function beep(f,d){try{if(!ac)return;if(ac.state!=="running")ac.resume();const t=ac.currentTime,g=ac.createGain();g.connect(ac.destination);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(1,t+.01);g.gain.setValueAtTime(1,t+d*.7);g.gain.exponentialRampToValueAtTime(.001,t+d);
+  [[f,"square",.35],[f*2,"triangle",.5]].forEach(([fr,ty,v])=>{const o=ac.createOscillator(),og=ac.createGain();o.type=ty;o.frequency.value=fr;og.gain.value=v;o.connect(og);og.connect(g);o.start(t);o.stop(t+d)})}catch(e){}}
+if(S.voice===undefined)S.voice=true;
+function say(txt){if(!S.voice||!txt)return;try{const v=window.speechSynthesis;v.cancel();const u=new SpeechSynthesisUtterance(txt);u.rate=1.05;u.volume=1;v.speak(u)}catch(e){}}
+function sideWord(x){return x&&x.side?(x.side==="Other side"?", other side":", weaker side first"):""}
+function announce(s,first){
+  const PK=["ready","rest","switch","trans"];
+  if(!PK.includes(s.k))return;
+  const nx=T.st.slice(T.st.indexOf(s)+1).find(x=>!PK.includes(x.k));
+  if(s.k==="switch"){say("Switch sides");return}
+  const lead=first?"Get ready. ":s.lbl?s.lbl+". ":"";
+  say(nx?lead+"Next up, "+nx.n+sideWord(nx):lead+"Last one");
+}
+function voiceBtn(){const b=document.getElementById("tVoice");b.textContent=S.voice?"Voice on":"Voice off"}
 async function startTimer(cfg){
   try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(e){}
+  try{if(S.voice){const u=new SpeechSynthesisUtterance(" ");u.volume=0;speechSynthesis.speak(u)}}catch(e){}
   try{wake=await navigator.wakeLock?.request("screen")}catch(e){}
   const st=cfg.extra?extraSteps(cfg.extra):steps(cfg.sess,cfg.opt);
   T={cfg,st,i:0,left:st[0].t,run:true,iv:null};
   if(cfg.resume&&S.inprog&&st[S.inprog.i]){T.i=S.inprog.i;T.left=S.inprog.left}
   document.getElementById("timer").hidden=false;
-  paint();T.iv=setInterval(tick,1000);
+  voiceBtn();paint();announce(T.st[T.i],T.i===0);T.iv=setInterval(tick,1000);
 }
 function keep(){if(T&&!T.cfg.extra){S.inprog={id:T.cfg.sess.id,i:T.i,left:T.left,opt:T.cfg.opt};save()}}
 function tick(){
@@ -432,7 +463,7 @@ function go(d){
   }
   const n=T.i+d;
   if(n>=T.st.length){finish();return}
-  T.i=n;T.left=T.st[n].t;
+  T.i=n;T.left=T.st[n].t;announce(T.st[n]);
   beep(PAUSEK.includes(T.st[n].k)?520:880,.35);
   paint();keep();
 }
@@ -442,7 +473,7 @@ function paint(){
   const show=pause?nxt:s;
   el.className="timer "+(pause?"rest":(s.k==="warm"||s.k==="cool")?"":"work");
   const LBL={ready:"Get ready",rest:"Rest",switch:"Switch sides",trans:"Next section",warm:"Warm up",work:"Work",burn:"Glute burnout",core:"Core and back",cool:"Cool down"};
-  let ph=LBL[s.k];if(pause&&show)ph+=" · "+LBL[show.k];
+  let ph=s.lbl||LBL[s.k];if(pause&&show)ph+=" · "+LBL[show.k];
   document.getElementById("tPhase").textContent=ph;
   document.getElementById("tUp").hidden=!pause;
   document.getElementById("tName").textContent=show?show.n:"Done";
@@ -466,6 +497,7 @@ function finish(){
   save();render();openSession(c.sess.id);
 }
 document.getElementById("tPlay").onclick=()=>{T.run=!T.run;paint()};
+document.getElementById("tVoice").onclick=()=>{S.voice=!S.voice;save();voiceBtn();if(!S.voice)try{speechSynthesis.cancel()}catch(e){}};
 document.getElementById("tSkip").onclick=()=>go(1);
 document.getElementById("tBack").onclick=()=>go(-1);
 document.getElementById("tEnd").onclick=()=>{keep();closeTimer();render()};
