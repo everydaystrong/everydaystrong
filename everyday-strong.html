@@ -1824,13 +1824,25 @@ function notifyHeather(subject, message){
 // Picks the entry the app reads contact details from: the client's own
 // newest Intake Form if there is one, otherwise the newest Contact Info
 // Heather typed in herself. Contact Info never counts as a completed intake.
+// Contact info Heather typed in herself. Older ones (before Oct 20, 2026)
+// were saved as "Intake Form" with only these six fields; a real intake
+// from forms.html always has more answers (Program, Level and so on).
+var TYPED_CONTACT_FIELDS = ["Name","Email","Phone","DOB","OK to Contact","Preferred Contact Method"];
+function isTypedContactEntry(v){
+  if(!v) return false;
+  if(v.formType==="Contact Info") return true;
+  if(v.formType!=="Intake Form" || v.source==="forms") return false;
+  var keys = Object.keys(v.data||{});
+  return keys.length>0 && keys.every(function(k){ return TYPED_CONTACT_FIELDS.indexOf(k)!==-1; });
+}
 function pickContactEntry(snap){
   var intake = null, intakeTs = -1, manual = null, manualTs = -1;
   snap.forEach(function(c){
     var v = c.val();
     if(!v || v.deleted) return;
-    if(v.formType==="Intake Form" && (v.ts||0) > intakeTs){ intake = v; intakeTs = v.ts||0; }
-    if(v.formType==="Contact Info" && (v.ts||0) > manualTs){ manual = v; manualTs = v.ts||0; }
+    var typed = isTypedContactEntry(v);
+    if(v.formType==="Intake Form" && !typed && (v.ts||0) > intakeTs){ intake = v; intakeTs = v.ts||0; }
+    if(typed && (v.ts||0) > manualTs){ manual = v; manualTs = v.ts||0; }
   });
   return intake || manual;
 }
@@ -2993,7 +3005,7 @@ function checkFormsReminder(){
   if(!bar || !DB || !currentUserKey) return;
   DB.ref("client_forms/"+currentUserKey).once("value", function(snap){
     var hasRealForm = false;
-    if(snap.exists()) snap.forEach(function(c){ var v=c.val(); if(v && !v.deleted && v.formType!=="Contact Info") hasRealForm = true; });
+    if(snap.exists()) snap.forEach(function(c){ var v=c.val(); if(v && !v.deleted && !isTypedContactEntry(v)) hasRealForm = true; });
     bar.style.display = hasRealForm ? "none" : "block";
   });
 }
@@ -6418,7 +6430,7 @@ function loadClientForms(){
       return;
     }
     entries.sort(function(a,b){ return (b.f.ts||0)-(a.f.ts||0); });
-    var bestIntake = entries.filter(function(e){ return e.f.formType==="Intake Form" && !e.f.deleted; })[0] || entries.filter(function(e){ return e.f.formType==="Contact Info" && !e.f.deleted; })[0];
+    var bestIntake = entries.filter(function(e){ return e.f.formType==="Intake Form" && !e.f.deleted && !isTypedContactEntry(e.f); })[0] || entries.filter(function(e){ return isTypedContactEntry(e.f) && !e.f.deleted; })[0];
     var h = bestIntake ? renderContactInfoCard(bestIntake) : "<button class='action-btn' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:14px;' onclick='renderAddContactInfoForm()'>Add Contact Info</button>";
     h += "<button class='action-btn sec' style='font-size:13px;padding:8px 14px;width:auto;margin-bottom:14px;' onclick='renderUploadFormBox()'>Upload Form Photo/PDF</button>";
     entries.forEach(function(e){
@@ -6426,7 +6438,7 @@ function loadClientForms(){
       var d=new Date(f.ts).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
       h+="<div style='background:var(--inp);border-radius:10px;padding:1rem;margin-bottom:10px;'>";
       h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'>";
-      h+="<strong style='font-size:14px;color:var(--text);'>"+ex(f.formType)+"</strong>";
+      h+="<strong style='font-size:14px;color:var(--text);'>"+(isTypedContactEntry(f)?"Contact Info (added by me)":ex(f.formType))+"</strong>";
       h+="<span style='font-size:11px;color:var(--sub);'>"+d+"</span></div>";
       if(f.photos && f.photos.length){
         h+="<div style='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;'>"+
@@ -6974,7 +6986,7 @@ function initSubmissionsBadge(){
         var key = clientNode.key;
         clientNode.forEach(function(entry){
           var v = entry.val();
-          if(v && (v.formType==="Uploaded Form" || v.formType==="Contact Info")) return;
+          if(v && (v.formType==="Uploaded Form" || isTypedContactEntry(v))) return;
           if(v){
             v._clientKey = key;
             v._entryKey = entry.key;
@@ -8772,6 +8784,6 @@ function formatSeconds(s){
 }
 </script>
 <p style="text-align:center;font-size:11px;color:#9a8a7a;padding:14px 16px 0;font-family:'Raleway',sans-serif;">Photos by <a href="https://christavphotography.com" target="_blank" rel="noopener" style="color:#a76a5b;text-decoration:none;">Christa V Photography</a></p>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.21b</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.28</p>
 </body>
 </html>
