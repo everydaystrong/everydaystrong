@@ -6059,8 +6059,8 @@ function sendWeeklySummary(){
     var total=0, active=0, trial=0, newSignups=0;
     if(snap.exists()) snap.forEach(function(c){
       var cd=c.val(); total++;
-      if(!isClientBlocked(cd)) active++;
-      if(cd.trial && cd.expiresAt && Date.now()<=cd.expiresAt) trial++;
+      if(!isClientBlocked(cd) && !isClientHidden(cd)) active++;
+      if(cd.trial && cd.expiresAt && Date.now()<=cd.expiresAt && !isClientHidden(cd)) trial++;
       if(cd.ts && cd.ts>=weekAgo) newSignups++;
     });
     DB.ref("checkins").orderByChild("ts").startAt(weekAgo).once("value", function(cisnap){
@@ -6126,8 +6126,8 @@ function loadDashboard(){
     var total=0, active=0, trial=0;
     if(snap.exists()) snap.forEach(function(c){
       var cd=c.val(); total++;
-      if(!isClientBlocked(cd)) active++;
-      if(cd.trial && cd.expiresAt && Date.now()<=cd.expiresAt) trial++;
+      if(!isClientBlocked(cd) && !isClientHidden(cd)) active++;
+      if(cd.trial && cd.expiresAt && Date.now()<=cd.expiresAt && !isClientHidden(cd)) trial++;
     });
     // Count videos
     DB.ref("videos").once("value",function(vsnap){
@@ -8784,6 +8784,6 @@ function formatSeconds(s){
 }
 </script>
 <p style="text-align:center;font-size:11px;color:#9a8a7a;padding:14px 16px 0;font-family:'Raleway',sans-serif;">Photos by <a href="https://christavphotography.com" target="_blank" rel="noopener" style="color:#a76a5b;text-decoration:none;">Christa V Photography</a></p>
-<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.28</p>
+<p style="text-align:center;font-size:10px;color:#c0b5a8;padding:10px 0;">build: v2026.10.28b</p>
 </body>
 </html>
